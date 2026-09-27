@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1018">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mon Garage">
+<title>Mon Garage</title>
+<style>
+:root{
+  --bg:#0d1018;
+  --surface:#191d27;
+  --surface2:#242936;
+  --line:#303746;
+  --text:#f4f5f7;
+  --muted:#969dac;
+  --accent:#e8ebf0;
+  --danger:#ef7777;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{width:min(100%,620px);margin:auto;padding:18px 14px 34px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.kicker{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:800}
+h1{font-size:32px;line-height:1;margin:5px 0 0;letter-spacing:-.05em}
+.header-action{width:42px;height:42px;border:1px solid var(--line);background:var(--surface);
+  color:var(--text);border-radius:50%;font-size:22px}
+.section{margin-top:25px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:0 3px 10px}
+.section-title{font-size:19px;font-weight:850;letter-spacing:-.025em}
+.section-count{font-size:11px;color:var(--muted)}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{
+  position:relative;overflow:hidden;background:var(--surface);
+  border:1px solid var(--line);border-radius:20px;min-height:240px;
+}
+.card-photo{
+  height:205px;background:#3b404c;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative
+}
+.card-photo img{width:100%;height:100%;object-fit:contain;display:block}
+.card-photo.no-photo{background:linear-gradient(145deg,#343946,#252a35)}
+.no-photo-icon{font-size:58px;opacity:.55}
+.card-body{padding:13px 15px 15px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-name{font-size:18px;font-weight:750;line-height:1.15}
+.card-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+.menu-btn{
+  width:38px;height:38px;flex:0 0 38px;border:0;border-radius:11px;
+  background:var(--surface2);color:var(--text);font-size:21px;line-height:1
+}
+.card-details{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pill{border:1px solid var(--line);background:var(--surface2);border-radius:999px;
+  padding:5px 8px;color:var(--muted);font-size:10px}
+.empty{
+  border:1px dashed var(--line);border-radius:18px;padding:20px;text-align:center;
+  color:var(--muted);font-size:12px;background:rgba(255,255,255,.01)
+}
+.add{
+  width:100%;height:52px;margin-top:12px;border:1px solid var(--line);border-radius:16px;
+  background:var(--surface);color:var(--text);font-weight:750
+}
+.add span{font-size:23px;vertical-align:-2px;margin-right:7px}
+.bottom-space{height:20px}
+
+/* modal */
+.backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.68);
+  display:none;align-items:flex-end;justify-content:center}
+.backdrop.open{display:flex}
+.modal{
+  width:min(100%,620px);max-height:92vh;overflow:auto;background:var(--surface);
+  border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;
+  padding:18px 16px calc(18px + env(safe-area-inset-bottom))
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal h2{margin:0;font-size:21px;letter-spacing:-.03em}
+.close{width:36px;height:36px;border:0;border-radius:50%;background:var(--surface2);color:var(--text);font-size:22px}
+.type-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:var(--surface2);
+  border:1px solid var(--line);border-radius:14px;margin-bottom:15px}
+.type-switch button{border:0;background:transparent;color:var(--muted);border-radius:10px;padding:10px;font-weight:750}
+.type-switch button.active{background:var(--surface);color:var(--text)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{min-width:0}
+.field.full{grid-column:1/-1}
+label{display:block;color:var(--muted);font-size:10px;font-weight:750;margin:0 0 6px 2px}
+input,select,textarea{
+  width:100%;min-width:0;height:46px;border:1px solid var(--line);border-radius:12px;
+  background:#10141d;color:var(--text);padding:0 11px;outline:none
+}
+textarea{height:82px;padding:11px;resize:vertical;line-height:1.4}
+input:focus,select:focus,textarea:focus{border-color:#667084}
+.photo-picker{
+  border:1px dashed var(--line);border-radius:14px;background:#10141d;min-height:112px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative
+}
+.photo-picker img{width:100%;height:170px;object-fit:contain}
+.photo-placeholder{text-align:center;color:var(--muted);font-size:11px;padding:18px}
+.photo-placeholder strong{display:block;color:var(--text);font-size:13px;margin-bottom:4px}
+.file-input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
+.actions button{height:47px;border-radius:13px;border:1px solid var(--line);font-weight:800}
+.cancel{background:transparent;color:var(--text)}
+.save{background:var(--accent);color:#12151c;border-color:var(--accent)}
+.delete-action{width:100%;height:42px;margin-top:8px;border:0;background:transparent;color:var(--danger);font-size:12px;font-weight:750}
+.hidden{display:none!important}
+.toast{position:fixed;z-index:200;left:50%;bottom:25px;transform:translateX(-50%);
+  background:var(--accent);color:#11151d;padding:9px 13px;border-radius:11px;font-size:12px;
+  opacity:0;pointer-events:none;transition:.2s}
+.toast.show{opacity:1}
+@media(max-width:390px){
+ .app{padding-left:12px;padding-right:12px}
+ h1{font-size:29px}
+ .card-photo{height:185px}
+ .form-grid{gap:8px}
+}
+</style>
+</head>
+<body>
+<main class="app">
+<header>
+  <div>
+    <div class="kicker">Garage personnel</div>
+    <h1>Mon Garage</h1>
+  </div>
+  <button class="header-action" id="themeHint" aria-label="Mon Garage">⌂</button>
+</header>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-title">Véhicules</div>
+    <div class="section-count" id="vehicleCount">0</div>
+  </div>
+  <div id="vehicleCards" class="cards"></div>
+  <button class="add" data-type="vehicle"><span>＋</span>Ajouter un véhicule</button>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <div class="section-title">Vélos</div>
+    <div class="section-count" id="bikeCount">0</div>
+  </div>
+  <div id="bikeCards" class="cards"></div>
+  <button class="add" data-type="bike"><span>＋</span>Ajouter un vélo</button>
+</section>
+
+<div class="bottom-space"></div>
+</main>
+
+<div class="backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 id="modalTitle">Ajouter un véhicule</h2>
+      <button class="close" id="closeModal">×</button>
+    </div>
+
+    <div class="type-switch">
+      <button id="vehicleTypeBtn" class="active" type="button">Véhicule</button>
+      <button id="bikeTypeBtn" type="button">Vélo</button>
+    </div>
+
+    <form id="itemForm">
+      <div class="form-grid">
+        <div class="field full">
+          <label for="name">Nom / modèle</label>
+          <input id="name" required placeholder="Ex. Audi A5 Coupé">
+        </div>
+
+        <div class="field">
+          <label for="brand">Marque</label>
+          <input id="brand" placeholder="Ex. Audi">
+        </div>
+        <div class="field">
+          <label for="model">Modèle</label>
+          <input id="model" placeholder="Ex. A5 Coupé">
+        </div>
+
+        <div class="field" id="yearField">
+          <label for="year">Année</label>
+          <input id="year" type="number" inputmode="numeric" placeholder="Ex. 2023">
+        </div>
+        <div class="field" id="mileageField">
+          <label for="mileage">Kilométrage</label>
+          <input id="mileage" type="number" inputmode="numeric" placeholder="Ex. 75000">
+        </div>
+
+        <div class="field" id="fuelField">
+          <label for="fuel">Motorisation</label>
+          <select id="fuel">
+            <option value="">Choisir</option>
+            <option>Essence</option>
+            <option>Diesel</option>
+            <option>Hybride</option>
+            <option>Électrique</option>
+            <option>GPL</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="field" id="plateField">
+          <label for="plate">Immatriculation</label>
+          <input id="plate" placeholder="Ex. AB-123-CD">
+        </div>
+
+        <div class="field bike-only hidden">
+          <label for="bikeType">Type de vélo</label>
+          <select id="bikeType">
+            <option value="">Choisir</option>
+            <option>Route</option>
+            <option>Gravel</option>
+            <option>VTT</option>
+            <option>VTC</option>
+            <option>Vélo électrique</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="field bike-only hidden">
+          <label for="bikeSize">Taille / cadre</label>
+          <input id="bikeSize" placeholder="Ex. 56 / L">
+        </div>
+        <div class="field bike-only hidden">
+          <label for="bikeWheels">Roues</label>
+          <input id="bikeWheels" placeholder="Ex. carbone 50 mm">
+        </div>
+        <div class="field bike-only hidden">
+          <label for="bikeGroupset">Groupe</label>
+          <input id="bikeGroupset" placeholder="Ex. Dura-Ace Di2">
+        </div>
+
+        <div class="field full">
+          <label>Photo</label>
+          <div class="photo-picker" id="photoPicker">
+            <div class="photo-placeholder" id="photoPlaceholder">
+              <strong>Ajouter une photo</strong>
+              Photo du véhicule ou du vélo
+            </div>
+            <img id="photoPreview" class="hidden" alt="Aperçu">
+            <input class="file-input" id="photoInput" type="file" accept="image/*">
+          </div>
+        </div>
+
+        <div class="field full">
+          <label for="notes">Notes</label>
+          <textarea id="notes" placeholder="Informations complémentaires…"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="cancel" type="button" id="cancelBtn">Annuler</button>
+        <button class="save" type="submit">Enregistrer</button>
+      </div>
+      <button class="delete-action hidden" id="deleteBtn" type="button">Supprimer</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = "monGarage_v1";
+let data = {vehicles:[], bikes:[]};
+let currentType = "vehicle";
+let editingId = null;
+let currentPhoto = "";
+
+const $ = id => document.getElementById(id);
+
+function uid(){
+  return Math.random().toString(36).slice(2,9) + Date.now().toString(36);
+}
+function load(){
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved) data = {...data,...JSON.parse(saved)};
+  }catch(e){}
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+function emptyHtml(type){
+  return `<div class="empty">Aucun ${type === "vehicle" ? "véhicule" : "vélo"} dans ton garage.</div>`;
+}
+function cardHtml(item,type){
+  const details = [];
+  if(type==="vehicle"){
+    if(item.year) details.push(item.year);
+    if(item.mileage) details.push(`${Number(item.mileage).toLocaleString("fr-FR")} km`);
+    if(item.fuel) details.push(item.fuel);
+    if(item.plate) details.push(item.plate);
+  }else{
+    if(item.bikeType) details.push(item.bikeType);
+    if(item.bikeSize) details.push(item.bikeSize);
+    if(item.bikeGroupset) details.push(item.bikeGroupset);
+  }
+  const photo = item.photo
+    ? `<img src="${item.photo}" alt="${escapeHtml(item.name)}">`
+    : `<div class="no-photo-icon">${type==="vehicle" ? "🚗" : "🚲"}</div>`;
+  return `
+  <article class="card">
+    <div class="card-photo ${item.photo ? "" : "no-photo"}">${photo}</div>
+    <div class="card-body">
+      <div class="card-top">
+        <div class="card-name">${escapeHtml(item.name)}</div>
+        <button class="menu-btn" data-edit="${item.id}" data-type="${type}" aria-label="Modifier">•••</button>
+      </div>
+      ${item.brand || item.model ? `<div class="card-sub">${escapeHtml([item.brand,item.model].filter(Boolean).join(" · "))}</div>` : ""}
+      ${details.length ? `<div class="card-details">${details.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join("")}</div>` : ""}
+    </div>
+  </article>`;
+}
+function render(){
+  const v = data.vehicles || [], b = data.bikes || [];
+  $("vehicleCount").textContent = v.length;
+  $("bikeCount").textContent = b.length;
+  $("vehicleCards").innerHTML = v.length ? v.map(x=>cardHtml(x,"vehicle")).join("") : emptyHtml("vehicle");
+  $("bikeCards").innerHTML = b.length ? b.map(x=>cardHtml(x,"bike")).join("") : emptyHtml("bike");
+}
+function resetForm(){
+  $("itemForm").reset();
+  currentPhoto = "";
+  $("photoPreview").src = "";
+  $("photoPreview").classList.add("hidden");
+  $("photoPlaceholder").classList.remove("hidden");
+}
+function setType(type){
+  currentType = type;
+  $("vehicleTypeBtn").classList.toggle("active",type==="vehicle");
+  $("bikeTypeBtn").classList.toggle("active",type==="bike");
+  $("modalTitle").textContent = editingId
+    ? (type==="vehicle" ? "Modifier le véhicule" : "Modifier le vélo")
+    : (type==="vehicle" ? "Ajouter un véhicule" : "Ajouter un vélo");
+  document.querySelectorAll(".bike-only").forEach(el=>el.classList.toggle("hidden",type!=="bike"));
+  ["yearField","mileageField","fuelField","plateField"].forEach(id=>{
+    $(id).classList.toggle("hidden",type==="bike");
+  });
+}
+function openModal(type,id=null){
+  editingId = id;
+  resetForm();
+  setType(type);
+  if(id){
+    const item = (type==="vehicle"?data.vehicles:data.bikes).find(x=>x.id===id);
+    if(!item) return;
+    $("name").value=item.name||"";
+    $("brand").value=item.brand||"";
+    $("model").value=item.model||"";
+    $("year").value=item.year||"";
+    $("mileage").value=item.mileage||"";
+    $("fuel").value=item.fuel||"";
+    $("plate").value=item.plate||"";
+    $("bikeType").value=item.bikeType||"";
+    $("bikeSize").value=item.bikeSize||"";
+    $("bikeWheels").value=item.bikeWheels||"";
+    $("bikeGroupset").value=item.bikeGroupset||"";
+    $("notes").value=item.notes||"";
+    currentPhoto=item.photo||"";
+    if(currentPhoto){
+      $("photoPreview").src=currentPhoto;
+      $("photoPreview").classList.remove("hidden");
+      $("photoPlaceholder").classList.add("hidden");
+    }
+    $("deleteBtn").classList.remove("hidden");
+  }else{
+    $("deleteBtn").classList.add("hidden");
+  }
+  $("modalBackdrop").classList.add("open");
+}
+function closeModal(){
+  $("modalBackdrop").classList.remove("open");
+  editingId=null;
+}
+function toast(msg){
+  $("toast").textContent=msg;
+  $("toast").classList.add("show");
+  setTimeout(()=>$("toast").classList.remove("show"),1800);
+}
+$("vehicleTypeBtn").onclick=()=>setType("vehicle");
+$("bikeTypeBtn").onclick=()=>setType("bike");
+$("closeModal").onclick=closeModal;
+$("cancelBtn").onclick=closeModal;
+$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+
+document.querySelectorAll(".add").forEach(btn=>btn.addEventListener("click",()=>openModal(btn.dataset.type)));
+
+$("photoInput").addEventListener("change",e=>{
+  const file=e.target.files?.[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    currentPhoto=reader.result;
+    $("photoPreview").src=currentPhoto;
+    $("photoPreview").classList.remove("hidden");
+    $("photoPlaceholder").classList.add("hidden");
+  };
+  reader.readAsDataURL(file);
+});
+
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-edit]");
+  if(btn) openModal(btn.dataset.type,btn.dataset.edit);
+});
+
+$("itemForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const item={
+    id:editingId||uid(),
+    name:$("name").value.trim(),
+    brand:$("brand").value.trim(),
+    model:$("model").value.trim(),
+    year:$("year").value.trim(),
+    mileage:$("mileage").value.trim(),
+    fuel:$("fuel").value,
+    plate:$("plate").value.trim(),
+    bikeType:$("bikeType").value,
+    bikeSize:$("bikeSize").value.trim(),
+    bikeWheels:$("bikeWheels").value.trim(),
+    bikeGroupset:$("bikeGroupset").value.trim(),
+    notes:$("notes").value.trim(),
+    photo:currentPhoto
+  };
+  if(!item.name){$("name").focus();return}
+  const list=currentType==="vehicle"?data.vehicles:data.bikes;
+  const idx=list.findIndex(x=>x.id===item.id);
+  if(idx>=0) list[idx]=item; else list.push(item);
+  save(); render(); closeModal();
+  toast(idx>=0 ? "Fiche modifiée" : "Ajouté au garage");
+});
+$("deleteBtn").onclick=()=>{
+  if(!editingId) return;
+  if(!confirm("Supprimer cette fiche ?")) return;
+  const key=currentType==="vehicle"?"vehicles":"bikes";
+  data[key]=data[key].filter(x=>x.id!==editingId);
+  save(); render(); closeModal(); toast("Fiche supprimée");
+};
+
+load();
+render();
+</script>
+</body>
+</html>
