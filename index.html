@@ -1,450 +1,407 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark" class="is-auth-pending">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d1018">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mon Garage">
-<title>Mon Garage</title>
-<style>
-:root{
-  --bg:#0d1018;
-  --surface:#191d27;
-  --surface2:#242936;
-  --line:#303746;
-  --text:#f4f5f7;
-  --muted:#969dac;
-  --accent:#e8ebf0;
-  --danger:#ef7777;
-}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
-body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-.app{width:min(100%,620px);margin:auto;padding:18px 14px 34px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
-.kicker{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:800}
-h1{font-size:32px;line-height:1;margin:5px 0 0;letter-spacing:-.05em}
-.header-action{width:42px;height:42px;border:1px solid var(--line);background:var(--surface);
-  color:var(--text);border-radius:50%;font-size:22px}
-.section{margin-top:25px}
-.section-head{display:flex;align-items:center;justify-content:space-between;margin:0 3px 10px}
-.section-title{font-size:19px;font-weight:850;letter-spacing:-.025em}
-.section-count{font-size:11px;color:var(--muted)}
-.cards{display:flex;flex-direction:column;gap:10px}
-.card{
-  position:relative;overflow:hidden;background:var(--surface);
-  border:1px solid var(--line);border-radius:20px;min-height:240px;
-}
-.card-photo{
-  height:205px;background:#3b404c;display:flex;align-items:center;justify-content:center;
-  overflow:hidden;position:relative
-}
-.card-photo img{width:100%;height:100%;object-fit:contain;display:block}
-.card-photo.no-photo{background:linear-gradient(145deg,#343946,#252a35)}
-.no-photo-icon{font-size:58px;opacity:.55}
-.card-body{padding:13px 15px 15px}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.card-name{font-size:18px;font-weight:750;line-height:1.15}
-.card-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
-.menu-btn{
-  width:38px;height:38px;flex:0 0 38px;border:0;border-radius:11px;
-  background:var(--surface2);color:var(--text);font-size:21px;line-height:1
-}
-.card-details{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.pill{border:1px solid var(--line);background:var(--surface2);border-radius:999px;
-  padding:5px 8px;color:var(--muted);font-size:10px}
-.empty{
-  border:1px dashed var(--line);border-radius:18px;padding:20px;text-align:center;
-  color:var(--muted);font-size:12px;background:rgba(255,255,255,.01)
-}
-.add{
-  width:100%;height:52px;margin-top:12px;border:1px solid var(--line);border-radius:16px;
-  background:var(--surface);color:var(--text);font-weight:750
-}
-.add span{font-size:23px;vertical-align:-2px;margin-right:7px}
-.bottom-space{height:20px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Suivi de vos véhicules et vélos : entretiens, carburant, coûts, documents.">
+  <meta name="theme-color" content="#0d1018">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mon Garage">
+  <meta name="format-detection" content="telephone=no">
+  <title>Mon Garage</title>
 
-/* modal */
-.backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.68);
-  display:none;align-items:flex-end;justify-content:center}
-.backdrop.open{display:flex}
-.modal{
-  width:min(100%,620px);max-height:92vh;overflow:auto;background:var(--surface);
-  border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;
-  padding:18px 16px calc(18px + env(safe-area-inset-bottom))
-}
-.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.modal h2{margin:0;font-size:21px;letter-spacing:-.03em}
-.close{width:36px;height:36px;border:0;border-radius:50%;background:var(--surface2);color:var(--text);font-size:22px}
-.type-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:var(--surface2);
-  border:1px solid var(--line);border-radius:14px;margin-bottom:15px}
-.type-switch button{border:0;background:transparent;color:var(--muted);border-radius:10px;padding:10px;font-weight:750}
-.type-switch button.active{background:var(--surface);color:var(--text)}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.field{min-width:0}
-.field.full{grid-column:1/-1}
-label{display:block;color:var(--muted);font-size:10px;font-weight:750;margin:0 0 6px 2px}
-input,select,textarea{
-  width:100%;min-width:0;height:46px;border:1px solid var(--line);border-radius:12px;
-  background:#10141d;color:var(--text);padding:0 11px;outline:none
-}
-textarea{height:82px;padding:11px;resize:vertical;line-height:1.4}
-input:focus,select:focus,textarea:focus{border-color:#667084}
-.photo-picker{
-  border:1px dashed var(--line);border-radius:14px;background:#10141d;min-height:112px;
-  display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative
-}
-.photo-picker img{width:100%;height:170px;object-fit:contain}
-.photo-placeholder{text-align:center;color:var(--muted);font-size:11px;padding:18px}
-.photo-placeholder strong{display:block;color:var(--text);font-size:13px;margin-bottom:4px}
-.file-input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}
-.actions button{height:47px;border-radius:13px;border:1px solid var(--line);font-weight:800}
-.cancel{background:transparent;color:var(--text)}
-.save{background:var(--accent);color:#12151c;border-color:var(--accent)}
-.delete-action{width:100%;height:42px;margin-top:8px;border:0;background:transparent;color:var(--danger);font-size:12px;font-weight:750}
-.hidden{display:none!important}
-.toast{position:fixed;z-index:200;left:50%;bottom:25px;transform:translateX(-50%);
-  background:var(--accent);color:#11151d;padding:9px 13px;border-radius:11px;font-size:12px;
-  opacity:0;pointer-events:none;transition:.2s}
-.toast.show{opacity:1}
-@media(max-width:390px){
- .app{padding-left:12px;padding-right:12px}
- h1{font-size:29px}
- .card-photo{height:185px}
- .form-grid{gap:8px}
-}
-</style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <script>
+    try { if (JSON.parse(localStorage.getItem('mon_garage_v2_theme')) === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/views/garage.css">
+
+  <script type="module" src="js/main.js"></script>
 </head>
+
 <body>
-<main class="app">
-<header>
-  <div>
-    <div class="kicker">Garage personnel</div>
-    <h1>Mon Garage</h1>
-  </div>
-  <button class="header-action" id="themeHint" aria-label="Mon Garage">⌂</button>
-</header>
+  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
 
-<section class="section">
-  <div class="section-head">
-    <div class="section-title">Véhicules</div>
-    <div class="section-count" id="vehicleCount">0</div>
-  </div>
-  <div id="vehicleCards" class="cards"></div>
-  <button class="add" data-type="vehicle"><span>＋</span>Ajouter un véhicule</button>
-</section>
-
-<section class="section">
-  <div class="section-head">
-    <div class="section-title">Vélos</div>
-    <div class="section-count" id="bikeCount">0</div>
-  </div>
-  <div id="bikeCards" class="cards"></div>
-  <button class="add" data-type="bike"><span>＋</span>Ajouter un vélo</button>
-</section>
-
-<div class="bottom-space"></div>
-</main>
-
-<div class="backdrop" id="modalBackdrop">
-  <div class="modal" role="dialog" aria-modal="true">
-    <div class="modal-head">
-      <h2 id="modalTitle">Ajouter un véhicule</h2>
-      <button class="close" id="closeModal">×</button>
+  <!-- ================= CONNEXION ================= -->
+  <div class="auth" id="authScreen" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth__card">
+      <div class="auth__logo" aria-hidden="true" data-icon="car" data-size="30"></div>
+      <div class="auth__kicker">Mon Garage</div>
+      <div class="auth__loading" id="authLoading"><span class="spinner"></span><span>Chargement…</span></div>
+      <form class="form auth__form" id="authForm" novalidate hidden>
+        <h1 class="auth__title" id="authTitle">Connexion</h1>
+        <p class="auth__sub" id="authSub">Retrouvez vos véhicules sur tous vos appareils.</p>
+        <div class="field"><label class="field__label" for="authEmail">E-mail</label><input class="input" id="authEmail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="vous@email.fr" required></div>
+        <div class="field" id="authPasswordField"><label class="field__label" for="authPassword">Mot de passe</label><input class="input" id="authPassword" name="password" type="password" autocomplete="current-password" placeholder="6 caractères minimum" required></div>
+        <p class="auth__error" id="authError" role="alert"></p>
+        <button type="submit" class="btn btn--primary btn--lg btn--block" id="authSubmit">Se connecter</button>
+        <button type="button" class="link-btn link-btn--center" id="authForgot">Mot de passe oublié ?</button>
+        <button type="button" class="btn btn--ghost btn--block" id="authSwitch">Créer un compte</button>
+      </form>
+      <div class="auth__offline" id="authOffline" hidden>
+        <p>Impossible de joindre le service de connexion.</p>
+        <button type="button" class="btn btn--soft btn--block" id="authRetry">Réessayer</button>
+        <button type="button" class="btn btn--ghost btn--block" id="authLocal">Continuer hors ligne</button>
+      </div>
     </div>
+  </div>
 
-    <div class="type-switch">
-      <button id="vehicleTypeBtn" class="active" type="button">Véhicule</button>
-      <button id="bikeTypeBtn" type="button">Vélo</button>
+  <!-- ================= EN-TÊTE ================= -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <button type="button" class="icon-btn icon-btn--glass" id="backBtn" aria-label="Retour au garage" hidden><span data-icon="chevronLeft" data-size="22"></span></button>
+      <div class="topbar__titles">
+        <span class="topbar__kicker" id="topKicker">Garage personnel</span>
+        <h1 class="topbar__title" id="topTitle">Mon Garage</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="sync-pill" id="syncStatus" data-status="connecting" role="status"><span class="spinner spinner--xs"></span><span>Connexion…</span></span>
+        <button type="button" class="icon-btn icon-btn--glass" id="editVehicleBtn" aria-label="Modifier la fiche" hidden><span data-icon="edit" data-size="19"></span></button>
+        <button type="button" class="icon-btn icon-btn--glass" id="themeToggle" aria-label="Changer de thème"></button>
+      </div>
     </div>
+  </header>
 
-    <form id="itemForm">
-      <div class="form-grid">
-        <div class="field full">
-          <label for="name">Nom / modèle</label>
-          <input id="name" required placeholder="Ex. Audi A5 Coupé">
-        </div>
+  <main class="app" id="main" tabindex="-1">
 
-        <div class="field">
-          <label for="brand">Marque</label>
-          <input id="brand" placeholder="Ex. Audi">
-        </div>
-        <div class="field">
-          <label for="model">Modèle</label>
-          <input id="model" placeholder="Ex. A5 Coupé">
-        </div>
+    <!-- ================= ACCUEIL ================= -->
+    <section id="homeView" class="view">
+      <section class="section">
+        <header class="section__head"><h2 class="section__title">Véhicules</h2><span class="section__count" id="vehicleCount">0</span></header>
+        <div class="garage-cards" id="vehicleCards"></div>
+        <button type="button" class="add-tile" data-new="vehicle"><span data-icon="plus" data-size="20"></span><span>Ajouter un véhicule</span></button>
+      </section>
+      <section class="section">
+        <header class="section__head"><h2 class="section__title">Vélos</h2><span class="section__count" id="bikeCount">0</span></header>
+        <div class="garage-cards" id="bikeCards"></div>
+        <button type="button" class="add-tile" data-new="bike"><span data-icon="plus" data-size="20"></span><span>Ajouter un vélo</span></button>
+      </section>
+      <p class="account" id="accountLine"></p>
+      <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
+    </section>
 
-        <div class="field" id="yearField">
-          <label for="year">Année</label>
-          <input id="year" type="number" inputmode="numeric" placeholder="Ex. 2023">
-        </div>
-        <div class="field" id="mileageField">
-          <label for="mileage">Kilométrage</label>
-          <input id="mileage" type="number" inputmode="numeric" placeholder="Ex. 75000">
-        </div>
+    <!-- ================= FICHE VÉHICULE ================= -->
+    <section id="detailView" class="view" hidden>
+      <section class="vhero card" id="vehicleHero"></section>
+      <nav class="vtabs" id="vehicleTabs" role="tablist" aria-label="Rubriques du véhicule"></nav>
 
-        <div class="field" id="fuelField">
-          <label for="fuel">Motorisation</label>
-          <select id="fuel">
-            <option value="">Choisir</option>
-            <option>Essence</option>
-            <option>Diesel</option>
-            <option>Hybride</option>
-            <option>Électrique</option>
-            <option>GPL</option>
-            <option>Autre</option>
-          </select>
-        </div>
-        <div class="field" id="plateField">
-          <label for="plate">Immatriculation</label>
-          <input id="plate" placeholder="Ex. AB-123-CD">
-        </div>
+      <div class="vpanel" id="panel-overview" data-panel="overview"></div>
 
-        <div class="field bike-only hidden">
-          <label for="bikeType">Type de vélo</label>
-          <select id="bikeType">
-            <option value="">Choisir</option>
-            <option>Route</option>
-            <option>Gravel</option>
-            <option>VTT</option>
-            <option>VTC</option>
-            <option>Vélo électrique</option>
-            <option>Autre</option>
-          </select>
-        </div>
-        <div class="field bike-only hidden">
-          <label for="bikeSize">Taille / cadre</label>
-          <input id="bikeSize" placeholder="Ex. 56 / L">
-        </div>
-        <div class="field bike-only hidden">
-          <label for="bikeWheels">Roues</label>
-          <input id="bikeWheels" placeholder="Ex. carbone 50 mm">
-        </div>
-        <div class="field bike-only hidden">
-          <label for="bikeGroupset">Groupe</label>
-          <input id="bikeGroupset" placeholder="Ex. Dura-Ace Di2">
-        </div>
+      <div class="vpanel" id="panel-maintenance" data-panel="maintenance" hidden>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Plan d’entretien</h2><p class="card__sub">Rappels par date et kilométrage</p></div><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="stack" id="reminderList"></div>
+        </section>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="card card--list" id="maintenanceList"></div>
+        </section>
+      </div>
 
-        <div class="field full">
-          <label>Photo</label>
-          <div class="photo-picker" id="photoPicker">
-            <div class="photo-placeholder" id="photoPlaceholder">
-              <strong>Ajouter une photo</strong>
-              Photo du véhicule ou du vélo
+      <div class="vpanel" id="panel-fuel" data-panel="fuel" hidden>
+        <div class="stats-grid" id="fuelStats"></div>
+        <section class="card section">
+          <header class="card__head"><div><h2 class="card__title" id="fuelChartTitle">Dépenses de carburant</h2><p class="card__sub">12 derniers mois</p></div></header>
+          <div id="fuelChart"></div>
+        </section>
+        <section class="section">
+          <header class="section__head"><h2 class="section__title" id="fuelListTitle">Pleins</h2><button type="button" class="add-btn" data-open="fuel" aria-label="Ajouter un plein"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="card card--list" id="fuelList"></div>
+        </section>
+      </div>
+
+      <div class="vpanel" id="panel-parts" data-panel="parts" hidden>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Usure des composants</h2><p class="card__sub" id="partsSub"></p></div><button type="button" class="add-btn" data-open="part" aria-label="Ajouter un composant"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="stack" id="partList"></div>
+        </section>
+      </div>
+
+      <div class="vpanel" id="panel-costs" data-panel="costs" hidden>
+        <section class="card cost-hero" id="costHero"></section>
+        <section class="card section">
+          <header class="card__head">
+            <div><h2 class="card__title">Coût par mois</h2><p class="card__sub" id="costRange"></p></div>
+            <div class="chart-steps">
+              <button type="button" class="icon-btn icon-btn--sm" id="costOlder" aria-label="Mois plus anciens"><span data-icon="chevronLeft" data-size="18"></span></button>
+              <button type="button" class="icon-btn icon-btn--sm" id="costNewer" aria-label="Mois plus récents"><span data-icon="chevronRight" data-size="18"></span></button>
             </div>
-            <img id="photoPreview" class="hidden" alt="Aperçu">
-            <input class="file-input" id="photoInput" type="file" accept="image/*">
+          </header>
+          <div id="costChart"></div>
+        </section>
+        <section class="card section">
+          <header class="card__head"><div><h2 class="card__title">Répartition depuis l’achat</h2><p class="card__sub" id="costSplitSub"></p></div></header>
+          <div class="donut-chart donut-chart--stack">
+            <div class="donut" id="costDonut"><div class="donut__center"><strong id="costDonutTotal">0 €</strong><span>payés</span></div></div>
+            <div class="legend" id="costLegend"></div>
           </div>
+        </section>
+        <section class="section">
+          <header class="section__head"><h2 class="section__title">Achat &amp; financement</h2><button type="button" class="link-btn" data-open="purchase">Modifier</button></header>
+          <div class="card" id="financeCard"></div>
+        </section>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Frais fixes</h2><p class="card__sub">Assurance, stationnement, abonnements…</p></div><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="card card--list" id="fixedList"></div>
+        </section>
+      </div>
+
+      <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="card card--list" id="docList"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FEUILLES ================= -->
+  <!-- Véhicule / vélo -->
+  <div class="sheet-backdrop" id="vehicleSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="vehicleTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="vehicleTitle">Ajouter un véhicule</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="vehicleForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="segmented segmented--types" id="kindSwitch">
+          <label><input type="radio" name="kind" value="vehicle" checked><span>Véhicule</span></label>
+          <label><input type="radio" name="kind" value="bike"><span>Vélo</span></label>
         </div>
-
-        <div class="field full">
-          <label for="notes">Notes</label>
-          <textarea id="notes" placeholder="Informations complémentaires…"></textarea>
+        <div class="field"><label class="field__label" for="veName">Nom</label><input class="input" id="veName" name="name" maxlength="80" placeholder="Ex. Audi A5 Coupé" autocomplete="off"></div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="veBrand">Marque</label><input class="input" id="veBrand" name="brand" maxlength="60" placeholder="Ex. Audi" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="veModel">Modèle</label><input class="input" id="veModel" name="model" maxlength="60" placeholder="Ex. A5 Coupé" autocomplete="off"></div>
         </div>
-      </div>
-
-      <div class="actions">
-        <button class="cancel" type="button" id="cancelBtn">Annuler</button>
-        <button class="save" type="submit">Enregistrer</button>
-      </div>
-      <button class="delete-action hidden" id="deleteBtn" type="button">Supprimer</button>
-    </form>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const STORAGE_KEY = "monGarage_v1";
-let data = {vehicles:[], bikes:[]};
-let currentType = "vehicle";
-let editingId = null;
-let currentPhoto = "";
-
-const $ = id => document.getElementById(id);
-
-function uid(){
-  return Math.random().toString(36).slice(2,9) + Date.now().toString(36);
-}
-function load(){
-  try{
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if(saved) data = {...data,...JSON.parse(saved)};
-  }catch(e){}
-}
-function save(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-function escapeHtml(value){
-  return String(value ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
-function emptyHtml(type){
-  return `<div class="empty">Aucun ${type === "vehicle" ? "véhicule" : "vélo"} dans ton garage.</div>`;
-}
-function cardHtml(item,type){
-  const details = [];
-  if(type==="vehicle"){
-    if(item.year) details.push(item.year);
-    if(item.mileage) details.push(`${Number(item.mileage).toLocaleString("fr-FR")} km`);
-    if(item.fuel) details.push(item.fuel);
-    if(item.plate) details.push(item.plate);
-  }else{
-    if(item.bikeType) details.push(item.bikeType);
-    if(item.bikeSize) details.push(item.bikeSize);
-    if(item.bikeGroupset) details.push(item.bikeGroupset);
-  }
-  const photo = item.photo
-    ? `<img src="${item.photo}" alt="${escapeHtml(item.name)}">`
-    : `<div class="no-photo-icon">${type==="vehicle" ? "🚗" : "🚲"}</div>`;
-  return `
-  <article class="card">
-    <div class="card-photo ${item.photo ? "" : "no-photo"}">${photo}</div>
-    <div class="card-body">
-      <div class="card-top">
-        <div class="card-name">${escapeHtml(item.name)}</div>
-        <button class="menu-btn" data-edit="${item.id}" data-type="${type}" aria-label="Modifier">•••</button>
-      </div>
-      ${item.brand || item.model ? `<div class="card-sub">${escapeHtml([item.brand,item.model].filter(Boolean).join(" · "))}</div>` : ""}
-      ${details.length ? `<div class="card-details">${details.map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join("")}</div>` : ""}
+        <div class="form-grid" data-kind="vehicle">
+          <div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div>
+          <div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field" data-kind="vehicle"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div>
+          <div class="field" data-kind="bike"><label class="field__label" for="veBikeType">Type de vélo</label><select class="input select" id="veBikeType" name="bikeType"></select></div>
+          <div class="field"><label class="field__label" for="veMileage">Kilométrage actuel</label><input class="input" id="veMileage" name="mileage" inputmode="numeric" placeholder="Ex. 75 000"></div>
+        </div>
+        <div class="form-grid" data-kind="bike">
+          <div class="field"><label class="field__label" for="veSize">Taille / cadre</label><input class="input" id="veSize" name="bikeSize" maxlength="30" placeholder="Ex. 56 / L"></div>
+          <div class="field"><label class="field__label" for="veGroupset">Groupe</label><input class="input" id="veGroupset" name="bikeGroupset" maxlength="60" placeholder="Ex. Ultegra Di2"></div>
+        </div>
+        <div class="field" data-kind="bike"><label class="field__label" for="veWheels">Roues</label><input class="input" id="veWheels" name="bikeWheels" maxlength="60" placeholder="Ex. carbone 50 mm"></div>
+        <div class="field">
+          <span class="field__label">Photo</span>
+          <label class="photo-picker" id="photoPicker">
+            <img id="photoPreview" alt="" hidden>
+            <span class="photo-picker__empty" id="photoEmpty"><span data-icon="upload" data-size="22"></span><strong>Ajouter une photo</strong><span>Elle est réduite automatiquement</span></span>
+            <input type="file" id="photoInput" accept="image/*" class="photo-picker__input">
+          </label>
+          <button type="button" class="link-btn" id="photoRemove" hidden>Retirer la photo</button>
+        </div>
+        <div class="field"><label class="field__label" for="veNotes">Notes <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="2" placeholder="Informations complémentaires…"></textarea></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="vehicleDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer du garage</span></button>
+      </form>
     </div>
-  </article>`;
-}
-function render(){
-  const v = data.vehicles || [], b = data.bikes || [];
-  $("vehicleCount").textContent = v.length;
-  $("bikeCount").textContent = b.length;
-  $("vehicleCards").innerHTML = v.length ? v.map(x=>cardHtml(x,"vehicle")).join("") : emptyHtml("vehicle");
-  $("bikeCards").innerHTML = b.length ? b.map(x=>cardHtml(x,"bike")).join("") : emptyHtml("bike");
-}
-function resetForm(){
-  $("itemForm").reset();
-  currentPhoto = "";
-  $("photoPreview").src = "";
-  $("photoPreview").classList.add("hidden");
-  $("photoPlaceholder").classList.remove("hidden");
-}
-function setType(type){
-  currentType = type;
-  $("vehicleTypeBtn").classList.toggle("active",type==="vehicle");
-  $("bikeTypeBtn").classList.toggle("active",type==="bike");
-  $("modalTitle").textContent = editingId
-    ? (type==="vehicle" ? "Modifier le véhicule" : "Modifier le vélo")
-    : (type==="vehicle" ? "Ajouter un véhicule" : "Ajouter un vélo");
-  document.querySelectorAll(".bike-only").forEach(el=>el.classList.toggle("hidden",type!=="bike"));
-  ["yearField","mileageField","fuelField","plateField"].forEach(id=>{
-    $(id).classList.toggle("hidden",type==="bike");
-  });
-}
-function openModal(type,id=null){
-  editingId = id;
-  resetForm();
-  setType(type);
-  if(id){
-    const item = (type==="vehicle"?data.vehicles:data.bikes).find(x=>x.id===id);
-    if(!item) return;
-    $("name").value=item.name||"";
-    $("brand").value=item.brand||"";
-    $("model").value=item.model||"";
-    $("year").value=item.year||"";
-    $("mileage").value=item.mileage||"";
-    $("fuel").value=item.fuel||"";
-    $("plate").value=item.plate||"";
-    $("bikeType").value=item.bikeType||"";
-    $("bikeSize").value=item.bikeSize||"";
-    $("bikeWheels").value=item.bikeWheels||"";
-    $("bikeGroupset").value=item.bikeGroupset||"";
-    $("notes").value=item.notes||"";
-    currentPhoto=item.photo||"";
-    if(currentPhoto){
-      $("photoPreview").src=currentPhoto;
-      $("photoPreview").classList.remove("hidden");
-      $("photoPlaceholder").classList.add("hidden");
-    }
-    $("deleteBtn").classList.remove("hidden");
-  }else{
-    $("deleteBtn").classList.add("hidden");
-  }
-  $("modalBackdrop").classList.add("open");
-}
-function closeModal(){
-  $("modalBackdrop").classList.remove("open");
-  editingId=null;
-}
-function toast(msg){
-  $("toast").textContent=msg;
-  $("toast").classList.add("show");
-  setTimeout(()=>$("toast").classList.remove("show"),1800);
-}
-$("vehicleTypeBtn").onclick=()=>setType("vehicle");
-$("bikeTypeBtn").onclick=()=>setType("bike");
-$("closeModal").onclick=closeModal;
-$("cancelBtn").onclick=closeModal;
-$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+  </div>
 
-document.querySelectorAll(".add").forEach(btn=>btn.addEventListener("click",()=>openModal(btn.dataset.type)));
+  <!-- Kilométrage -->
+  <div class="sheet-backdrop sheet-backdrop--dialog" id="kmSheet" hidden>
+    <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="kmTitle" tabindex="-1">
+      <h2 class="dialog__title" id="kmTitle">Mettre à jour le compteur</h2>
+      <form class="form" id="kmForm" novalidate>
+        <div class="field"><label class="field__label" for="kmValue">Kilométrage total</label><input class="input input--big" id="kmValue" name="km" inputmode="numeric" autocomplete="off"><p class="field__help" id="kmHelp"></p></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
 
-$("photoInput").addEventListener("change",e=>{
-  const file=e.target.files?.[0];
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    currentPhoto=reader.result;
-    $("photoPreview").src=currentPhoto;
-    $("photoPreview").classList.remove("hidden");
-    $("photoPlaceholder").classList.add("hidden");
-  };
-  reader.readAsDataURL(file);
-});
+  <!-- Entretien -->
+  <div class="sheet-backdrop" id="maintenanceSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="maintenanceTitle">Nouvel entretien</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="maintenanceForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="maType">Type</label><select class="input select" id="maType" name="type"></select></div>
+        <div class="field"><label class="field__label" for="maLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="maLabel" name="label" maxlength="120" placeholder="Ex. Vidange + filtres" autocomplete="off"></div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="maDate">Date</label><input class="input" id="maDate" type="date" name="date"></div>
+          <div class="field"><label class="field__label" for="maKm">Kilométrage</label><input class="input" id="maKm" name="km" inputmode="numeric" autocomplete="off"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="maGarage">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div>
+        </div>
+        <div class="field" id="maReminderField"><label class="field__label" for="maReminder">Rappel à remettre à zéro</label><select class="input select" id="maReminder" name="reminder"></select><p class="field__help">Le prochain entretien est recalculé à partir de cette date et de ce kilométrage.</p></div>
+        <div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="maintenanceDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer l’entretien</span></button>
+      </form>
+    </div>
+  </div>
 
-document.addEventListener("click",e=>{
-  const btn=e.target.closest("[data-edit]");
-  if(btn) openModal(btn.dataset.type,btn.dataset.edit);
-});
+  <!-- Rappel -->
+  <div class="sheet-backdrop" id="reminderSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reminderTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="reminderTitle">Nouveau rappel</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="reminderForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="reLabel">Entretien</label><input class="input" id="reLabel" name="label" maxlength="60" list="reChoices" placeholder="Ex. Vidange" autocomplete="off"><datalist id="reChoices"></datalist></div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="reKm">Tous les … km</label><input class="input" id="reKm" name="everyKm" inputmode="numeric" placeholder="Ex. 15 000"></div>
+          <div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12"></div>
+        </div>
+        <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas.</p>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="reLastDate">Dernier fait le</label><input class="input" id="reLastDate" type="date" name="lastDate"></div>
+          <div class="field"><label class="field__label" for="reLastKm">à … km</label><input class="input" id="reLastKm" name="lastKm" inputmode="numeric"></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="reminderDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le rappel</span></button>
+      </form>
+    </div>
+  </div>
 
-$("itemForm").addEventListener("submit",e=>{
-  e.preventDefault();
-  const item={
-    id:editingId||uid(),
-    name:$("name").value.trim(),
-    brand:$("brand").value.trim(),
-    model:$("model").value.trim(),
-    year:$("year").value.trim(),
-    mileage:$("mileage").value.trim(),
-    fuel:$("fuel").value,
-    plate:$("plate").value.trim(),
-    bikeType:$("bikeType").value,
-    bikeSize:$("bikeSize").value.trim(),
-    bikeWheels:$("bikeWheels").value.trim(),
-    bikeGroupset:$("bikeGroupset").value.trim(),
-    notes:$("notes").value.trim(),
-    photo:currentPhoto
-  };
-  if(!item.name){$("name").focus();return}
-  const list=currentType==="vehicle"?data.vehicles:data.bikes;
-  const idx=list.findIndex(x=>x.id===item.id);
-  if(idx>=0) list[idx]=item; else list.push(item);
-  save(); render(); closeModal();
-  toast(idx>=0 ? "Fiche modifiée" : "Ajouté au garage");
-});
-$("deleteBtn").onclick=()=>{
-  if(!editingId) return;
-  if(!confirm("Supprimer cette fiche ?")) return;
-  const key=currentType==="vehicle"?"vehicles":"bikes";
-  data[key]=data[key].filter(x=>x.id!==editingId);
-  save(); render(); closeModal(); toast("Fiche supprimée");
-};
+  <!-- Plein / recharge -->
+  <div class="sheet-backdrop" id="fuelSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fuelTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="fuelTitle">Nouveau plein</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="fuelForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fuDate">Date</label><input class="input" id="fuDate" type="date" name="date"></div>
+          <div class="field"><label class="field__label" for="fuKm">Compteur (km)</label><input class="input" id="fuKm" name="km" inputmode="numeric" autocomplete="off"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fuQty" id="fuQtyLabel">Litres</label><input class="input" id="fuQty" name="qty" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="fuTotal">Montant · €</label><input class="input" id="fuTotal" name="total" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+        </div>
+        <label class="check"><input type="checkbox" name="full" checked><span id="fuFullLabel">Plein complet</span></label>
+        <p class="field__help" id="fuHelp">La consommation est calculée entre deux pleins complets.</p>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="fuelDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer</span></button>
+      </form>
+    </div>
+  </div>
 
-load();
-render();
-</script>
+  <!-- Composant (vélo) -->
+  <div class="sheet-backdrop" id="partSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="partTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="partTitle">Nouveau composant</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="partForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="paName">Composant</label><input class="input" id="paName" name="name" maxlength="60" list="paChoices" placeholder="Ex. Chaîne" autocomplete="off"><datalist id="paChoices"></datalist></div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="paLimit">Durée de vie (km)</label><input class="input" id="paLimit" name="limitKm" inputmode="numeric" placeholder="Ex. 3 000"></div>
+          <div class="field"><label class="field__label" for="paCost">Prix · € <span class="field__opt">(facultatif)</span></label><input class="input" id="paCost" name="cost" inputmode="decimal" placeholder="0,00"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="paDate">Monté le</label><input class="input" id="paDate" type="date" name="installedDate"></div>
+          <div class="field"><label class="field__label" for="paKm">au compteur (km)</label><input class="input" id="paKm" name="installedKm" inputmode="numeric"></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="partDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le composant</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Achat & financement -->
+  <div class="sheet-backdrop" id="purchaseSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="purchaseTitle">Achat &amp; financement</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="purchaseForm" novalidate>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="puDate">Date d’achat</label><input class="input" id="puDate" type="date" name="purchaseDate"></div>
+          <div class="field"><label class="field__label" for="puKm">Km à l’achat</label><input class="input" id="puKm" name="purchaseKm" inputmode="numeric"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="puPrice">Prix d’achat · €</label><input class="input" id="puPrice" name="purchasePrice" inputmode="decimal" placeholder="0"></div>
+          <div class="field"><label class="field__label" for="puResale">Valeur de revente estimée · €</label><input class="input" id="puResale" name="resaleValue" inputmode="decimal" placeholder="0"></div>
+        </div>
+        <div class="field"><label class="field__label" for="loType">Financement</label><select class="input select" id="loType" name="type"></select></div>
+        <div data-loan="credit">
+          <div class="form-grid">
+            <div class="field"><label class="field__label" for="loPrincipal">Montant emprunté · €</label><input class="input" id="loPrincipal" name="principal" inputmode="decimal"></div>
+            <div class="field"><label class="field__label" for="loRate">Taux annuel · %</label><input class="input" id="loRate" name="rate" inputmode="decimal" placeholder="Ex. 4,5"></div>
+          </div>
+          <p class="field__help">L’apport (prix − montant emprunté) est compté au mois d’achat.</p>
+        </div>
+        <div data-loan="lease">
+          <div class="field"><label class="field__label" for="loFirst">Premier loyer / apport · €</label><input class="input" id="loFirst" name="firstPayment" inputmode="decimal"></div>
+        </div>
+        <div data-loan="any">
+          <div class="form-grid">
+            <div class="field"><label class="field__label" for="loMonths" id="loMonthsLabel">Durée (mois)</label><input class="input" id="loMonths" name="months" inputmode="numeric" placeholder="Ex. 48"></div>
+            <div class="field"><label class="field__label" for="loMonthly" id="loMonthlyLabel">Mensualité · €</label><input class="input" id="loMonthly" name="monthly" inputmode="decimal" placeholder="Calculée si vide"></div>
+          </div>
+          <div class="field"><label class="field__label" for="loStart" id="loStartLabel">Première échéance</label><input class="input" id="loStart" type="date" name="start"></div>
+        </div>
+        <div data-loan="loa">
+          <div class="field"><label class="field__label" for="loResidual">Option d’achat finale · € <span class="field__opt">(facultatif)</span></label><input class="input" id="loResidual" name="residual" inputmode="decimal"></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Frais fixe -->
+  <div class="sheet-backdrop" id="fixedSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fixedTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="fixedTitle">Nouveau frais fixe</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="fixedForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fiCategory">Catégorie</label><select class="input select" id="fiCategory" name="category"></select></div>
+          <div class="field"><label class="field__label" for="fiLabel">Libellé <span class="field__opt">(facultatif)</span></label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fiAmount">Montant · €</label><input class="input" id="fiAmount" name="amount" inputmode="decimal" placeholder="0,00"></div>
+          <div class="field"><label class="field__label" for="fiPeriod">Fréquence</label><select class="input select" id="fiPeriod" name="period"><option value="month">Par mois</option><option value="year">Par an</option></select></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fiStart">Depuis le</label><input class="input" id="fiStart" type="date" name="start"></div>
+          <div class="field"><label class="field__label" for="fiEnd">Jusqu’au <span class="field__opt">(facultatif)</span></label><input class="input" id="fiEnd" type="date" name="end"></div>
+        </div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="fixedDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Document -->
+  <div class="sheet-backdrop" id="docSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="docTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="docTitle">Nouveau document</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="docForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="doType">Type</label><select class="input select" id="doType" name="type"></select></div>
+        <div class="field"><label class="field__label" for="doLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div>
+        <div class="field"><label class="field__label" for="doExpiry">Date d’échéance <span class="field__opt">(facultatif)</span></label><input class="input" id="doExpiry" type="date" name="expiry"><p class="field__help">Une alerte apparaît 30 jours avant.</p></div>
+        <div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="docDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le document</span></button>
+      </form>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop sheet-backdrop--dialog" id="calendarSheet" hidden>
+    <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle" tabindex="-1" id="calendarContent"></div>
+  </div>
 </body>
 </html>
