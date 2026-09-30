@@ -1,0 +1,86 @@
+/* =========================================================
+   IDENTITÉ « MON GARAGE » — graphite sobre (reprise de l'ébauche)
+   Surcharge les tokens communs (tokens.css).
+   ========================================================= */
+:root {
+  --bg: #0d1018;
+  --bg-2: #11151e;
+  --surface: rgba(25, 29, 39, .82);
+  --surface-solid: #191d27;
+  --surface-2: rgba(232, 235, 240, .04);
+  --surface-3: rgba(232, 235, 240, .08);
+  --field: #10141d;
+  --border: #262c38;
+  --border-strong: #303746;
+  --text: #f4f5f7;
+  --text-2: #b4bac6;
+  --text-3: #858c9b;
+
+  --accent: #e8ebf0;
+  --accent-2: #c9ced8;
+  --accent-ink: #12151c;
+  --accent-soft: rgba(232, 235, 240, .1);
+  --gradient-accent: linear-gradient(135deg, #f4f5f7 0%, #cfd4dd 100%);
+  --gradient-hero: radial-gradient(120% 120% at 90% 0%, rgba(232, 235, 240, .1) 0%, rgba(232, 235, 240, 0) 55%), linear-gradient(150deg, #242936 0%, #191d27 60%, #151923 100%);
+  --shadow-accent: 0 8px 22px -12px rgba(232, 235, 240, .35);
+
+  --blue: #9fb6d6;
+  --blue-soft: rgba(159, 182, 214, .12);
+  --violet: #b8aede;
+  --violet-soft: rgba(184, 174, 222, .12);
+  --amber: #e6bf6e;
+  --amber-soft: rgba(230, 191, 110, .13);
+  --green: #8fc4a0;
+  --green-soft: rgba(143, 196, 160, .12);
+  --danger: #ef7777;
+  --danger-soft: rgba(239, 119, 119, .13);
+
+  --ambient-1: rgba(159, 182, 214, .06);
+  --ambient-2: rgba(232, 235, 240, .03);
+  --ambient-3: rgba(0, 0, 0, 0);
+
+  /* Palette des graphiques (validée contraste et daltonisme) */
+  --series-1: #5e97d0; --series-2: #c67e55; --series-3: #33a795; --series-4: #ad8e3e;
+  --series-5: #c2779b; --series-6: #76a15e; --series-7: #9187ce; --series-8: #ca786e;
+}
+
+:root[data-theme="light"] {
+  --bg: #f2f3f6;
+  --bg-2: #eceef2;
+  --surface: rgba(255, 255, 255, .9);
+  --surface-solid: #ffffff;
+  --surface-2: rgba(20, 26, 38, .035);
+  --surface-3: rgba(20, 26, 38, .07);
+  --field: #ffffff;
+  --border: rgba(20, 26, 38, .1);
+  --border-strong: rgba(20, 26, 38, .18);
+  --text: #171b24;
+  --text-2: #555d6c;
+  --text-3: #858c9b;
+
+  --accent: #1d2230;
+  --accent-2: #3a4152;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(29, 34, 48, .07);
+  --gradient-accent: linear-gradient(135deg, #3a4152 0%, #1d2230 100%);
+  --gradient-hero: radial-gradient(120% 120% at 90% 0%, rgba(29, 34, 48, .07) 0%, rgba(29, 34, 48, 0) 55%), linear-gradient(150deg, #ffffff 0%, #f0f2f5 100%);
+  --shadow-accent: 0 8px 20px -10px rgba(29, 34, 48, .45);
+
+  --blue: #3f6390;
+  --blue-soft: rgba(63, 99, 144, .09);
+  --violet: #62569a;
+  --violet-soft: rgba(98, 86, 154, .09);
+  --amber: #8a6512;
+  --amber-soft: rgba(138, 101, 18, .1);
+  --green: #2f7a4a;
+  --green-soft: rgba(47, 122, 74, .09);
+  --danger: #bf4040;
+  --danger-soft: rgba(191, 64, 64, .08);
+
+  --ambient-1: rgba(63, 99, 144, .05);
+  --ambient-2: rgba(0, 0, 0, 0);
+  --ambient-3: rgba(0, 0, 0, 0);
+
+  --series-1: #4c84bc; --series-2: #b26c44; --series-3: #149483; --series-4: #9a7c2a;
+  --series-5: #af6589; --series-6: #648e4c; --series-7: #8075ba; --series-8: #b7665c;
+}
