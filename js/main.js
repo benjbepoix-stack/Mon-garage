@@ -6,7 +6,8 @@ import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
 import { initDialogs, confirmDialog } from './ui/dialog.js';
-import { applyTheme } from './ui/theme.js';
+import { applyTheme, renderStylePicker } from './ui/theme.js';
+import { STYLES } from './core/schema.js';
 import { renderStatus } from './ui/status.js';
 import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
@@ -234,7 +235,8 @@ function initGlobalErrors() {
 async function init() {
   initGlobalErrors();
   store.loadLocal();
-  applyTheme(store.theme());
+  applyTheme(store.theme(), store.style());
+  renderStylePicker(STYLES, store.style());
   $$('[data-icon]').forEach(el => (el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 22)));
 
   initDialogs();
@@ -249,7 +251,10 @@ async function init() {
   initAuthUI();
 
   store.subscribe(keys => {
-    if (keys.includes('theme')) applyTheme(store.theme(), { animate: true });
+    if (keys.includes('theme') || keys.includes('style')) {
+      applyTheme(store.theme(), store.style(), { animate: true });
+      renderStylePicker(STYLES, store.style());
+    }
     if (keys.length === 1 && keys[0] === 'activeId') return;
     render();
   });
@@ -257,6 +262,10 @@ async function init() {
   window.addEventListener('hashchange', route);
   $('#backBtn').addEventListener('click', goHome);
   $('#editVehicleBtn').addEventListener('click', () => store.active() && openVehicle(store.active().kind, store.activeId()));
+  $('#stylePicker').addEventListener('click', e => {
+    const pick = e.target.closest('[data-style-pick]')?.dataset.stylePick;
+    if (pick && pick !== store.style()) store.setKeys({ style: pick });
+  });
   $('#themeToggle').addEventListener('click', () => store.setKeys({ theme: store.theme() === 'light' ? 'dark' : 'light' }));
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();

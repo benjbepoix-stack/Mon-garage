@@ -11,7 +11,7 @@
  *   v_<id>_loan         financement (crédit, LOA, LLD)
  *   v_<id>_docs         documents et échéances
  *   v_<id>_parts        composants suivis en usure (vélos)
- *   activeId, theme
+ *   activeId, theme, style
  */
 import { isDateKey } from './dates.js';
 
@@ -146,16 +146,26 @@ const normalizers = {
 
 export const DEFAULTS = { maintenance: [], reminders: [], fuel: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [] };
 
+/** Styles graphiques proposés (le premier est celui par défaut). */
+export const STYLES = [
+  { id: 'graphite', name: 'Graphite', hint: 'Sobre' },
+  { id: 'racing', name: 'Racing', hint: 'Rouge corsa' },
+  { id: 'neon', name: 'Néon', hint: 'Électrique' },
+  { id: 'atelier', name: 'Atelier', hint: 'Vintage' },
+  { id: 'british', name: 'British', hint: 'Vert anglais' }
+];
+
 export function normalizeKey(key, value) {
   if (key === 'vehicles') return normalizeVehicles(value);
   if (key === 'activeId') return typeof value === 'string' ? value : null;
   if (key === 'theme') return value === 'light' ? 'light' : 'dark';
+  if (key === 'style') return STYLES.some(x => x.id === value) ? value : STYLES[0].id;
   if (key.startsWith('photo_')) return typeof value === 'string' && value.startsWith('data:image/') ? value : null;
   const fk = parseFieldKey(key);
   return fk ? normalizers[fk.field](value) : value;
 }
 
-export const isKnownKey = key => key === 'vehicles' || key === 'activeId' || key === 'theme' || key.startsWith('photo_') || Boolean(parseFieldKey(key));
+export const isKnownKey = key => key === 'vehicles' || key === 'activeId' || key === 'theme' || key === 'style' || key.startsWith('photo_') || Boolean(parseFieldKey(key));
 
 export const makeId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 

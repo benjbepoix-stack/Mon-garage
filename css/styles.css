@@ -1,0 +1,215 @@
+/* =========================================================
+   STYLES GRAPHIQUES — surcharge des tokens selon data-style
+   graphite (défaut, theme.css) · racing · neon · atelier · british
+   Chaque style existe en sombre et en clair.
+   ========================================================= */
+
+/* ---------- Racing : carbone et rouge corsa ---------- */
+:root[data-style="racing"] {
+  --bg: #0b0a0c;
+  --bg-2: #121013;
+  --surface: rgba(26, 22, 25, .86);
+  --surface-solid: #19161a;
+  --field: #120f13;
+  --border: #2b2429;
+  --border-strong: #3a3036;
+  --accent: #ff3347;
+  --accent-2: #ff7a1a;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(255, 51, 71, .14);
+  --gradient-accent: linear-gradient(120deg, #ff3347 0%, #ff7a1a 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(255, 51, 71, .22) 0%, rgba(255, 51, 71, 0) 55%), repeating-linear-gradient(45deg, rgba(255, 255, 255, .018) 0 6px, rgba(0, 0, 0, 0) 6px 12px), linear-gradient(150deg, #231b1f 0%, #19161a 100%);
+  --shadow-accent: 0 10px 26px -10px rgba(255, 51, 71, .7);
+  --ambient-1: rgba(255, 51, 71, .14);
+  --ambient-2: rgba(255, 122, 26, .07);
+  --ambient-3: rgba(0, 0, 0, 0);
+  --font-display: "Avenir Next Condensed", "Arial Narrow", "Roboto Condensed", -apple-system, system-ui, sans-serif;
+}
+:root[data-style="racing"][data-theme="light"] {
+  --bg: #f5f3f3;
+  --bg-2: #eeeaea;
+  --surface: rgba(255, 255, 255, .92);
+  --surface-solid: #ffffff;
+  --field: #ffffff;
+  --border: rgba(40, 10, 15, .1);
+  --border-strong: rgba(40, 10, 15, .2);
+  --accent: #d3132a;
+  --accent-2: #e85d04;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(211, 19, 42, .09);
+  --gradient-accent: linear-gradient(120deg, #d3132a 0%, #e85d04 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(211, 19, 42, .12) 0%, rgba(211, 19, 42, 0) 55%), linear-gradient(150deg, #ffffff 0%, #f6f0f0 100%);
+  --shadow-accent: 0 10px 22px -10px rgba(211, 19, 42, .55);
+  --ambient-1: rgba(211, 19, 42, .07);
+  --ambient-2: rgba(232, 93, 4, .04);
+}
+
+/* ---------- Néon : nuit électrique cyan / violet ---------- */
+:root[data-style="neon"] {
+  --bg: #070915;
+  --bg-2: #0b0e1f;
+  --surface: rgba(17, 20, 42, .8);
+  --surface-solid: #12152b;
+  --field: #0c0f22;
+  --border: #22274a;
+  --border-strong: #323a6a;
+  --text-2: #b3b9d9;
+  --accent: #22e4ff;
+  --accent-2: #b14dff;
+  --accent-ink: #050816;
+  --accent-soft: rgba(34, 228, 255, .13);
+  --gradient-accent: linear-gradient(120deg, #22e4ff 0%, #b14dff 100%);
+  --gradient-hero: radial-gradient(90% 120% at 0% 0%, rgba(34, 228, 255, .2) 0%, rgba(34, 228, 255, 0) 60%), radial-gradient(90% 120% at 100% 100%, rgba(177, 77, 255, .22) 0%, rgba(177, 77, 255, 0) 60%), #12152b;
+  --shadow-accent: 0 0 26px -4px rgba(34, 228, 255, .55);
+  --ambient-1: rgba(34, 228, 255, .16);
+  --ambient-2: rgba(177, 77, 255, .18);
+  --ambient-3: rgba(255, 64, 160, .08);
+}
+:root[data-style="neon"][data-theme="light"] {
+  --bg: #f1f3fb;
+  --bg-2: #e9ecf8;
+  --surface: rgba(255, 255, 255, .9);
+  --surface-solid: #ffffff;
+  --field: #ffffff;
+  --border: rgba(30, 30, 90, .1);
+  --border-strong: rgba(30, 30, 90, .2);
+  --text-2: #4f5677;
+  --accent: #0087a8;
+  --accent-2: #7c3aed;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 135, 168, .1);
+  --gradient-accent: linear-gradient(120deg, #00a3c4 0%, #7c3aed 100%);
+  --gradient-hero: radial-gradient(90% 120% at 0% 0%, rgba(0, 163, 196, .14) 0%, rgba(0, 163, 196, 0) 60%), radial-gradient(90% 120% at 100% 100%, rgba(124, 58, 237, .13) 0%, rgba(124, 58, 237, 0) 60%), #ffffff;
+  --shadow-accent: 0 10px 24px -10px rgba(124, 58, 237, .5);
+  --ambient-1: rgba(0, 163, 196, .12);
+  --ambient-2: rgba(124, 58, 237, .1);
+  --ambient-3: rgba(255, 64, 160, .05);
+}
+
+/* ---------- Atelier : garage vintage, cuir, laiton et orange ---------- */
+:root[data-style="atelier"] {
+  --bg: #14100c;
+  --bg-2: #1a1510;
+  --surface: rgba(35, 28, 21, .86);
+  --surface-solid: #221b14;
+  --field: #18130e;
+  --border: #3a2f23;
+  --border-strong: #4d3e2e;
+  --text: #f6ecdc;
+  --text-2: #cdbca3;
+  --text-3: #95836b;
+  --accent: #ff9f1c;
+  --accent-2: #e8c170;
+  --accent-ink: #1b1209;
+  --accent-soft: rgba(255, 159, 28, .14);
+  --gradient-accent: linear-gradient(120deg, #ffb347 0%, #ff8a00 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(255, 159, 28, .2) 0%, rgba(255, 159, 28, 0) 55%), linear-gradient(150deg, #2e241a 0%, #221b14 100%);
+  --shadow-accent: 0 10px 24px -10px rgba(255, 138, 0, .6);
+  --ambient-1: rgba(255, 159, 28, .12);
+  --ambient-2: rgba(232, 193, 112, .06);
+  --ambient-3: rgba(0, 0, 0, 0);
+  --font-display: "Rockwell", "Roboto Slab", "Georgia", serif;
+}
+:root[data-style="atelier"][data-theme="light"] {
+  --bg: #f4ede1;
+  --bg-2: #ede3d3;
+  --surface: rgba(255, 251, 244, .92);
+  --surface-solid: #fffaf2;
+  --field: #fffaf2;
+  --border: rgba(80, 50, 20, .14);
+  --border-strong: rgba(80, 50, 20, .24);
+  --text: #2a1d10;
+  --text-2: #6a5640;
+  --text-3: #9a8466;
+  --accent: #c2410c;
+  --accent-2: #a16207;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(194, 65, 12, .1);
+  --gradient-accent: linear-gradient(120deg, #ea580c 0%, #c2410c 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(234, 88, 12, .13) 0%, rgba(234, 88, 12, 0) 55%), linear-gradient(150deg, #fffaf2 0%, #f3e8d6 100%);
+  --shadow-accent: 0 10px 22px -10px rgba(194, 65, 12, .55);
+  --ambient-1: rgba(234, 88, 12, .08);
+  --ambient-2: rgba(161, 98, 7, .06);
+}
+
+/* ---------- British : vert anglais et laiton ---------- */
+:root[data-style="british"] {
+  --bg: #08110d;
+  --bg-2: #0c1712;
+  --surface: rgba(17, 32, 25, .86);
+  --surface-solid: #11201a;
+  --field: #0b1611;
+  --border: #1f3a2d;
+  --border-strong: #2c4d3c;
+  --text: #f1f5ef;
+  --text-2: #b6c7bb;
+  --text-3: #7f9887;
+  --accent: #d9b45a;
+  --accent-2: #f0d48a;
+  --accent-ink: #14200f;
+  --accent-soft: rgba(217, 180, 90, .14);
+  --gradient-accent: linear-gradient(120deg, #f0d48a 0%, #c89a3a 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(217, 180, 90, .16) 0%, rgba(217, 180, 90, 0) 55%), linear-gradient(150deg, #1b3a2b 0%, #11201a 100%);
+  --shadow-accent: 0 10px 24px -10px rgba(217, 180, 90, .55);
+  --ambient-1: rgba(40, 140, 90, .16);
+  --ambient-2: rgba(217, 180, 90, .07);
+  --ambient-3: rgba(0, 0, 0, 0);
+}
+:root[data-style="british"][data-theme="light"] {
+  --bg: #eef3ef;
+  --bg-2: #e5ece6;
+  --surface: rgba(255, 255, 255, .92);
+  --surface-solid: #ffffff;
+  --field: #ffffff;
+  --border: rgba(10, 50, 30, .12);
+  --border-strong: rgba(10, 50, 30, .22);
+  --text: #102118;
+  --text-2: #46594d;
+  --text-3: #7d8f83;
+  --accent: #14532d;
+  --accent-2: #a16207;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(20, 83, 45, .09);
+  --gradient-accent: linear-gradient(120deg, #1f6f43 0%, #14532d 100%);
+  --gradient-hero: radial-gradient(120% 140% at 100% 0%, rgba(161, 98, 7, .1) 0%, rgba(161, 98, 7, 0) 55%), linear-gradient(150deg, #ffffff 0%, #e9f1eb 100%);
+  --shadow-accent: 0 10px 22px -10px rgba(20, 83, 45, .55);
+  --ambient-1: rgba(20, 83, 45, .08);
+  --ambient-2: rgba(161, 98, 7, .05);
+}
+
+/* ---------- Touches communes aux styles colorés ---------- */
+:root:not([data-style="graphite"]) .topbar__title { background: var(--gradient-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+:root:not([data-style="graphite"]) .topbar__kicker { color: var(--accent); }
+:root:not([data-style="graphite"]) .section__title::before { content: ""; width: 4px; height: 1.1em; border-radius: 4px; background: var(--gradient-accent); flex: none; }
+:root:not([data-style="graphite"]) .section__count { background: var(--accent-soft); color: var(--accent); }
+:root:not([data-style="graphite"]) .gcard::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gradient-accent); opacity: .85; }
+:root:not([data-style="graphite"]) .gcard:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: var(--shadow-accent); }
+:root:not([data-style="graphite"]) .gcard .pill { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+:root:not([data-style="graphite"]) .add-tile:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Racing : titres en capitales italiques façon livrée */
+:root[data-style="racing"] .topbar__title { font-style: italic; }
+:root[data-style="racing"] .section__title,
+:root[data-style="racing"] .gcard__name { font-style: italic; text-transform: uppercase; letter-spacing: .01em; }
+/* Néon : halo lumineux */
+:root[data-style="neon"]:not([data-theme="light"]) .gcard { box-shadow: 0 0 0 1px rgba(34, 228, 255, .08), 0 14px 40px -18px rgba(177, 77, 255, .5); }
+:root[data-style="neon"]:not([data-theme="light"]) .topbar__title { filter: drop-shadow(0 0 12px rgba(34, 228, 255, .35)); }
+/* Atelier : cartes façon plaque émaillée */
+:root[data-style="atelier"] .gcard__name { font-family: var(--font-display); letter-spacing: 0; }
+:root[data-style="atelier"] .gcard { border-width: 2px; }
+
+/* ---------- Sélecteur de style (accueil) ---------- */
+.style-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); }
+.style-chip { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface-solid); text-align: left; cursor: pointer; transition: border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease); }
+.style-chip:hover { border-color: var(--border-strong); }
+.style-chip:active { transform: scale(.97); }
+.style-chip[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.style-chip__swatch { width: 34px; height: 34px; flex: none; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15); }
+.style-chip__swatch--graphite { background: linear-gradient(135deg, #2a2f3b 0 50%, #e8ebf0 50% 100%); }
+.style-chip__swatch--racing { background: linear-gradient(135deg, #141114 0 50%, #ff3347 50% 75%, #ff7a1a 75% 100%); }
+.style-chip__swatch--neon { background: linear-gradient(135deg, #0b0e1f 0 45%, #22e4ff 45% 72%, #b14dff 72% 100%); }
+.style-chip__swatch--atelier { background: linear-gradient(135deg, #2e241a 0 50%, #ff9f1c 50% 75%, #e8c170 75% 100%); }
+.style-chip__swatch--british { background: linear-gradient(135deg, #1b3a2b 0 55%, #d9b45a 55% 100%); }
+.style-chip__text { display: flex; flex-direction: column; min-width: 0; }
+.style-chip__text strong { font-size: var(--fs-sm); }
+.style-chip__text small { font-size: 11.5px; color: var(--text-3); }

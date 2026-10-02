@@ -38,9 +38,11 @@ export const kmOf = (v, f = fieldsOf(v.id)) => currentKm(v, f);
 
 export const kindIcon = (v, size = 22) => icon(isBike(v) ? 'bike' : 'car', size);
 
-export function photoHtml(v, size = 44) {
+export function photoHtml(v, size = 44, { full = false } = {}) {
   const src = v.hasPhoto ? store.photo(v.id) : '';
-  return src ? `<img src="${src}" alt="" loading="lazy">` : kindIcon(v, size);
+  if (!src) return kindIcon(v, size);
+  // full : photo entière (non recadrée) sur un fond flouté de la même image
+  return full ? `<img class="photo-fill" src="${src}" alt="" aria-hidden="true"><img class="photo-main" src="${src}" alt="" loading="lazy">` : `<img src="${src}" alt="" loading="lazy">`;
 }
 
 export const LEVEL_LABEL = { late: 'En retard', soon: 'Bientôt', ok: 'À jour', unknown: 'À renseigner', none: 'Sans échéance' };

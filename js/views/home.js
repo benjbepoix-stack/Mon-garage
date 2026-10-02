@@ -11,7 +11,7 @@ function card(v) {
   const next = alerts(v, f)[0];
   const pills = isBike(v) ? [v.bikeType, v.bikeSize, v.bikeGroupset, kmOf(v, f) ? km(kmOf(v, f)) : ''] : [v.year, kmOf(v, f) ? km(kmOf(v, f)) : '', v.fuel, v.plate];
   return `<button type="button" class="gcard" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
-    <div class="gcard__photo">${photoHtml(v, 56)}
+    <div class="gcard__photo${v.hasPhoto && store.photo(v.id) ? ' has-img' : ''}">${photoHtml(v, 56, { full: true })}
       ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span></span>` : ''}
     </div>
     <div class="gcard__body">

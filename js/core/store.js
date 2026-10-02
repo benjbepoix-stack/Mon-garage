@@ -86,6 +86,7 @@ export const vehicle = id => vehicles().find(v => v.id === id) || null;
 export const activeId = () => (vehicle(data.activeId) ? data.activeId : null);
 export const active = () => vehicle(activeId());
 export const theme = () => data.theme || 'dark';
+export const style = () => data.style || 'graphite';
 export const photo = id => data[photoKey(id)] || '';
 
 /** Champ d'un véhicule (copie modifiable). */
