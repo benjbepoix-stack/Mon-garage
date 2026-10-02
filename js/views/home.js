@@ -5,6 +5,40 @@ import { alerts } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { icon } from '../ui/icons.js';
 import { fieldsOf, kmOf, km, photoHtml } from './common.js';
+import { scheduleAlertsSync } from '../services/carnet-sync.js';
+
+let knownVehicleIds = new Set();
+
+/**
+ * Résumé des échéances d'un véhicule, pour le widget en lecture seule de
+ * Carnet (3 plus urgentes, retard et bientôt uniquement — un véhicule à
+ * jour n'a rien à signaler).
+ */
+function alertsDigest(v, f) {
+  const urgent = alerts(v, f).filter(a => a.level === 'late' || a.level === 'soon').slice(0, 3);
+  return {
+    vehicleId: v.id,
+    vehicleName: String(v.name || '').slice(0, 100),
+    kind: isBike(v) ? 'bike' : 'vehicle',
+    updatedAt: new Date().toISOString(),
+    alerts: urgent.map(a => ({ id: a.id, level: a.level, title: a.title, text: a.text }))
+  };
+}
+
+/** Synchronise (best-effort) le résumé des échéances de tous les véhicules vers Carnet. */
+function syncAlerts(all) {
+  const digests = new Map();
+  const currentIds = new Set();
+  all.forEach(v => {
+    currentIds.add(v.id);
+    digests.set(v.id, alertsDigest(v, fieldsOf(v.id)));
+  });
+  knownVehicleIds.forEach(id => {
+    if (!currentIds.has(id)) digests.set(id, null); // véhicule supprimé : efface son résumé
+  });
+  knownVehicleIds = currentIds;
+  scheduleAlertsSync(digests);
+}
 
 function card(v) {
   const f = fieldsOf(v.id);
@@ -33,4 +67,5 @@ export function renderHome() {
   $('#bikeCount').textContent = bikes.length;
   $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans ton garage.</div>';
   $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans ton garage.</div>';
+  syncAlerts(all);
 }
