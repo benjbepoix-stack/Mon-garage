@@ -39,6 +39,77 @@ export const DEFAULT_REMINDERS = {
   ],
   bike: [{ label: 'Révision', everyKm: 5000, everyMonths: 12 }]
 };
+/**
+ * Plan d'entretien proposé selon la motorisation (voiture) ou le type (vélo),
+ * à partir des préconisations usuelles des constructeurs (généralisées par
+ * motorisation, pas par modèle précis — à ajuster selon le carnet d'entretien
+ * réel du véhicule). Rempli automatiquement à la création d'une fiche.
+ */
+export const FUEL_REMINDERS = {
+  Essence: [
+    { label: 'Vidange', everyKm: 15000, everyMonths: 12 },
+    { label: 'Filtre à air', everyKm: 30000, everyMonths: 0 },
+    { label: 'Bougies', everyKm: 60000, everyMonths: 0 },
+    { label: 'Pneus', everyKm: 40000, everyMonths: 0 },
+    { label: 'Freins', everyKm: 30000, everyMonths: 0 },
+    { label: 'Liquide de frein', everyKm: 0, everyMonths: 24 }
+  ],
+  Diesel: [
+    { label: 'Vidange', everyKm: 15000, everyMonths: 12 },
+    { label: 'Filtre à air', everyKm: 30000, everyMonths: 0 },
+    { label: 'Distribution', everyKm: 120000, everyMonths: 0 },
+    { label: 'Pneus', everyKm: 40000, everyMonths: 0 },
+    { label: 'Freins', everyKm: 30000, everyMonths: 0 },
+    { label: 'Liquide de frein', everyKm: 0, everyMonths: 24 }
+  ],
+  GPL: [
+    { label: 'Vidange', everyKm: 15000, everyMonths: 12 },
+    { label: 'Filtre à air', everyKm: 30000, everyMonths: 0 },
+    { label: 'Bougies', everyKm: 60000, everyMonths: 0 },
+    { label: 'Pneus', everyKm: 40000, everyMonths: 0 },
+    { label: 'Freins', everyKm: 30000, everyMonths: 0 },
+    { label: 'Révision circuit GPL', everyKm: 0, everyMonths: 24 }
+  ],
+  Électrique: [
+    { label: 'Pneus', everyKm: 30000, everyMonths: 0 },
+    { label: 'Freins', everyKm: 60000, everyMonths: 0 },
+    { label: 'Liquide de frein', everyKm: 0, everyMonths: 24 },
+    { label: 'Filtre d’habitacle', everyKm: 0, everyMonths: 12 },
+    { label: 'Batterie 12V', everyKm: 0, everyMonths: 48 },
+    { label: 'Liquide de refroidissement batterie', everyKm: 0, everyMonths: 72 }
+  ]
+};
+FUEL_REMINDERS.Hybride = [
+  { label: 'Vidange', everyKm: 15000, everyMonths: 12 },
+  { label: 'Filtre à air', everyKm: 30000, everyMonths: 0 },
+  { label: 'Pneus', everyKm: 40000, everyMonths: 0 },
+  { label: 'Freins', everyKm: 40000, everyMonths: 0 },
+  { label: 'Liquide de frein', everyKm: 0, everyMonths: 24 },
+  { label: 'Batterie 12V', everyKm: 0, everyMonths: 48 }
+];
+FUEL_REMINDERS['Hybride rechargeable'] = FUEL_REMINDERS.Hybride;
+
+export const BIKE_TYPE_REMINDERS = {
+  VTT: [
+    { label: 'Révision', everyKm: 3000, everyMonths: 6 },
+    { label: 'Chaîne', everyKm: 2000, everyMonths: 0 }
+  ],
+  'Vélo électrique': [
+    { label: 'Révision', everyKm: 3000, everyMonths: 6 },
+    { label: 'Chaîne', everyKm: 2500, everyMonths: 0 },
+    { label: 'Batterie', everyKm: 0, everyMonths: 12 }
+  ]
+};
+
+/**
+ * Rappels proposés à la création d'une fiche, affinés selon la motorisation
+ * (voiture) ou le type (vélo) quand ils sont connus, sinon plan générique.
+ */
+export function presetReminders({ kind, fuel, bikeType } = {}) {
+  if (kind === 'bike') return BIKE_TYPE_REMINDERS[bikeType] || DEFAULT_REMINDERS.bike;
+  return FUEL_REMINDERS[fuel] || DEFAULT_REMINDERS.vehicle;
+}
+
 /** Composants de vélo proposés : seuil d'usure en km. */
 export const DEFAULT_PARTS = [
   { name: 'Chaîne', limitKm: 3000 },
@@ -152,7 +223,11 @@ export const STYLES = [
   { id: 'racing', name: 'Racing', hint: 'Rouge corsa' },
   { id: 'neon', name: 'Néon', hint: 'Électrique' },
   { id: 'atelier', name: 'Atelier', hint: 'Vintage' },
-  { id: 'british', name: 'British', hint: 'Vert anglais' }
+  { id: 'british', name: 'British', hint: 'Vert anglais' },
+  { id: 'rallye', name: 'Rallye terre', hint: 'Livrée course' },
+  { id: 'futuriste', name: 'Électrique', hint: 'Futuriste' },
+  { id: 'italia', name: 'Classic Italia', hint: 'Collection' },
+  { id: 'offroad', name: 'Offroad désert', hint: 'Expédition' }
 ];
 
 export function normalizeKey(key, value) {

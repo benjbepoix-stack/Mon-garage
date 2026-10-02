@@ -3,7 +3,7 @@ import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
 import { reminderStatus, currentKm, daysUntil } from '../core/calc.js';
-import { MAINTENANCE_TYPES, DEFAULT_REMINDERS, makeId, fieldKey } from '../core/schema.js';
+import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
@@ -129,7 +129,7 @@ export function openReminder(id = null) {
   const form = $('#reminderForm');
   form.reset();
   clearErrors(form);
-  $('#reChoices').innerHTML = [...new Set([...DEFAULT_REMINDERS[v.kind].map(x => x.label), ...MAINTENANCE_TYPES[v.kind]])].map(t => `<option value="${esc(t)}">`).join('');
+  $('#reChoices').innerHTML = [...new Set([...presetReminders(v).map(x => x.label), ...MAINTENANCE_TYPES[v.kind]])].map(t => `<option value="${esc(t)}">`).join('');
   form.elements.editId.value = r ? r.id : '';
   form.elements.label.value = r?.label || '';
   form.elements.everyKm.value = intInput(r?.everyKm);

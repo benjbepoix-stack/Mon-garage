@@ -1,7 +1,7 @@
 /* Fiche véhicule / vélo : création, modification, photo, suppression. */
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { FUELS, BIKE_TYPES, DEFAULT_REMINDERS, DEFAULT_PARTS, fieldKey, photoKey, makeId } from '../core/schema.js';
+import { FUELS, BIKE_TYPES, DEFAULT_PARTS, presetReminders, fieldKey, photoKey, makeId } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -90,13 +90,14 @@ function onSubmit(e) {
     patch.vehicles = store.vehicles().map(x => (x.id === id ? { ...x, ...info } : x));
   } else {
     patch.vehicles = [...store.vehicles(), info];
-    // Plan d'entretien et composants proposés (modifiables ensuite)
-    patch[fieldKey(id, 'reminders')] = DEFAULT_REMINDERS[info.kind].map(r => ({ ...r, id: makeId() }));
+    // Plan d'entretien proposé selon la motorisation (ou le type de vélo), et composants
+    // proposés pour les vélos — préconisations généralisées, modifiables ensuite.
+    patch[fieldKey(id, 'reminders')] = presetReminders(info).map(r => ({ ...r, id: makeId() }));
     if (info.kind === 'bike') patch[fieldKey(id, 'parts')] = DEFAULT_PARTS.map(p => ({ ...p, id: makeId(), installedKm: info.mileage, installedDate: '' }));
   }
   store.setKeys(patch);
   closeSheet('vehicleSheet');
-  toast(existing ? 'Fiche modifiée' : 'Ajouté au garage');
+  toast(existing ? 'Fiche modifiée' : 'Ajouté au garage · plan d’entretien pré-rempli');
 }
 
 async function remove() {
