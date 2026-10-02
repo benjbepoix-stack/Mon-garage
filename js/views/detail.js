@@ -14,6 +14,7 @@ import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
 import { renderCosts } from './costs.js';
 import { renderDocs } from './docs.js';
+import { openResaleDossier } from '../features/resale-dossier.js';
 
 let tab = 'overview';
 
@@ -82,7 +83,10 @@ function renderOverview(v, f, list) {
           : `<div class="empty-state"><p>Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.</p></div>`
       }</div>
     </section>
-    ${v.notes ? `<section class="section card"><h2 class="card__title">Notes</h2><p class="notes-text">${esc(v.notes)}</p></section>` : ''}`;
+    ${v.notes ? `<section class="section card"><h2 class="card__title">Notes</h2><p class="notes-text">${esc(v.notes)}</p></section>` : ''}
+    <section class="section">
+      <button type="button" class="btn btn--soft btn--block" data-action="resale-dossier">${icon('doc', 18)}<span>Exporter le dossier de revente</span></button>
+    </section>`;
 }
 
 const PANELS = { maintenance: renderMaintenance, fuel: renderFuel, parts: renderParts, costs: renderCosts, docs: renderDocs };
@@ -120,7 +124,11 @@ export function initDetail({ onTab }) {
   });
   $('#panel-overview').addEventListener('click', e => {
     const row = e.target.closest('[data-goto]');
-    if (row) onTab(row.dataset.goto);
+    if (row) return onTab(row.dataset.goto);
+    if (e.target.closest('[data-action="resale-dossier"]')) {
+      const v = store.active();
+      if (v) openResaleDossier(v, fieldsOf(v.id));
+    }
   });
   $('#kmForm').addEventListener('submit', e => {
     e.preventDefault();

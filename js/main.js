@@ -276,6 +276,16 @@ async function init() {
 
   route();
 
+  // Mises à jour : voir sw.js. Un nouveau service worker recharge la page une fois.
+  // Enregistré avant la branche Firebase pour fonctionner même sans projet configuré.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController) location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').catch(error => console.warn('[sw] enregistrement impossible', error));
+  }
+
   if (!isConfigured()) {
     // Pas encore de projet Firebase : tout fonctionne sur l'appareil.
     hideAuth();
