@@ -106,7 +106,7 @@ async function remove() {
   if (!v) return;
   const ok = await confirmDialog({
     title: `Supprimer ${v.name} ?`,
-    message: 'Toutes ses données (entretiens, pleins, coûts, documents) seront supprimées sur tous vos appareils. Cette action est irréversible.',
+    message: 'Toutes ses données (entretiens, carburant, coûts, documents) seront supprimées sur tous vos appareils. Cette action est irréversible.',
     confirmLabel: 'Supprimer définitivement',
     danger: true
   });

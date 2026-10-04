@@ -3,7 +3,7 @@
 import { $ } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, fromKey, addDays, dateKey } from '../core/dates.js';
-import { monthOf, costSummary } from '../core/calc.js';
+import { monthOf, costSummary, activeFuelEstimate } from '../core/calc.js';
 import { isElectric, makeId } from '../core/schema.js';
 import { confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -11,7 +11,6 @@ import { km, euro, toNumber, numInput, fieldsOf } from './common.js';
 
 /* ---------- Estimation mensuelle ---------- */
 const FUEL_ESTIMATE_CATEGORY = 'Carburant';
-const activeEstimate = f => f.fixed.find(x => x.category === FUEL_ESTIMATE_CATEGORY && x.auto && !x.end);
 const avgKmPerMonth = s => (s.monthsOwned ? s.km / s.monthsOwned : 0);
 let lastFuelSummary = null;
 
@@ -37,7 +36,7 @@ export function renderFuel(v, f) {
   $('#ffTitle').textContent = ev ? 'Recharge' : 'Carburant';
   $('#ffConsumptionLabel').textContent = ev ? 'Conso. · kWh/100 km' : 'Conso. · L/100 km';
   $('#ffPriceLabel').textContent = ev ? 'Prix · €/kWh' : 'Prix · €/L';
-  const active = activeEstimate(f);
+  const active = activeFuelEstimate(f);
   if (document.activeElement !== $('#ffConsumption')) $('#ffConsumption').value = active ? numInput(active.fuelConsumption) : '';
   if (document.activeElement !== $('#ffPrice')) $('#ffPrice').value = active ? numInput(active.fuelPrice) : '';
   refreshFuelEstimate();
@@ -60,7 +59,7 @@ function saveFuelEstimate() {
   const avgKm = avgKmPerMonth(s);
   const amount = Math.round((consumptionValue / 100) * avgKm * price * 100) / 100;
   const today = todayKey();
-  const active = activeEstimate(f);
+  const active = activeFuelEstimate(f);
   const hasHistory = f.fixed.some(x => x.category === FUEL_ESTIMATE_CATEGORY && x.auto);
   let list = f.fixed;
   if (active && monthOf(active.start) === monthOf(today)) {

@@ -10,7 +10,7 @@
 import { esc } from '../core/utils.js';
 import { formatKey, todayKey } from '../core/dates.js';
 import * as store from '../core/store.js';
-import { costSummary, consumption, currentKm } from '../core/calc.js';
+import { costSummary, activeFuelEstimate, currentKm } from '../core/calc.js';
 import { isBike, isElectric } from '../core/schema.js';
 import { euro, euroRound, km, dec } from '../views/common.js';
 
@@ -62,13 +62,13 @@ function buildBody(v, f) {
 
   let fuelSection = '';
   if (!isBike(v)) {
-    const c = consumption(f.fuel);
+    const est = activeFuelEstimate(f);
     const unit = isElectric(v) ? 'kWh' : 'L';
     fuelSection = section(
       isElectric(v) ? 'Recharge' : 'Carburant',
-      c
-        ? `<p>${dec(c.per100, 1)} ${unit}/100 km · ${dec(c.costPerKm * 100, 2)} € pour 100 km (sur ${km(c.distance)}).</p>`
-        : '<p class="empty">Historique insuffisant pour calculer une consommation moyenne.</p>'
+      est
+        ? `<p>Estimation : ${dec(est.fuelConsumption, 1)} ${unit}/100 km · ${dec(est.fuelPrice, 2)} € / ${unit}.</p>`
+        : '<p class="empty">Aucune estimation renseignée.</p>'
     );
   }
 

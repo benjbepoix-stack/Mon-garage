@@ -60,6 +60,31 @@ function migrateLegacy() {
   setKeys({ ...patch, vehicles: list });
 }
 
+/**
+ * Purge ponctuelle des pleins saisis à la main (clé v_<id>_fuel) : cette fonctionnalité a
+ * été retirée (carburant compté uniquement par estimation), mais les données restaient en
+ * mémoire sans être ni visibles ni modifiables, et continuaient pourtant à être comptées —
+ * on les efface une bonne fois pour toutes, localement et côté cloud.
+ */
+function purgeLegacyFuel() {
+  // Ces clés ne sont plus dans FIELDS (isKnownKey les ignore désormais) : setKeys() ne les
+  // verrait jamais, d'où une suppression directe, localStorage puis file d'attente cloud.
+  let changed = false;
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      const m = k && k.startsWith(BASE) ? /^v_(.+)_fuel$/.exec(k.slice(BASE.length)) : null;
+      if (!m) continue;
+      localStorage.removeItem(k);
+      unsynced[`v_${m[1]}_fuel`] = true;
+      changed = true;
+    }
+  } catch (error) {
+    console.warn('[store] purge carburant impossible', error);
+  }
+  if (changed) persistUnsynced();
+}
+
 export function loadLocal() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -76,6 +101,7 @@ export function loadLocal() {
   const saved = readJSON(UNSYNCED_KEY, {});
   unsynced = saved && typeof saved === 'object' ? saved : {};
   migrateLegacy();
+  purgeLegacyFuel();
 }
 
 export const subscribe = fn => (listeners.add(fn), () => listeners.delete(fn));

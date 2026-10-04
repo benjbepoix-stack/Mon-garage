@@ -6,16 +6,19 @@
  *                       toutes les photos à chaque modification
  *   v_<id>_maintenance  entretiens réalisés
  *   v_<id>_reminders    plan d'entretien (rappels date / kilométrage)
- *   v_<id>_fuel         pleins / recharges
- *   v_<id>_fixed        frais fixes (assurance, stationnement…)
+ *   v_<id>_fixed        frais fixes (assurance, stationnement, carburant estimé…)
  *   v_<id>_loan         financement (crédit, LOA, LLD)
  *   v_<id>_docs         documents et échéances
  *   v_<id>_parts        composants suivis en usure (vélos)
  *   activeId, theme, style
+ *
+ * v_<id>_fuel (pleins saisis à la main) a existé mais a été retiré : le carburant ne
+ * se compte plus que par estimation (voir v_<id>_fixed, catégorie « Carburant » auto).
+ * store.js purge les éventuelles données restantes de cette ancienne clé au chargement.
  */
 import { isDateKey } from './dates.js';
 
-export const FIELDS = ['maintenance', 'reminders', 'fuel', 'fixed', 'loan', 'docs', 'parts'];
+export const FIELDS = ['maintenance', 'reminders', 'fixed', 'loan', 'docs', 'parts'];
 
 export const FUELS = ['Essence', 'Diesel', 'Hybride', 'Hybride rechargeable', 'Électrique', 'GPL', 'Autre'];
 export const BIKE_TYPES = ['Route', 'Gravel', 'VTT', 'VTC', 'Vélo électrique', 'Autre'];
@@ -180,12 +183,6 @@ const normalizers = {
       .filter(isObj)
       .map(x => ({ id: id(x.id), label: str(x.label, 60), everyKm: int(x.everyKm, 1e6), everyMonths: int(x.everyMonths, 240), lastDate: date(x.lastDate), lastKm: int(x.lastKm) }))
       .filter(x => x.id && x.label && (x.everyKm || x.everyMonths)),
-  fuel: raw =>
-    asArray(raw)
-      .filter(isObj)
-      .map(x => ({ id: id(x.id), date: date(x.date), km: int(x.km), qty: num(x.qty, 1e4), total: num(x.total, 1e5), full: x.full !== false }))
-      .filter(x => x.id && x.date)
-      .sort(byDateDesc),
   fixed: raw =>
     asArray(raw)
       .filter(isObj)
@@ -232,7 +229,7 @@ const normalizers = {
       .filter(x => x.id && x.name)
 };
 
-export const DEFAULTS = { maintenance: [], reminders: [], fuel: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [] };
+export const DEFAULTS = { maintenance: [], reminders: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [] };
 
 /** Styles graphiques proposés (le premier est celui par défaut). */
 export const STYLES = [

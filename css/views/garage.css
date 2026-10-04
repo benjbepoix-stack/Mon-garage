@@ -16,7 +16,7 @@
 .auth[hidden] { display: none; }
 html.is-auth-pending body > :not(.auth):not(.sheet-backdrop):not(.toast-stack):not(.ambient) { visibility: hidden; }
 .auth__card { width: min(400px, 100%); display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding: var(--sp-6) var(--sp-5); border-radius: var(--r-xl); background: var(--surface-solid); border: 1px solid var(--border); box-shadow: var(--shadow-lg); animation: pop-in var(--dur-slow) var(--ease); }
-.auth__logo { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 20px; font-size: 34px; background: var(--gradient-accent); box-shadow: var(--shadow-accent); }
+.auth__logo { width: 64px; height: 64px; border-radius: 20px; box-shadow: var(--shadow-accent); object-fit: cover; }
 .auth__kicker { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
 .auth__loading { display: flex; align-items: center; gap: 10px; color: var(--text-2); padding: var(--sp-4) 0; }
 .auth__form { width: 100%; gap: var(--sp-3); }
@@ -45,6 +45,8 @@ html.is-auth-pending body > :not(.auth):not(.sheet-backdrop):not(.toast-stack):n
 /* ---------- Composants partagés ---------- */
 .chart-steps { display: flex; align-items: center; gap: 4px; flex: none; }
 .field__help { font-size: 11.5px; color: var(--text-3); margin: 0; }
+/* Note d'aide en pleine largeur de section (hors formulaire, donc sans le gap de .form) : évite qu'elle touche le cadre de la carte juste au-dessus. */
+.section > .card + .field__help { margin-top: var(--sp-3); }
 .segmented--types { margin-bottom: 0; }
 .segmented--types label { position: relative; display: block; }
 .segmented--types input { position: absolute; opacity: 0; pointer-events: none; }

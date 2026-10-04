@@ -27,9 +27,9 @@ export function addMonthsToDate(dateKey, n) {
 export const daysUntil = (dateKey, today = todayKey()) => Math.round((fromKey(dateKey) - fromKey(today)) / 86400000);
 
 /* ---------- Kilométrage ---------- */
-/** Kilométrage actuel : le plus grand relevé connu (fiche, entretiens, pleins). */
+/** Kilométrage actuel : le plus grand relevé connu (fiche, entretiens). */
 export function currentKm(v, f) {
-  return Math.max(v?.mileage || 0, v?.purchaseKm || 0, ...(f.maintenance || []).map(x => x.km || 0), ...(f.fuel || []).map(x => x.km || 0));
+  return Math.max(v?.mileage || 0, v?.purchaseKm || 0, ...(f.maintenance || []).map(x => x.km || 0));
 }
 
 /* ---------- Financement ---------- */
@@ -114,29 +114,26 @@ export const COST_KEYS = ['purchase', 'loan', 'maintenance', 'fuel', 'fixed'];
 
 /** Entrée « Carburant » générée par l'estimation automatique (onglet Carburant), pas un frais fixe saisi à la main. */
 const isAutoFuelFixed = x => x.category === 'Carburant' && x.auto;
+/** Estimation carburant actuellement active (sans date de fin), s'il y en a une. */
+export const activeFuelEstimate = f => f.fixed.find(x => isAutoFuelFixed(x) && !x.end);
 
-/**
- * Coûts d'un mois donné, par catégorie (le carburant estimé compte comme du carburant, pas un frais
- * fixe). Un mois où des pleins ont été saisis à la main ignore l'estimation pour ce mois-là, pour ne
- * jamais additionner les deux (l'estimation ne comble que les mois sans saisie réelle).
- */
+/** Coûts d'un mois donné, par catégorie (le carburant estimé compte comme du carburant, pas un frais fixe). */
 export function monthCosts(v, f, month, schedule = loanSchedule(v, f.loan)) {
   const inMonth = x => x.date.startsWith(month);
-  const manualFuel = f.fuel.filter(inMonth).reduce((s, x) => s + x.total, 0);
-  const fuelEstimate = manualFuel ? 0 : f.fixed.filter(isAutoFuelFixed).reduce((s, x) => s + fixedFor(x, month), 0);
+  const fuelEstimate = f.fixed.filter(isAutoFuelFixed).reduce((s, x) => s + fixedFor(x, month), 0);
   const otherFixed = f.fixed.filter(x => !isAutoFuelFixed(x)).reduce((s, x) => s + fixedFor(x, month), 0);
   return {
     purchase: schedule.oneOffs[month] || 0,
     loan: schedule.payments[month] || 0,
     maintenance: f.maintenance.filter(inMonth).reduce((s, x) => s + x.cost, 0),
-    fuel: manualFuel + fuelEstimate,
+    fuel: fuelEstimate,
     fixed: otherFixed
   };
 }
 
 /** Premier mois pertinent (achat, financement ou première saisie). */
 export function firstMonth(v, f, schedule = loanSchedule(v, f.loan)) {
-  const candidates = [v.purchaseDate, ...f.maintenance.map(x => x.date), ...f.fuel.map(x => x.date), ...f.fixed.map(x => x.start)].filter(Boolean).map(monthOf);
+  const candidates = [v.purchaseDate, ...f.maintenance.map(x => x.date), ...f.fixed.map(x => x.start)].filter(Boolean).map(monthOf);
   if (schedule.startMonth) candidates.push(schedule.startMonth);
   candidates.push(...Object.keys(schedule.oneOffs));
   return candidates.sort()[0] || null;
@@ -175,30 +172,6 @@ export function costSummary(v, f, today = todayKey()) {
     usagePerMonth: monthsOwned ? usage / monthsOwned : 0,
     first
   };
-}
-
-/* ---------- Consommation ---------- */
-/**
- * Méthode du plein à plein : entre le premier et le dernier plein complet,
- * quantité ajoutée (hors premier plein) / distance.
- */
-export function consumption(fuel) {
-  const list = [...fuel].filter(x => x.km > 0).sort((a, b) => a.km - b.km || a.date.localeCompare(b.date));
-  const fulls = list.filter(x => x.full);
-  if (fulls.length < 2) return null;
-  const a = fulls[0];
-  const b = fulls[fulls.length - 1];
-  const distance = b.km - a.km;
-  if (distance <= 0) return null;
-  const between = list.filter(x => x.km > a.km && x.km <= b.km);
-  const qty = between.reduce((s, x) => s + x.qty, 0);
-  const cost = between.reduce((s, x) => s + x.total, 0);
-  return { per100: (qty / distance) * 100, costPerKm: cost / distance, distance };
-}
-
-/** Prix unitaire moyen (€/L ou €/kWh). */
-export function unitPrice(entry) {
-  return entry.qty ? entry.total / entry.qty : 0;
 }
 
 /* ---------- Échéances ---------- */
