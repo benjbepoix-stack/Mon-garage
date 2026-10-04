@@ -173,6 +173,21 @@ function repairAutoFuelOverlaps(list) {
   return list.map(x => (fixedEnd.has(x.id) ? { ...x, end: fixedEnd.get(x.id) } : x));
 }
 const byDateDesc = (a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id));
+const MAX_DOC_FILES = 10;
+
+/**
+ * Pièces jointes d'un document : plusieurs fichiers possibles (`files`). Reprend aussi l'ancien
+ * format à un seul fichier (`file`/`fileName`, avant l'ajout des pièces jointes multiples).
+ */
+function normalizeDocFiles(x) {
+  const legacy = fileUrl(x.file);
+  const raw = Array.isArray(x.files) ? x.files : legacy ? [{ id: x.id, file: legacy, fileName: x.fileName }] : [];
+  return raw
+    .filter(isObj)
+    .map(y => ({ id: id(y.id) || makeId(), file: fileUrl(y.file), fileName: str(y.fileName, 150) }))
+    .filter(y => y.file)
+    .slice(0, MAX_DOC_FILES);
+}
 
 export function normalizeVehicles(raw) {
   return asArray(raw)
@@ -251,7 +266,7 @@ const normalizers = {
   docs: raw =>
     asArray(raw)
       .filter(isObj)
-      .map(x => ({ id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000), file: fileUrl(x.file), fileName: str(x.fileName, 150) }))
+      .map(x => ({ id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000), files: normalizeDocFiles(x) }))
       .filter(x => x.id)
       .sort((a, b) => (a.expiry || '9999').localeCompare(b.expiry || '9999')),
   parts: raw =>

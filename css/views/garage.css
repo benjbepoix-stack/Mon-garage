@@ -216,6 +216,7 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 
 /* Pièce jointe de document (photo ou PDF) */
 .file-attach { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+#docFilesList { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .file-attach__btn { position: relative; overflow: hidden; }
 .file-attach__current { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 6px 6px 10px; border-radius: var(--r-pill); background: var(--surface-3); border: 1px solid var(--border); font-size: var(--fs-xs); font-weight: 650; }
 .file-attach__icon { display: grid; place-items: center; color: var(--text-3); flex: none; }

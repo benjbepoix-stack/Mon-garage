@@ -3,7 +3,7 @@
    secours hors ligne. L'app-shell est aussi pré-mis en cache à l'installation,
    pour qu'un tout premier lancement hors ligne (au garage, en concession…)
    affiche l'app au lieu d'un écran blanc. */
-const CACHE = 'mon-garage-v9';
+const CACHE = 'mon-garage-v10';
 
 const PRECACHE_URLS = [
   './',
@@ -26,6 +26,7 @@ const PRECACHE_URLS = [
   './js/core/validation.js',
   './js/features/calendar-prompt.js',
   './js/features/ics.js',
+  './js/features/overdue-prompt.js',
   './js/features/resale-dossier.js',
   './js/services/firebase.js',
   './js/services/storage.js',

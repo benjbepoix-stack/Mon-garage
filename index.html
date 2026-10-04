@@ -409,15 +409,11 @@
         <div class="field"><label class="field__label" for="doExpiry">Date d’échéance <span class="field__opt">(facultatif)</span></label><input class="input" id="doExpiry" type="date" name="expiry"><p class="field__help">Une alerte apparaît 30 jours avant.</p></div>
         <div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div>
         <div class="field">
-          <span class="field__label">Pièce jointe <span class="field__opt">(photo ou PDF, facultatif)</span></span>
+          <span class="field__label">Pièces jointes <span class="field__opt">(photos ou PDF, facultatif, plusieurs possibles)</span></span>
           <div class="file-attach">
-            <div class="file-attach__current" id="docFileCurrent" hidden>
-              <span class="file-attach__icon" id="docFileIcon"></span>
-              <span class="file-attach__name" id="docFileName"></span>
-              <button type="button" class="icon-btn icon-btn--sm" id="docFileRemove" aria-label="Retirer la pièce jointe"><span data-icon="close" data-size="16"></span></button>
-            </div>
-            <label class="btn btn--ghost btn--sm file-attach__btn" id="docFileLabel"><span data-icon="upload" data-size="16"></span><span>Ajouter un fichier</span>
-              <input type="file" id="docFileInput" accept="image/*,application/pdf" class="photo-picker__input">
+            <div id="docFilesList"></div>
+            <label class="btn btn--ghost btn--sm file-attach__btn" id="docFileLabel"><span data-icon="upload" data-size="16"></span><span>Ajouter des fichiers</span>
+              <input type="file" id="docFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
             </label>
           </div>
         </div>
@@ -429,6 +425,10 @@
 
   <div class="sheet-backdrop sheet-backdrop--dialog" id="calendarSheet" hidden>
     <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="calendarTitle" tabindex="-1" id="calendarContent"></div>
+  </div>
+
+  <div class="sheet-backdrop sheet-backdrop--dialog" id="overdueSheet" hidden>
+    <div class="sheet sheet--dialog" role="alertdialog" aria-modal="true" aria-labelledby="overdueTitle" tabindex="-1" id="overdueContent"></div>
   </div>
 </body>
 </html>

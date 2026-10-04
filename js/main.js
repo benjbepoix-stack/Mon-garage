@@ -12,6 +12,7 @@ import { renderStatus } from './ui/status.js';
 import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
+import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
 import { renderHome } from './views/home.js';
 import { initVehicles, openVehicle } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
@@ -46,6 +47,12 @@ function route() {
 
 function openVehicleView(id) {
   location.hash = hashFor(id);
+}
+
+function goToReminder(vehicleId, reminderId) {
+  location.hash = hashFor(vehicleId, 'maintenance');
+  route();
+  openReminder(reminderId);
 }
 
 function goTab(tab) {
@@ -254,6 +261,7 @@ async function init() {
   initParts();
   initCosts();
   initDocs();
+  initOverduePrompt({ onView: goToReminder });
   initAuthUI();
 
   store.subscribe(keys => {
@@ -302,19 +310,26 @@ async function init() {
     hideAuth();
     renderStatus('local', 'Données enregistrées sur cet appareil');
     $('#accountLine').textContent = 'Données enregistrées sur cet appareil (synchronisation à venir).';
+    checkOverdue();
     return;
   }
   showAuth('loading');
   store.setCloudSink(pushCloud);
   const ok = await initFirebase({
     onUser,
-    onRemote: remote => store.applyRemote(remote),
+    onRemote: remote => {
+      store.applyRemote(remote);
+      checkOverdue();
+    },
     onStatus: renderStatus,
     onError: message => toastError(`Synchronisation : ${message}`),
     onAck: store.acknowledge,
     getSnapshot: store.cloudSnapshot
   });
-  if (!ok) showAuth('offline');
+  if (!ok) {
+    showAuth('offline');
+    checkOverdue();
+  }
 }
 
 init();

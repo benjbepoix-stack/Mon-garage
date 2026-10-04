@@ -93,6 +93,7 @@
 }
 
 .icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -102,6 +103,7 @@
   color: var(--text-2);
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
 }
+.icon-btn__badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 3px; display: grid; place-items: center; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 9.5px; font-weight: 800; line-height: 1; }
 .icon-btn:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
 .icon-btn:active:not(:disabled) { transform: scale(.9); }
 .icon-btn:disabled { opacity: .3; }

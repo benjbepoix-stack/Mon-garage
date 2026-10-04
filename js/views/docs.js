@@ -12,9 +12,9 @@ import { offerCalendar } from '../features/calendar-prompt.js';
 import { LEVEL_LABEL, readDocFile } from './common.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeric' });
+const MAX_FILES = 10;
 
-let pendingFile = '';
-let pendingFileName = '';
+let pendingFiles = [];
 
 function openAttachment(file, name) {
   if (file.startsWith('data:image/')) return openPhotoLightbox(file, name);
@@ -29,21 +29,28 @@ function openAttachment(file, name) {
 
 function row(d) {
   const s = docStatus(d);
+  const n = d.files.length;
   const when = d.expiry ? (s.daysLeft < 0 ? `Expiré le ${fmtDate(d.expiry)}` : `Échéance le ${fmtDate(d.expiry)}`) : 'Sans date d’échéance';
   return `<div class="row" data-edit data-doc="${esc(d.id)}">
     <span class="row__icon">${icon('doc', 18)}</span>
     <div class="row__body"><span class="row__title">${esc(d.type)}${d.label ? ` <span class="row__soft">· ${esc(d.label)}</span>` : ''}</span><span class="row__sub">${esc(when)}</span>
       ${d.expiry ? `<span class="row__tags"><span class="level is-${s.level}">${s.level === 'late' ? 'Expiré' : LEVEL_LABEL[s.level]}</span></span>` : ''}</div>
-    ${d.file ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-file="${esc(d.id)}" aria-label="Voir la pièce jointe" title="Pièce jointe">${icon('paperclip', 17)}</button>` : ''}
+    ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-file="${esc(d.id)}" aria-label="${n > 1 ? `Voir les pièces jointes (${n})` : 'Voir la pièce jointe'}" title="${n > 1 ? `${n} pièces jointes` : 'Pièce jointe'}">${icon('paperclip', 17)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
     ${d.expiry && s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 17)}</button>` : ''}
   </div>`;
 }
 
-function showAttachment(file, name) {
-  $('#docFileCurrent').hidden = !file;
-  $('#docFileName').textContent = name || (file.startsWith('data:image/') ? 'Photo' : 'Document PDF');
-  $('#docFileIcon').innerHTML = file.startsWith('data:image/') ? icon('image', 16) : icon('doc', 16);
-  $('#docFileLabel').querySelector('span:last-of-type').textContent = file ? 'Remplacer' : 'Ajouter un fichier';
+function renderPendingFiles() {
+  $('#docFilesList').innerHTML = pendingFiles
+    .map(
+      (pf, i) => `<div class="file-attach__current" data-file-index="${i}">
+        <span class="file-attach__icon">${pf.file.startsWith('data:image/') ? icon('image', 16) : icon('doc', 16)}</span>
+        <span class="file-attach__name">${esc(pf.fileName || (pf.file.startsWith('data:image/') ? 'Photo' : 'Document PDF'))}</span>
+        <button type="button" class="icon-btn icon-btn--sm" data-file-remove="${i}" aria-label="Retirer cette pièce jointe">${icon('close', 16)}</button>
+      </div>`
+    )
+    .join('');
+  $('#docFileLabel').querySelector('span:last-of-type').textContent = pendingFiles.length ? 'Ajouter d’autres fichiers' : 'Ajouter des fichiers';
 }
 
 export function renderDocs(v, f) {
@@ -64,10 +71,9 @@ export function openDoc(id = null) {
   form.elements.label.value = d?.label || '';
   form.elements.expiry.value = d?.expiry || '';
   form.elements.note.value = d?.note || '';
-  pendingFile = d?.file || '';
-  pendingFileName = d?.fileName || '';
+  pendingFiles = d?.files ? d.files.map(x => ({ ...x })) : [];
   $('#docFileInput').value = '';
-  showAttachment(pendingFile, pendingFileName);
+  renderPendingFiles();
   $('#docTitle').textContent = d ? 'Modifier le document' : 'Nouveau document';
   $('#docDelete').hidden = !d;
   openSheet('docSheet', { focus: false });
@@ -87,7 +93,7 @@ function onSubmit(e) {
   if (!valid) return showErrors(form, errors);
   const v = store.active();
   const list = store.field('docs', v.id);
-  const item = { id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, file: pendingFile, fileName: pendingFileName };
+  const item = { id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files: pendingFiles };
   store.setField('docs', val.editId ? list.map(x => (x.id === val.editId ? item : x)) : [...list, item], v.id);
   closeSheet('docSheet');
   if (item.expiry && item.expiry >= todayKey()) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
@@ -109,28 +115,50 @@ export function initDocs() {
   $('#docForm').addEventListener('submit', onSubmit);
   $('#docDelete').addEventListener('click', remove);
   $('#docFileInput').addEventListener('change', async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      pendingFile = await readDocFile(file);
-      pendingFileName = file.name;
-      showAttachment(pendingFile, pendingFileName);
-    } catch (error) {
-      toastError(error.message);
-    } finally {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const room = MAX_FILES - pendingFiles.length;
+    if (room <= 0) {
+      toastError(`${MAX_FILES} pièces jointes maximum par document.`);
       e.target.value = '';
+      return;
     }
+    const errors = [];
+    for (const file of files.slice(0, room)) {
+      // eslint-disable-next-line no-await-in-loop
+      try {
+        const data = await readDocFile(file);
+        pendingFiles.push({ id: makeId(), file: data, fileName: file.name });
+      } catch (error) {
+        errors.push(`${file.name} : ${error.message}`);
+      }
+    }
+    if (files.length > room) errors.push(`${MAX_FILES} pièces jointes maximum par document : ${files.length - room} fichier(s) ignoré(s).`);
+    renderPendingFiles();
+    if (errors.length) toastError(errors.join(' '));
+    e.target.value = '';
   });
-  $('#docFileRemove').addEventListener('click', () => {
-    pendingFile = '';
-    pendingFileName = '';
-    showAttachment('', '');
+  $('#docFilesList').addEventListener('click', e => {
+    const removeBtn = e.target.closest('[data-file-remove]');
+    if (removeBtn) {
+      pendingFiles.splice(Number(removeBtn.dataset.fileRemove), 1);
+      renderPendingFiles();
+      return;
+    }
+    const pill = e.target.closest('[data-file-index]');
+    if (pill) {
+      const pf = pendingFiles[Number(pill.dataset.fileIndex)];
+      if (pf) openAttachment(pf.file, pf.fileName);
+    }
   });
   $('#docList').addEventListener('click', e => {
     const fileBtn = e.target.closest('[data-doc-file]');
     if (fileBtn) {
       const d = store.field('docs', store.active().id).find(x => x.id === fileBtn.dataset.docFile);
-      if (d?.file) openAttachment(d.file, d.fileName);
+      if (!d?.files.length) return;
+      // Une seule pièce jointe : ouverture directe. Plusieurs : la fiche liste chacune individuellement.
+      if (d.files.length === 1) openAttachment(d.files[0].file, d.files[0].fileName);
+      else openDoc(d.id);
       return;
     }
     const r = e.target.closest('[data-doc]');

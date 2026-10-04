@@ -39,7 +39,10 @@ Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème so
 Chaque carte de l'accueil affiche une vignette (80 px), distincte du bouton qui ouvre la fiche : toucher la photo l'affiche en plein écran (sans ouvrir la fiche), toucher le reste de la carte ouvre la fiche. Sous le nom : seulement la marque, le modèle et, pour un véhicule, la plaque d'immatriculation (pas l'année, le kilométrage ni la motorisation) ; l'échéance la plus urgente s'affiche en dessous.
 
 ## Pièces jointes des documents
-Chaque document (onglet Documents) peut avoir une pièce jointe — photo ou PDF (scan de la carte grise, de l'attestation d'assurance…) — ajoutée depuis le formulaire. Une photo s'affiche en grand au toucher du trombone ; un PDF se télécharge (ouverture native sur iPhone). Les images sont réduites comme les photos de véhicule ; les PDF sont limités à 4 Mo.
+Chaque document (onglet Documents) peut avoir plusieurs pièces jointes — photos ou PDF (scan de la carte grise, de l'attestation d'assurance, et son avenant…) — ajoutées en une ou plusieurs fois depuis le formulaire (10 maximum par document). S'il n'y en a qu'une, le trombone l'ouvre directement (photo en grand, PDF téléchargé — ouverture native sur iPhone) ; s'il y en a plusieurs, un badge affiche leur nombre et le trombone rouvre la fiche du document pour les lister et les ouvrir une à une. Les images sont réduites comme les photos de véhicule ; chaque fichier est limité à 4 Mo.
+
+## Rappels en retard à l'ouverture
+Au lancement de l'app (une fois par session), si un ou plusieurs rappels d'entretien sont en retard — tous véhicules confondus —, une fenêtre les signale un par un (véhicule, rappel, retard) avec un bouton « Suivant » s'il y en a plusieurs, puis « Terminé » sur le dernier ; « Voir ce rappel » ouvre directement sa fiche dans l'onglet Entretien du véhicule concerné.
 
 ## Remise à zéro groupée des rappels et des composants d'usure
 À chaque entretien enregistré (onglet Entretien), plusieurs rappels peuvent être cochés d'un coup (ex. vidange + filtre à huile + filtre à air faits le même jour) : chacun repart de la date et du kilométrage de cet entretien. Pour un vélo, les composants suivis en usure (onglet Usure : chaîne, pneus, plaquettes…) peuvent aussi être cochés et remis à zéro en même temps, sans repasser par le bouton « Remplacé ».
