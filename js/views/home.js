@@ -4,7 +4,7 @@ import * as store from '../core/store.js';
 import { alerts } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, kmOf, km, photoHtml } from './common.js';
+import { fieldsOf, photoHtml } from './common.js';
 import { scheduleAlertsSync } from '../services/carnet-sync.js';
 
 let knownVehicleIds = new Set();
@@ -44,16 +44,16 @@ function card(v) {
   const f = fieldsOf(v.id);
   const next = alerts(v, f)[0];
   const hasImg = v.hasPhoto && store.photo(v.id);
-  const pills = isBike(v) ? [v.bikeType, v.bikeSize, v.bikeGroupset, kmOf(v, f) ? km(kmOf(v, f)) : ''] : [v.year, kmOf(v, f) ? km(kmOf(v, f)) : '', v.fuel, v.plate];
+  // Juste la marque, le modèle et (pour un véhicule) la plaque : pas d'année, de km ni de carburant ici.
+  const sub = [v.brand, v.model, ...(isBike(v) ? [] : [v.plate])].filter(Boolean).join(' · ');
   return `<article class="gcard">
     ${hasImg
-      ? `<button type="button" class="gcard__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 30)}</button>`
-      : `<div class="gcard__photo">${photoHtml(v, 30)}</div>`}
+      ? `<button type="button" class="gcard__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 34)}</button>`
+      : `<div class="gcard__photo">${photoHtml(v, 34)}</div>`}
     <button type="button" class="gcard__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
       <div class="gcard__text">
         <div class="gcard__name">${esc(v.name)}</div>
-        ${v.brand || v.model ? `<div class="gcard__sub">${esc([v.brand, v.model].filter(Boolean).join(' · '))}</div>` : ''}
-        ${pills.some(Boolean) ? `<div class="gcard__pills">${pills.filter(Boolean).map(p => `<span class="pill">${esc(p)}</span>`).join('')}</div>` : ''}
+        ${sub ? `<div class="gcard__sub">${esc(sub)}</div>` : ''}
         ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span></span>` : ''}
       </div>
       <span class="gcard__chevron">${icon('chevronRight', 20)}</span>

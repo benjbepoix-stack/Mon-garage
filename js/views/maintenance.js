@@ -3,7 +3,7 @@ import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
 import { reminderStatus, currentKm, daysUntil } from '../core/calc.js';
-import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey } from '../core/schema.js';
+import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -61,7 +61,7 @@ export function renderMaintenance(v, f) {
   const current = currentKm(v, f);
   $('#reminderList').innerHTML = f.reminders.length
     ? f.reminders.map(r => reminderCard(r, current)).join('')
-    : '<div class="empty-card">Aucun rappel. Ajoutez par exemple la vidange tous les 15 000 km ou 1 an.</div>';
+    : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
   $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(maintenanceRow).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
@@ -75,16 +75,19 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
   const form = $('#maintenanceForm');
   form.reset();
   clearErrors(form);
+  const bike = isBike(v);
   const types = MAINTENANCE_TYPES[v.kind];
   const reminder = f.reminders.find(r => r.id === reminderId);
   form.elements.type.innerHTML = types.map(t => `<option>${esc(t)}</option>`).join('');
   form.elements.editId.value = x ? x.id : '';
   form.elements.type.value = x?.type || (reminder && types.find(t => t.toLowerCase() === reminder.label.toLowerCase())) || types[0];
   form.elements.label.value = x?.label || (reminder && !types.includes(reminder.label) ? reminder.label : '');
+  form.elements.label.placeholder = bike ? 'Ex. Réglage dérailleur' : 'Ex. Vidange + filtres';
   form.elements.date.value = x?.date || todayKey();
   form.elements.km.value = intInput(x ? x.km : currentKm(v, f));
   form.elements.cost.value = x ? numInput(x.cost) : '';
   form.elements.garage.value = x?.garage || '';
+  $('#maGarageLabel').innerHTML = `${bike ? 'Atelier' : 'Garage'} <span class="field__opt">(facultatif)</span>`;
   form.elements.note.value = x?.note || '';
   // Pré-coche le rappel correspondant au type choisi (ou celui d'où vient « Fait ») ; les autres restent décochables/cochables à la main.
   const match = reminder || (!x && f.reminders.find(r => r.label.toLowerCase() === form.elements.type.value.toLowerCase()));
@@ -98,6 +101,15 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
         .join('')
     : '<p class="check-list__empty">Aucun rappel créé pour l’instant.</p>';
   $('#maReminderField').hidden = !f.reminders.length;
+  // Vélo uniquement : remise à zéro de l'usure d'un ou plusieurs composants (chaîne, pneus…) en même temps que l'entretien.
+  if (bike && f.parts.length) {
+    const matchPart = !x && f.parts.find(p => p.name.toLowerCase() === form.elements.type.value.toLowerCase());
+    const prePart = new Set(matchPart ? [matchPart.id] : []);
+    $('#maPartList').innerHTML = f.parts
+      .map(p => `<label class="check-row"><input type="checkbox" name="parts" value="${esc(p.id)}" ${prePart.has(p.id) ? 'checked' : ''}><span>${esc(p.name)}</span></label>`)
+      .join('');
+  }
+  $('#maPartField').hidden = !(bike && f.parts.length);
   $('#maintenanceTitle').textContent = x ? 'Modifier l’entretien' : 'Nouvel entretien';
   $('#maintenanceDelete').hidden = !x;
   openSheet('maintenanceSheet', { focus: false });
@@ -125,6 +137,11 @@ function onMaintenanceSubmit(e) {
   const item = { id: existing ? existing.id : makeId(), type: val.type, label: val.label, date: val.date, km: toNumber(val.km) || 0, cost: toNumber(val.cost) || 0, garage: val.garage, note: val.note };
   const list = existing ? f.maintenance.map(m => (m === existing ? item : m)) : [...f.maintenance, item];
   const patch = { maintenance: list };
+  // Remise à zéro de l'usure des composants (vélo) cochés, comme le bouton « Remplacé » de l'onglet Usure.
+  const checkedPartIds = new Set($$('#maPartList input[name="parts"]:checked').map(c => c.value));
+  if (checkedPartIds.size) {
+    patch.parts = f.parts.map(p => (checkedPartIds.has(p.id) ? { ...p, installedKm: item.km || p.installedKm, installedDate: item.date } : p));
+  }
   // Remise à zéro de tous les rappels cochés (si cet entretien est le plus récent pour chacun)
   const checkedIds = new Set($$('#maReminderList input[name="reminders"]:checked').map(c => c.value));
   if (checkedIds.size) {
@@ -154,6 +171,7 @@ export function openReminder(id = null) {
   form.reset();
   clearErrors(form);
   $('#reChoices').innerHTML = [...new Set([...presetReminders(v).map(x => x.label), ...MAINTENANCE_TYPES[v.kind]])].map(t => `<option value="${esc(t)}">`).join('');
+  form.elements.label.placeholder = isBike(v) ? 'Ex. Chaîne' : 'Ex. Vidange';
   form.elements.editId.value = r ? r.id : '';
   form.elements.label.value = r?.label || '';
   form.elements.everyKm.value = intInput(r?.everyKm);
@@ -223,6 +241,9 @@ export function initMaintenance() {
   $('#maintenanceForm').addEventListener('submit', onMaintenanceSubmit);
   $('#maintenanceDelete').addEventListener('click', removeMaintenance);
   $('#maReminderList').addEventListener('change', e => {
+    e.target.closest('.check-row')?.classList.toggle('is-checked', e.target.checked);
+  });
+  $('#maPartList').addEventListener('change', e => {
     e.target.closest('.check-row')?.classList.toggle('is-checked', e.target.checked);
   });
   $('#reminderForm').addEventListener('submit', onReminderSubmit);

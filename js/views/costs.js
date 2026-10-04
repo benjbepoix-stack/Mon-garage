@@ -1,16 +1,18 @@
 /* Coûts : coût réel depuis l'achat, coût mensuel, financement, frais fixes. */
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { todayKey, formatKey, fromKey, addDays, dateKey } from '../core/dates.js';
+import { todayKey, formatKey } from '../core/dates.js';
 import { costSummary, monthCosts, addMonths, monthOf, monthDiff } from '../core/calc.js';
-import { LOAN_TYPES, FIXED_CATEGORIES, isBike, isElectric, makeId, fieldKey } from '../core/schema.js';
+import { LOAN_TYPES, FIXED_CATEGORIES, isBike, makeId, fieldKey } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
-import { toast, toastError } from '../ui/toast.js';
+import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { renderBarChart, renderDonut } from '../ui/charts.js';
 import { euro, euroRound, km, toNumber, numInput, intInput, positive, capitalize, fieldsOf } from './common.js';
 
+/* Catégorie gérée par l'estimation automatique de l'onglet Carburant : jamais proposée
+   à la main ici, et jamais listée parmi les frais fixes (voir js/views/fuel.js). */
 const FUEL_FIXED_CATEGORY = 'Carburant';
 
 const WINDOW = 12;
@@ -95,8 +97,9 @@ function renderFinance(v, f, s) {
 }
 
 function renderFixed(f) {
-  $('#fixedList').innerHTML = f.fixed.length
-    ? f.fixed
+  const list = f.fixed.filter(x => !(x.category === FUEL_FIXED_CATEGORY && x.auto));
+  $('#fixedList').innerHTML = list.length
+    ? list
         .map(x => {
           const sub = [x.period === 'year' ? `${euro(x.amount)} / an` : 'Mensuel', `depuis ${formatKey(x.start, { month: 'short', year: 'numeric' })}`, x.end ? `jusqu’à ${formatKey(x.end, { month: 'short', year: 'numeric' })}` : ''].filter(Boolean).join(' · ');
           return `<div class="row" data-edit data-fixed="${esc(x.id)}"><span class="row__icon">${icon('repeat', 18)}</span>
@@ -107,78 +110,12 @@ function renderFixed(f) {
     : '<div class="empty-state"><p>Aucun frais fixe. Ajoutez par exemple votre assurance.</p></div>';
 }
 
-/* ---------- Carburant (frais fixe estimé) ---------- */
-const activeFuelFixed = f => f.fixed.find(x => x.category === FUEL_FIXED_CATEGORY && x.auto && !x.end);
-const avgKmPerMonth = s => (s.monthsOwned ? s.km / s.monthsOwned : 0);
-let lastFuelSummary = null;
-
-function refreshFuelEstimate() {
-  const s = lastFuelSummary;
-  if (!s) return;
-  const avgKm = avgKmPerMonth(s);
-  $('#ffKmMonth').textContent = avgKm ? `≈ ${km(Math.round(avgKm))} / mois` : '—';
-  const consumption = toNumber($('#ffConsumption').value) || 0;
-  const price = toNumber($('#ffPrice').value) || 0;
-  const estimate = (consumption / 100) * avgKm * price;
-  $('#ffEstimate').textContent = estimate
-    ? `≈ ${euro(estimate)} / mois`
-    : avgKm
-      ? 'Renseignez la consommation et le prix pour estimer le coût mensuel.'
-      : 'Renseignez l’achat (date, kilométrage) pour estimer le km moyen par mois.';
-}
-
-function renderFuelFixed(v, f, s) {
-  const section = $('#fuelFixedSection');
-  if (isBike(v)) {
-    section.hidden = true;
-    return;
-  }
-  section.hidden = false;
-  lastFuelSummary = s;
-  const ev = isElectric(v);
-  $('#ffTitle').textContent = ev ? 'Recharge (frais fixe)' : 'Carburant (frais fixe)';
-  $('#ffConsumptionLabel').textContent = ev ? 'Consommation · kWh/100 km' : 'Consommation · L/100 km';
-  $('#ffPriceLabel').textContent = ev ? 'Prix de l’électricité · €/kWh' : 'Prix du carburant · €/L';
-  const active = activeFuelFixed(f);
-  if (document.activeElement !== $('#ffConsumption')) $('#ffConsumption').value = active ? numInput(active.fuelConsumption) : '';
-  if (document.activeElement !== $('#ffPrice')) $('#ffPrice').value = active ? numInput(active.fuelPrice) : '';
-  refreshFuelEstimate();
-}
-
-function saveFuelFixed() {
-  const v = store.active();
-  const f = fieldsOf(v.id);
-  const consumption = toNumber($('#ffConsumption').value);
-  const price = toNumber($('#ffPrice').value);
-  if (!consumption || !price) return toastError('Indiquez la consommation et le prix.');
-  const s = costSummary(v, f);
-  const avgKm = avgKmPerMonth(s);
-  const amount = Math.round((consumption / 100) * avgKm * price * 100) / 100;
-  const today = todayKey();
-  const active = activeFuelFixed(f);
-  let list = f.fixed;
-  if (active && monthOf(active.start) === monthOf(today)) {
-    // Déjà modifié ce mois-ci et aucun mois passé ne dépend de cette valeur : on ajuste sur place.
-    list = list.map(x => (x === active ? { ...x, amount, fuelConsumption: consumption, fuelPrice: price } : x));
-  } else {
-    if (active) {
-      const yesterday = dateKey(addDays(fromKey(today), -1));
-      list = list.map(x => (x === active ? { ...x, end: yesterday > active.start ? yesterday : active.start } : x));
-    }
-    list = [...list, { id: makeId(), category: FUEL_FIXED_CATEGORY, label: '', amount, period: 'month', start: today, end: '', auto: true, fuelConsumption: consumption, fuelPrice: price }];
-  }
-  store.setField('fixed', list, v.id);
-  toast('Estimation carburant mise à jour');
-  renderCosts(v, fieldsOf(v.id));
-}
-
 export function renderCosts(v, f) {
   const s = costSummary(v, f);
   renderHero(v, s);
   renderChart(v, f, s);
   renderSplit(s);
   renderFinance(v, f, s);
-  renderFuelFixed(v, f, s);
   renderFixed(f);
 }
 
@@ -306,7 +243,8 @@ async function removeFixed() {
 
 export function initCosts() {
   $('#loType').innerHTML = Object.entries(LOAN_TYPES).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('');
-  $('#fiCategory').innerHTML = FIXED_CATEGORIES.map(c => `<option>${esc(c)}</option>`).join('');
+  // « Carburant » est géré automatiquement depuis l'onglet Carburant (estimation mensuelle) : pas proposable ici.
+  $('#fiCategory').innerHTML = FIXED_CATEGORIES.filter(c => c !== FUEL_FIXED_CATEGORY).map(c => `<option>${esc(c)}</option>`).join('');
   $('#loType').addEventListener('change', syncLoan);
   $('#purchaseForm').addEventListener('submit', onPurchaseSubmit);
   $('#fixedForm').addEventListener('submit', onFixedSubmit);
@@ -315,9 +253,6 @@ export function initCosts() {
     const r = e.target.closest('[data-fixed]');
     if (r) openFixed(r.dataset.fixed);
   });
-  $('#ffConsumption').addEventListener('input', refreshFuelEstimate);
-  $('#ffPrice').addEventListener('input', refreshFuelEstimate);
-  $('#ffSave').addEventListener('click', saveFuelFixed);
   $('#costOlder').addEventListener('click', () => {
     offset++;
     const v = store.active();

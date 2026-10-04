@@ -23,8 +23,8 @@ database.rules.json     règles Realtime Database (chaque compte ne voit que ses
 ## Logo
 Volant à quatre branches, vert anglais et or (`icon.svg`, décliné en `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`).
 
-## Styles graphiques
-Réglage → Style : 2 habillages visuels (sombre et clair pour chacun), appliqués par une classe `data-style` qui surcharge les tokens de couleur (`css/styles.css`).
+## Réglages (thème et style graphique)
+Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème sombre/clair et style graphique, appliqués par les attributs `data-theme` / `data-style` qui surchargent les tokens de couleur (`css/styles.css`).
 - **Graphite** (par défaut) · **British** (vert anglais et laiton)
 
 ## Plan d'entretien pré-rempli
@@ -36,16 +36,16 @@ Réglage → Style : 2 habillages visuels (sombre et clair pour chacun), appliqu
   ⚠️ Ce chemin (`garage_alerts`) doit être autorisé dans les règles Firebase de la base de **Carnet** (`database.rules.json` de ce dépôt) — voir le README de Carnet pour l'étape de déploiement, à faire une seule fois depuis la console Firebase.
 
 ## Carte véhicule (accueil) et photo en grand
-Chaque carte de l'accueil affiche une vignette compacte (même format que le cadre de la fiche détail), distincte du bouton qui ouvre la fiche : toucher la photo l'affiche en plein écran (sans ouvrir la fiche), toucher le reste de la carte ouvre la fiche. L'échéance la plus urgente s'affiche sous le nom du véhicule plutôt qu'en incrustation sur la photo.
+Chaque carte de l'accueil affiche une vignette (80 px), distincte du bouton qui ouvre la fiche : toucher la photo l'affiche en plein écran (sans ouvrir la fiche), toucher le reste de la carte ouvre la fiche. Sous le nom : seulement la marque, le modèle et, pour un véhicule, la plaque d'immatriculation (pas l'année, le kilométrage ni la motorisation) ; l'échéance la plus urgente s'affiche en dessous.
 
 ## Pièces jointes des documents
 Chaque document (onglet Documents) peut avoir une pièce jointe — photo ou PDF (scan de la carte grise, de l'attestation d'assurance…) — ajoutée depuis le formulaire. Une photo s'affiche en grand au toucher du trombone ; un PDF se télécharge (ouverture native sur iPhone). Les images sont réduites comme les photos de véhicule ; les PDF sont limités à 4 Mo.
 
-## Remise à zéro groupée des rappels
-À chaque entretien enregistré (onglet Entretien), plusieurs rappels peuvent être cochés d'un coup (ex. vidange + filtre à huile + filtre à air faits le même jour) : chacun repart de la date et du kilométrage de cet entretien.
+## Remise à zéro groupée des rappels et des composants d'usure
+À chaque entretien enregistré (onglet Entretien), plusieurs rappels peuvent être cochés d'un coup (ex. vidange + filtre à huile + filtre à air faits le même jour) : chacun repart de la date et du kilométrage de cet entretien. Pour un vélo, les composants suivis en usure (onglet Usure : chaîne, pneus, plaquettes…) peuvent aussi être cochés et remis à zéro en même temps, sans repasser par le bouton « Remplacé ».
 
-## Carburant en frais fixe estimé
-Dans l'onglet Coûts, une estimation mensuelle du carburant (ou de la recharge) peut remplacer la saisie de chaque plein : consommation (L ou kWh/100 km) et prix sont saisis à la main, le kilométrage moyen par mois est calculé automatiquement (distance parcourue depuis l'achat ÷ nombre de mois). Modifier la consommation ou le prix ne change jamais les mois déjà écoulés : une nouvelle période démarre (visible dans la liste des frais fixes, catégorie « Carburant ») sauf si la modification a lieu le même mois que la précédente mise à jour.
+## Carburant : estimation mensuelle
+Dans l'onglet Carburant, une estimation mensuelle (consommation en L ou kWh/100 km, prix) peut compléter ou remplacer la saisie de chaque plein ; le kilométrage moyen par mois est calculé automatiquement (distance parcourue depuis l'achat ÷ nombre de mois). Elle compte comme du carburant dans les coûts (pas un frais fixe). À la première activation, l'estimation est appliquée rétroactivement depuis la date d'achat du véhicule, pour rattraper l'historique sans avoir à saisir chaque mois passé. Modifier ensuite la consommation ou le prix ne change jamais les mois déjà écoulés : une nouvelle période démarre à partir d'aujourd'hui, sauf si la modification a lieu le même mois que la précédente mise à jour.
 
 ## Hors ligne (PWA)
 

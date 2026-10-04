@@ -96,15 +96,20 @@ function fixedFor(item, month) {
 
 export const COST_KEYS = ['purchase', 'loan', 'maintenance', 'fuel', 'fixed'];
 
-/** Coûts d'un mois donné, par catégorie. */
+/** Entrée « Carburant » générée par l'estimation automatique (onglet Carburant), pas un frais fixe saisi à la main. */
+const isAutoFuelFixed = x => x.category === 'Carburant' && x.auto;
+
+/** Coûts d'un mois donné, par catégorie (le carburant estimé compte comme du carburant, pas un frais fixe). */
 export function monthCosts(v, f, month, schedule = loanSchedule(v, f.loan)) {
   const inMonth = x => x.date.startsWith(month);
+  const fuelEstimate = f.fixed.filter(isAutoFuelFixed).reduce((s, x) => s + fixedFor(x, month), 0);
+  const otherFixed = f.fixed.filter(x => !isAutoFuelFixed(x)).reduce((s, x) => s + fixedFor(x, month), 0);
   return {
     purchase: schedule.oneOffs[month] || 0,
     loan: schedule.payments[month] || 0,
     maintenance: f.maintenance.filter(inMonth).reduce((s, x) => s + x.cost, 0),
-    fuel: f.fuel.filter(inMonth).reduce((s, x) => s + x.total, 0),
-    fixed: f.fixed.reduce((s, x) => s + fixedFor(x, month), 0)
+    fuel: f.fuel.filter(inMonth).reduce((s, x) => s + x.total, 0) + fuelEstimate,
+    fixed: otherFixed
   };
 }
 

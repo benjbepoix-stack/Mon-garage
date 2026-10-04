@@ -71,7 +71,7 @@
       <div class="topbar__actions">
         <span class="sync-pill" id="syncStatus" data-status="connecting" role="status"><span class="spinner spinner--xs"></span><span>Connexion…</span></span>
         <button type="button" class="icon-btn icon-btn--glass" id="editVehicleBtn" aria-label="Modifier la fiche" hidden><span data-icon="edit" data-size="19"></span></button>
-        <button type="button" class="icon-btn icon-btn--glass" id="themeToggle" aria-label="Changer de thème"></button>
+        <button type="button" class="icon-btn icon-btn--glass" id="settingsBtn" aria-label="Réglages"><span data-icon="settings" data-size="19"></span></button>
       </div>
     </div>
   </header>
@@ -89,10 +89,6 @@
         <header class="section__head"><h2 class="section__title">Vélos</h2><span class="section__count" id="bikeCount">0</span></header>
         <div class="garage-cards" id="bikeCards"></div>
         <button type="button" class="add-tile" data-new="bike"><span data-icon="plus" data-size="20"></span><span>Ajouter un vélo</span></button>
-      </section>
-      <section class="section">
-        <header class="section__head"><h2 class="section__title">Style graphique</h2></header>
-        <div class="style-picker" id="stylePicker" role="group" aria-label="Style graphique"></div>
       </section>
       <p class="account" id="accountLine"></p>
       <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
@@ -122,6 +118,23 @@
         <section class="card section">
           <header class="card__head"><div><h2 class="card__title" id="fuelChartTitle">Dépenses de carburant</h2><p class="card__sub">12 derniers mois</p></div></header>
           <div id="fuelChart"></div>
+        </section>
+        <section class="section" id="fuelFixedSection">
+          <header class="section__head"><div><h2 class="section__title" id="ffTitle">Carburant · estimation mensuelle</h2><p class="card__sub">Alternative à la saisie de chaque plein</p></div></header>
+          <div class="card" id="fuelFixedCard">
+            <div class="form-grid">
+              <div class="field"><label class="field__label" for="ffConsumption" id="ffConsumptionLabel">Consommation · L/100 km</label><input class="input" id="ffConsumption" inputmode="decimal" placeholder="Ex. 6,5" autocomplete="off"></div>
+              <div class="field"><label class="field__label" for="ffPrice" id="ffPriceLabel">Prix du carburant · €/L</label><input class="input" id="ffPrice" inputmode="decimal" placeholder="Ex. 1,85" autocomplete="off"></div>
+            </div>
+            <div class="field">
+              <span class="field__label">Km moyen / mois</span>
+              <p class="field__value" id="ffKmMonth">—</p>
+              <p class="field__help">Calculé automatiquement depuis l’achat (ou la 1ʳᵉ saisie) et le dernier kilométrage connu.</p>
+            </div>
+            <p class="fuel-fixed__estimate" id="ffEstimate"></p>
+            <div class="form-actions form-actions--end"><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
+            <p class="field__help">Première activation : le coût estimé est appliqué rétroactivement depuis l’achat. Modifier ensuite la consommation ou le prix ne change pas les mois déjà passés : seule l’estimation à venir change.</p>
+          </div>
         </section>
         <section class="section">
           <header class="section__head"><h2 class="section__title" id="fuelListTitle">Pleins</h2><button type="button" class="add-btn" data-open="fuel" aria-label="Ajouter un plein"><span data-icon="plus" data-size="18"></span></button></header>
@@ -158,23 +171,6 @@
         <section class="section">
           <header class="section__head"><h2 class="section__title">Achat &amp; financement</h2><button type="button" class="link-btn" data-open="purchase">Modifier</button></header>
           <div class="card" id="financeCard"></div>
-        </section>
-        <section class="section" id="fuelFixedSection">
-          <header class="section__head"><div><h2 class="section__title" id="ffTitle">Carburant (frais fixe)</h2><p class="card__sub">Estimation mensuelle, sans saisir chaque plein</p></div></header>
-          <div class="card" id="fuelFixedCard">
-            <div class="form-grid">
-              <div class="field"><label class="field__label" for="ffConsumption" id="ffConsumptionLabel">Consommation · L/100 km</label><input class="input" id="ffConsumption" inputmode="decimal" placeholder="Ex. 6,5" autocomplete="off"></div>
-              <div class="field"><label class="field__label" for="ffPrice" id="ffPriceLabel">Prix du carburant · €/L</label><input class="input" id="ffPrice" inputmode="decimal" placeholder="Ex. 1,85" autocomplete="off"></div>
-            </div>
-            <div class="field">
-              <span class="field__label">Km moyen / mois</span>
-              <p class="field__value" id="ffKmMonth">—</p>
-              <p class="field__help">Calculé automatiquement depuis l’achat (ou la 1ʳᵉ saisie) et le dernier kilométrage connu.</p>
-            </div>
-            <p class="fuel-fixed__estimate" id="ffEstimate"></p>
-            <div class="form-actions form-actions--end"><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
-            <p class="field__help">Modifier la consommation ou le prix ne change pas les mois déjà passés : seule l’estimation à venir change.</p>
-          </div>
         </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Frais fixes</h2><p class="card__sub">Assurance, stationnement, abonnements…</p></div><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
@@ -238,6 +234,27 @@
     </div>
   </div>
 
+  <!-- Réglages (thème et style graphique) -->
+  <div class="sheet-backdrop" id="settingsSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="settingsTitle">Réglages</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="form sheet__scroll">
+        <div class="field">
+          <span class="field__label">Thème</span>
+          <div class="segmented segmented--types" id="themeSwitch">
+            <label><input type="radio" name="theme" value="dark"><span>Sombre</span></label>
+            <label><input type="radio" name="theme" value="light"><span>Clair</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field__label">Style graphique</span>
+          <div class="style-picker" id="stylePicker" role="group" aria-label="Style graphique"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Kilométrage -->
   <div class="sheet-backdrop sheet-backdrop--dialog" id="kmSheet" hidden>
     <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="kmTitle" tabindex="-1">
@@ -264,9 +281,10 @@
         </div>
         <div class="form-grid">
           <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
-          <div class="field"><label class="field__label" for="maGarage">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="maGarage" id="maGarageLabel">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div>
         </div>
         <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
+        <div class="field" id="maPartField" hidden><span class="field__label">Composants à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maPartList"></div><p class="field__help">Chaque composant coché repart de cette date et de ce kilométrage, comme avec « Remplacé » dans l’onglet Usure.</p></div>
         <div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="maintenanceDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer l’entretien</span></button>
