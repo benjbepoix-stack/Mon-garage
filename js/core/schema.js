@@ -213,7 +213,10 @@ const normalizers = {
       monthly: num(x.monthly, 1e5),
       start: date(x.start),
       firstPayment: num(x.firstPayment),
-      residual: num(x.residual)
+      residual: num(x.residual),
+      // Solde réglé par anticipation (crédit) : clôt le prêt à cette date, mensualités suivantes ignorées.
+      earlyPayoffAmount: num(x.earlyPayoffAmount),
+      earlyPayoffDate: date(x.earlyPayoffDate)
     };
   },
   docs: raw =>

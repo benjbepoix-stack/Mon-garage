@@ -154,12 +154,13 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 .due__head { display: flex; align-items: flex-start; gap: var(--sp-3); }
 .due__body { flex: 1; min-width: 0; }
 .due__title { font-weight: 800; overflow-wrap: anywhere; }
-.due__sub { font-size: var(--fs-xs); color: var(--text-3); margin-top: 2px; }
+.due__sub { font-size: var(--fs-xs); color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .due__bar { margin-top: 12px; height: 6px; border-radius: var(--r-pill); background: var(--surface-3); overflow: hidden; }
 .due__bar span { display: block; height: 100%; width: var(--value); border-radius: inherit; background: var(--green); transition: width var(--dur-slow) var(--ease); }
 .due.is-soon .due__bar span { background: var(--amber); }
 .due.is-late .due__bar span { background: var(--danger); }
 .due__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin-top: 10px; font-size: var(--fs-xs); color: var(--text-2); font-weight: 650; }
+.due__foot > span { min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .due__actions { display: flex; gap: 4px; flex: none; }
 .level { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: var(--r-pill); font-size: 11px; font-weight: 800; background: var(--green-soft); color: var(--green); white-space: nowrap; }
 .level.is-soon { background: var(--amber-soft); color: var(--amber); }
@@ -181,7 +182,7 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 /* Carburant : estimation mensuelle (onglet Carburant) */
 .field__value { font-size: var(--fs-lg); font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .fuel-fixed__estimate { margin-top: var(--sp-2); padding: 10px 12px; border-radius: var(--r-md); background: var(--accent-soft); color: var(--accent); font-weight: 750; font-size: var(--fs-sm); }
-.form-actions--end { display: flex; justify-content: flex-end; margin-top: var(--sp-3); }
+.form-actions--end { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-3); }
 .cost-hero .kpi strong { font-size: var(--fs-md); }
 .facts { display: grid; gap: 0; margin: 0; }
 .fact { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); }
@@ -218,6 +219,9 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 .file-attach__icon { display: grid; place-items: center; color: var(--text-3); flex: none; }
 .file-attach__name { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-kind][hidden], [data-loan][hidden] { display: none !important; }
+
+/* Achat & financement : aligne les champs d'une même ligne même quand un libellé passe sur 2 lignes */
+#purchaseForm .form-grid .field__label { min-height: 2.9em; display: flex; align-items: flex-end; }
 
 @media (min-width: 720px) {
   .garage-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

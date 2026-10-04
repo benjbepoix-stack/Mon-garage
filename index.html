@@ -132,12 +132,12 @@
               <p class="field__help">Calculé automatiquement depuis l’achat (ou la 1ʳᵉ saisie) et le dernier kilométrage connu.</p>
             </div>
             <p class="fuel-fixed__estimate" id="ffEstimate"></p>
-            <div class="form-actions form-actions--end"><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
-            <p class="field__help">Première activation : le coût estimé est appliqué rétroactivement depuis l’achat. Modifier ensuite la consommation ou le prix ne change pas les mois déjà passés : seule l’estimation à venir change.</p>
+            <div class="form-actions form-actions--end"><button type="button" class="btn btn--ghost btn--sm" id="ffReset">Réinitialiser</button><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
+            <p class="field__help">Première activation : le coût estimé est appliqué rétroactivement depuis l’achat. Modifier ensuite la consommation ou le prix ne change pas les mois déjà passés : seule l’estimation à venir change. « Réinitialiser » efface l’historique estimé pour rattraper à nouveau depuis l’achat.</p>
           </div>
         </section>
         <section class="section">
-          <header class="section__head"><h2 class="section__title" id="fuelListTitle">Pleins</h2><button type="button" class="add-btn" data-open="fuel" aria-label="Ajouter un plein"><span data-icon="plus" data-size="18"></span></button></header>
+          <header class="section__head"><div><h2 class="section__title" id="fuelListTitle">Pleins</h2><p class="card__sub">Historique, pour mémoire — la case ci-dessus suffit désormais</p></div></header>
           <div class="card card--list" id="fuelList"></div>
         </section>
       </div>
@@ -372,7 +372,7 @@
         </div>
         <div class="form-grid">
           <div class="field"><label class="field__label" for="puPrice">Prix d’achat · €</label><input class="input" id="puPrice" name="purchasePrice" inputmode="decimal" placeholder="0"></div>
-          <div class="field"><label class="field__label" for="puResale">Valeur de revente estimée · €</label><input class="input" id="puResale" name="resaleValue" inputmode="decimal" placeholder="0"></div>
+          <div class="field"><label class="field__label" for="puResale">Revente estimée · €</label><input class="input" id="puResale" name="resaleValue" inputmode="decimal" placeholder="0"></div>
         </div>
         <div class="field"><label class="field__label" for="loType">Financement</label><select class="input select" id="loType" name="type"></select></div>
         <div data-loan="credit">
@@ -381,6 +381,11 @@
             <div class="field"><label class="field__label" for="loRate">Taux annuel · %</label><input class="input" id="loRate" name="rate" inputmode="decimal" placeholder="Ex. 4,5"></div>
           </div>
           <p class="field__help">L’apport (prix − montant emprunté) est compté au mois d’achat.</p>
+          <div class="form-grid">
+            <div class="field"><label class="field__label" for="loPayoffAmount">Solde anticipé · €</label><input class="input" id="loPayoffAmount" name="earlyPayoffAmount" inputmode="decimal" placeholder="0"></div>
+            <div class="field"><label class="field__label" for="loPayoffDate">Réglé le</label><input class="input" id="loPayoffDate" type="date" name="earlyPayoffDate"></div>
+          </div>
+          <p class="field__help">Si le crédit a été soldé par anticipation : les mensualités s’arrêtent à cette date, remplacées par ce montant.</p>
         </div>
         <div data-loan="lease">
           <div class="field"><label class="field__label" for="loFirst">Premier loyer / apport · €</label><input class="input" id="loFirst" name="firstPayment" inputmode="decimal"></div>

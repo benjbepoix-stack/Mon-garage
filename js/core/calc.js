@@ -54,19 +54,34 @@ export function loanSchedule(v, loan) {
   let principal = 0;
   let rate = 0;
   let startMonth = null;
+  let contractMonths = 0;
+  let payoffMonth = null;
+  let closedEarly = false;
 
   if (type === 'none') {
     add(oneOffs, purchaseMonth, price);
   } else if (type === 'credit') {
     principal = Math.min(loan.principal || 0, price || Infinity);
     months = loan.months || 0;
+    contractMonths = months;
     rate = (loan.rate || 0) / 1200;
     monthly = loan.monthly || (months ? (rate ? (principal * rate) / (1 - Math.pow(1 + rate, -months)) : principal / months) : 0);
     monthly = Math.round(monthly * 100) / 100;
     startMonth = loan.start ? monthOf(loan.start) : purchaseMonth;
     add(oneOffs, purchaseMonth || startMonth, Math.max(0, price - principal));
-    for (let k = 0; k < months && startMonth; k++) add(payments, addMonths(startMonth, k), monthly);
-    interest = Math.max(0, monthly * months - principal);
+    // Solde anticipé : mensualités normales jusqu'au mois précédant le règlement, qui clôt le prêt.
+    payoffMonth = loan.earlyPayoffDate ? monthOf(loan.earlyPayoffDate) : null;
+    const payoffAmount = loan.earlyPayoffAmount || 0;
+    closedEarly = Boolean(payoffMonth && payoffAmount > 0);
+    const regularMonths = closedEarly && startMonth ? Math.max(0, Math.min(months, monthDiff(startMonth, payoffMonth))) : months;
+    for (let k = 0; k < regularMonths && startMonth; k++) add(payments, addMonths(startMonth, k), monthly);
+    if (closedEarly) {
+      add(payments, payoffMonth, payoffAmount);
+      months = regularMonths + 1;
+      interest = Math.max(0, monthly * regularMonths + payoffAmount - principal);
+    } else {
+      interest = Math.max(0, monthly * months - principal);
+    }
   } else {
     months = loan.months || 0;
     monthly = loan.monthly || 0;
@@ -75,11 +90,12 @@ export function loanSchedule(v, loan) {
     for (let k = 1; k <= months && startMonth; k++) add(payments, addMonths(startMonth, k), monthly);
   }
 
-  /** Capital restant dû après les échéances passées (crédit uniquement). */
+  /** Capital restant dû après les échéances passées (crédit uniquement), nul une fois le solde anticipé réglé. */
   const remainingAt = month => {
-    if (type !== 'credit' || !startMonth || !months) return 0;
-    const paid = Math.max(0, Math.min(months, monthDiff(startMonth, month) + 1));
-    if (paid >= months) return 0;
+    if (type !== 'credit' || !startMonth || !contractMonths) return 0;
+    if (closedEarly && month >= payoffMonth) return 0;
+    const paid = Math.max(0, Math.min(contractMonths, monthDiff(startMonth, month) + 1));
+    if (paid >= contractMonths) return 0;
     const left = rate ? principal * Math.pow(1 + rate, paid) - (monthly * (Math.pow(1 + rate, paid) - 1)) / rate : principal - monthly * paid;
     return Math.max(0, Math.round(left * 100) / 100);
   };
@@ -99,16 +115,21 @@ export const COST_KEYS = ['purchase', 'loan', 'maintenance', 'fuel', 'fixed'];
 /** Entrée « Carburant » générée par l'estimation automatique (onglet Carburant), pas un frais fixe saisi à la main. */
 const isAutoFuelFixed = x => x.category === 'Carburant' && x.auto;
 
-/** Coûts d'un mois donné, par catégorie (le carburant estimé compte comme du carburant, pas un frais fixe). */
+/**
+ * Coûts d'un mois donné, par catégorie (le carburant estimé compte comme du carburant, pas un frais
+ * fixe). Un mois où des pleins ont été saisis à la main ignore l'estimation pour ce mois-là, pour ne
+ * jamais additionner les deux (l'estimation ne comble que les mois sans saisie réelle).
+ */
 export function monthCosts(v, f, month, schedule = loanSchedule(v, f.loan)) {
   const inMonth = x => x.date.startsWith(month);
-  const fuelEstimate = f.fixed.filter(isAutoFuelFixed).reduce((s, x) => s + fixedFor(x, month), 0);
+  const manualFuel = f.fuel.filter(inMonth).reduce((s, x) => s + x.total, 0);
+  const fuelEstimate = manualFuel ? 0 : f.fixed.filter(isAutoFuelFixed).reduce((s, x) => s + fixedFor(x, month), 0);
   const otherFixed = f.fixed.filter(x => !isAutoFuelFixed(x)).reduce((s, x) => s + fixedFor(x, month), 0);
   return {
     purchase: schedule.oneOffs[month] || 0,
     loan: schedule.payments[month] || 0,
     maintenance: f.maintenance.filter(inMonth).reduce((s, x) => s + x.cost, 0),
-    fuel: f.fuel.filter(inMonth).reduce((s, x) => s + x.total, 0) + fuelEstimate,
+    fuel: manualFuel + fuelEstimate,
     fixed: otherFixed
   };
 }

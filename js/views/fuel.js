@@ -84,6 +84,27 @@ function saveFuelEstimate() {
   renderFuel(v, fieldsOf(v.id));
 }
 
+/** Efface l'historique estimé (toutes les périodes auto) pour pouvoir rattraper à nouveau depuis l'achat. */
+async function resetFuelEstimate() {
+  const v = store.active();
+  const f = fieldsOf(v.id);
+  const hasAny = f.fixed.some(x => x.category === FUEL_ESTIMATE_CATEGORY && x.auto);
+  if (hasAny) {
+    const ok = await confirmDialog({
+      title: 'Réinitialiser l’estimation ?',
+      message: 'L’historique déjà calculé est effacé. La prochaine saisie sera rattrapée depuis l’achat du véhicule.',
+      confirmLabel: 'Réinitialiser',
+      danger: true
+    });
+    if (!ok) return;
+    store.setField('fixed', f.fixed.filter(x => !(x.category === FUEL_ESTIMATE_CATEGORY && x.auto)), v.id);
+    toast('Estimation réinitialisée');
+  }
+  $('#ffConsumption').value = '';
+  $('#ffPrice').value = '';
+  renderFuel(v, fieldsOf(v.id));
+}
+
 function row(v, x) {
   const u = unitOf(v);
   const price = unitPrice(x);
@@ -194,4 +215,5 @@ export function initFuel() {
   $('#ffConsumption').addEventListener('input', refreshFuelEstimate);
   $('#ffPrice').addEventListener('input', refreshFuelEstimate);
   $('#ffSave').addEventListener('click', saveFuelEstimate);
+  $('#ffReset').addEventListener('click', resetFuelEstimate);
 }

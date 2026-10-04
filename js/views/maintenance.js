@@ -8,7 +8,7 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf, capitalize } from './common.js';
+import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
 import { readJSON, write } from '../services/storage.js';
 import { pushReminderToCarnet } from '../services/carnet-sync.js';
 
@@ -26,7 +26,9 @@ function reminderCard(r, current) {
   const byKm = r.everyKm && r.lastKm ? (current - r.lastKm) / r.everyKm : 0;
   const byDate = r.everyMonths && r.lastDate ? -daysUntil(r.lastDate) / (r.everyMonths * 30.44) : 0;
   const ratio = Math.max(0, Math.min(1, Math.max(byKm, byDate)));
-  const every = [r.everyKm ? `tous les ${km(r.everyKm)}` : '', r.everyMonths ? `tous les ${r.everyMonths} mois` : ''].filter(Boolean).join(' ou ');
+  // Un seul « tous les » devant les deux critères (pas de répétition) pour rester court sur une ligne.
+  const everyParts = [r.everyKm ? km(r.everyKm) : '', r.everyMonths ? `${r.everyMonths} mois` : ''].filter(Boolean);
+  const every = everyParts.length ? `Tous les ${everyParts.join(' ou ')}` : '';
   const next = [s.nextKm ? km(s.nextKm) : '', s.nextDate ? fmtDate(s.nextDate) : ''].filter(Boolean).join(' ou ');
   const last = r.lastDate || r.lastKm ? `Dernier : ${[r.lastDate ? fmtDate(r.lastDate) : '', r.lastKm ? km(r.lastKm) : ''].filter(Boolean).join(' · ')}` : 'Dernière fois inconnue : touchez pour la renseigner';
   const canSend = s.level === 'late' || s.level === 'soon';
@@ -34,14 +36,14 @@ function reminderCard(r, current) {
   return `<article class="due card is-${s.level}" data-reminder="${esc(r.id)}">
     <div class="due__head">
       <span class="row__icon">${icon('wrench', 18)}</span>
-      <button type="button" class="due__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="due__title">${esc(r.label)}</span><span class="due__sub">${esc(capitalize(every))}</span></button>
+      <button type="button" class="due__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="due__title">${esc(r.label)}</span><span class="due__sub">${esc(every)}</span></button>
       <span class="level is-${s.level}">${LEVEL_LABEL[s.level]}</span>
     </div>
     ${s.level !== 'unknown' ? `<div class="due__bar"><span style="--value:${Math.round(ratio * 100)}%"></span></div>` : ''}
     <div class="due__foot"><span>${next ? `Prochain : ${esc(next)}` : esc(last)}</span>
       <div class="due__actions">
-        ${canSend ? `<button type="button" class="btn btn--soft btn--sm" data-reminder-send ${isSent ? 'disabled' : ''}>${icon(isSent ? 'check' : 'upload', 15)}<span>${isSent ? 'Envoyée ✓' : 'Carnet'}</span></button>` : ''}
-        <button type="button" class="btn btn--soft btn--sm" data-reminder-done>${icon('check', 15)}<span>Fait</span></button>
+        ${canSend ? `<button type="button" class="icon-btn icon-btn--sm" data-reminder-send ${isSent ? 'disabled' : ''} aria-label="${isSent ? 'Déjà envoyée à Carnet' : 'Envoyer à Carnet'}" title="${isSent ? 'Envoyée ✓' : 'Carnet'}">${icon(isSent ? 'check' : 'upload', 16)}</button>` : ''}
+        <button type="button" class="icon-btn icon-btn--sm" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 16)}</button>
       </div>
     </div>
     ${next ? `<p class="due__sub">${esc(last)}</p>` : ''}

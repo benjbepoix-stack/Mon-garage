@@ -85,6 +85,9 @@ function renderFinance(v, f, s) {
     if (sch.type === 'credit') facts.push(['Montant emprunté', euro(sch.principal)], ['Taux', `${String(f.loan.rate || 0).replace('.', ',')} %`]);
     else if (f.loan.firstPayment) facts.push(['Premier loyer', euro(f.loan.firstPayment)]);
     facts.push([sch.type === 'credit' ? 'Mensualité' : 'Loyer', euro(sch.monthly)], ['Échéances', `${done} / ${sch.months} · fin ${monthLabel(sch.endMonth, { month: 'short', year: 'numeric' })}`]);
+    if (sch.type === 'credit' && f.loan.earlyPayoffAmount && f.loan.earlyPayoffDate) {
+      facts.push(['Solde anticipé', `${euro(f.loan.earlyPayoffAmount)} · ${formatKey(f.loan.earlyPayoffDate, { day: 'numeric', month: 'short', year: 'numeric' })}`]);
+    }
     if (sch.type === 'credit') facts.push(['Capital restant dû', euro(s.remainingDebt)], ['Coût du crédit (intérêts)', euro(sch.interest)]);
     if (sch.type === 'loa' && f.loan.residual) facts.push(['Option d’achat', euro(f.loan.residual)]);
     progress = `<div class="finance-progress"><div class="due__bar"><span style="--value:${Math.round((done / sch.months) * 100)}%"></span></div></div>`;
@@ -151,6 +154,8 @@ export function openPurchase() {
   set('start', loan.start);
   set('firstPayment', numInput(loan.firstPayment));
   set('residual', numInput(loan.residual));
+  set('earlyPayoffAmount', numInput(loan.earlyPayoffAmount));
+  set('earlyPayoffDate', loan.earlyPayoffDate || '');
   syncLoan();
   openSheet('purchaseSheet', { focus: false });
 }
@@ -167,7 +172,9 @@ const purchaseSchema = {
   monthly: [...money('La mensualité'), (v, all) => ((all.type === 'loa' || all.type === 'lld') && !toNumber(v) ? 'Indiquez le loyer.' : null)],
   start: [rules.date(), (v, all) => (all.type !== 'none' && !v && !all.purchaseDate ? 'Indiquez la date de début.' : null)],
   firstPayment: money('Le montant'),
-  residual: money('Le montant')
+  residual: money('Le montant'),
+  earlyPayoffAmount: money('Le montant'),
+  earlyPayoffDate: [rules.date(), (v, all) => (v && all.purchaseDate && v < all.purchaseDate ? 'Précède la date d’achat.' : null)]
 };
 
 function onPurchaseSubmit(e) {
@@ -178,7 +185,10 @@ function onPurchaseSubmit(e) {
   if (!valid) return showErrors(form, errors);
   const v = store.active();
   const n = k => toNumber(val[k]) || 0;
-  const loan = val.type === 'none' ? { type: 'none' } : { type: val.type, principal: n('principal'), rate: n('rate'), months: n('months'), monthly: n('monthly'), start: val.start || val.purchaseDate, firstPayment: n('firstPayment'), residual: n('residual') };
+  const loan =
+    val.type === 'none'
+      ? { type: 'none' }
+      : { type: val.type, principal: n('principal'), rate: n('rate'), months: n('months'), monthly: n('monthly'), start: val.start || val.purchaseDate, firstPayment: n('firstPayment'), residual: n('residual'), earlyPayoffAmount: n('earlyPayoffAmount'), earlyPayoffDate: val.type === 'credit' ? val.earlyPayoffDate || '' : '' };
   store.setKeys({
     vehicles: store.vehicles().map(x => (x.id === v.id ? { ...x, purchaseDate: val.purchaseDate, purchaseKm: n('purchaseKm'), purchasePrice: n('purchasePrice'), resaleValue: n('resaleValue') } : x)),
     [fieldKey(v.id, 'loan')]: loan
