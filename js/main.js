@@ -16,7 +16,7 @@ import { renderHome } from './views/home.js';
 import { initVehicles, openVehicle } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
-import { initFuel, openFuel } from './views/fuel.js';
+import { initFuel } from './views/fuel.js';
 import { initParts, openPart } from './views/parts.js';
 import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/costs.js';
 import { initDocs, openDoc } from './views/docs.js';
@@ -204,7 +204,6 @@ const OPENERS = {
   km: () => openKm(),
   maintenance: () => openMaintenance(),
   reminder: () => openReminder(),
-  fuel: () => openFuel(),
   part: () => openPart(),
   purchase: () => openPurchase(),
   fixed: () => openFixed(),

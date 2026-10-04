@@ -220,8 +220,8 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 .file-attach__name { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-kind][hidden], [data-loan][hidden] { display: none !important; }
 
-/* Achat & financement : aligne les champs d'une même ligne même quand un libellé passe sur 2 lignes */
-#purchaseForm .form-grid .field__label { min-height: 2.9em; display: flex; align-items: flex-end; }
+/* Aligne les champs d'une même ligne (form-grid) même quand un libellé passe sur 2 lignes, partout dans l'app. */
+.form-grid .field__label { min-height: 2.9em; display: flex; align-items: flex-end; }
 
 @media (min-width: 720px) {
   .garage-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
