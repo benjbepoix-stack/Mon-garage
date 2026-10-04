@@ -226,7 +226,9 @@ export function alerts(v, f, today = todayKey()) {
     const s = docStatus(d, today);
     if (s.level === 'none') return;
     const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : `expire dans ${fmtDays(s.daysLeft)}`;
-    out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label || d.type, text, score: s.daysLeft / 365 });
+    // Le type reste toujours visible (ex. « Contrôle technique ») : un libellé personnalisé
+    // s'ajoute en complément, il ne le remplace pas (cohérent avec la liste de l'onglet Documents).
+    out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label ? `${d.type} · ${d.label}` : d.type, text, score: s.daysLeft / 365 });
   });
   f.parts.forEach(p => {
     const s = partStatus(p, km);
