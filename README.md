@@ -20,6 +20,9 @@ database.rules.json     règles Realtime Database (chaque compte ne voit que ses
 - Local : `localStorage`, préfixe `mon_garage_v2_` ; les données de la première version (`monGarage_v1`) sont reprises automatiquement.
 - Cloud : `users/<uid>/garage`, une clé par rubrique et par véhicule ; photos réduites (JPEG ~1200 px).
 
+## Logo
+Volant à quatre branches, vert anglais et or (`icon.svg`, décliné en `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`).
+
 ## Styles graphiques
 Réglage → Style : 2 habillages visuels (sombre et clair pour chacun), appliqués par une classe `data-style` qui surcharge les tokens de couleur (`css/styles.css`).
 - **Graphite** (par défaut) · **British** (vert anglais et laiton)
