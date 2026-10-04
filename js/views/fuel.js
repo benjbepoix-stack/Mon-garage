@@ -46,8 +46,12 @@ export function renderFuel(v, f) {
  * Enregistre (ou met à jour) l'estimation mensuelle. Première activation : on rattrape
  * l'historique depuis l'achat du véhicule (si connu) en appliquant la consommation et le
  * prix saisis à toute la période déjà écoulée. Ensuite, modifier ces deux champs ne change
- * jamais les mois déjà passés : une nouvelle période démarre aujourd'hui (l'ancienne se clôt
- * hier), sauf si la précédente mise à jour date déjà de ce mois-ci (ajustement sur place).
+ * jamais les mois déjà passés : une nouvelle période démarre au 1er du mois en cours (l'ancienne
+ * se clôt à la fin du mois précédent), sauf si la précédente mise à jour date déjà de ce mois-ci
+ * (ajustement sur place). La bascule se fait sur une frontière de mois, jamais en plein mois : les
+ * coûts se comptent par mois entier (pas de prorata journalier, voir fixedFor dans calc.js), donc
+ * clôturer l'ancienne période « hier » tout en démarrant la nouvelle « aujourd'hui » du même mois
+ * faisait compter les deux en entier pour ce mois-là (carburant doublé le mois de la bascule).
  */
 function saveFuelEstimate() {
   const v = store.active();
@@ -66,11 +70,11 @@ function saveFuelEstimate() {
     // Déjà modifié ce mois-ci et aucun mois passé ne dépend de cette valeur : on ajuste sur place.
     list = list.map(x => (x === active ? { ...x, amount, fuelConsumption: consumptionValue, fuelPrice: price } : x));
   } else {
+    const start = hasHistory ? `${monthOf(today)}-01` : v.purchaseDate || today;
     if (active) {
-      const yesterday = dateKey(addDays(fromKey(today), -1));
-      list = list.map(x => (x === active ? { ...x, end: yesterday > active.start ? yesterday : active.start } : x));
+      const monthEnd = dateKey(addDays(fromKey(start), -1));
+      list = list.map(x => (x === active ? { ...x, end: monthEnd > active.start ? monthEnd : active.start } : x));
     }
-    const start = hasHistory ? today : v.purchaseDate || today;
     list = [...list, { id: makeId(), category: FUEL_ESTIMATE_CATEGORY, label: '', amount, period: 'month', start, end: '', auto: true, fuelConsumption: consumptionValue, fuelPrice: price }];
   }
   store.setField('fixed', list, v.id);

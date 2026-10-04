@@ -142,6 +142,36 @@ const int = (v, max = 1e8) => Math.round(num(v, max));
 const date = v => (isDateKey(v) ? v : '');
 const id = v => (typeof v === 'string' && v ? v.slice(0, 60) : typeof v === 'number' && Number.isFinite(v) ? String(v) : null);
 const oneOf = (v, list, fallback = '') => (list.includes(v) ? v : fallback);
+
+/** Dernier jour du mois précédant le 1er jour donné (ex. « 2026-10-01 » → « 2026-09-30 »). */
+function monthEndBefore(isoFirstOfMonth) {
+  const [y, m] = isoFirstOfMonth.split('-').map(Number);
+  const d = new Date(y, m - 1, 0); // jour 0 d'un mois = dernier jour du mois précédent
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Les périodes d'estimation carburant automatique (voir js/views/fuel.js) ne doivent jamais se
+ * chevaucher au niveau du mois : les coûts se comptent par mois entier, sans prorata journalier
+ * (fixedFor dans calc.js), donc deux périodes touchant le même mois le comptaient chacune en
+ * entier ce mois-là. D'anciennes données (bascules faites en plein mois, avant correction) peuvent
+ * encore avoir ce chevauchement : on le répare au chargement, en clôturant chaque période la veille
+ * du 1er du mois où démarre la suivante.
+ */
+function repairAutoFuelOverlaps(list) {
+  const autoFuel = list.filter(x => x.category === 'Carburant' && x.auto).sort((a, b) => a.start.localeCompare(b.start));
+  if (autoFuel.length < 2) return list;
+  const fixedEnd = new Map();
+  for (let i = 0; i < autoFuel.length - 1; i++) {
+    const cur = autoFuel[i];
+    const nextStartMonth = autoFuel[i + 1].start.slice(0, 7);
+    if (cur.end && cur.end.slice(0, 7) < nextStartMonth) continue; // déjà correct
+    const monthEnd = monthEndBefore(`${nextStartMonth}-01`);
+    fixedEnd.set(cur.id, monthEnd > cur.start ? monthEnd : cur.start);
+  }
+  if (!fixedEnd.size) return list;
+  return list.map(x => (fixedEnd.has(x.id) ? { ...x, end: fixedEnd.get(x.id) } : x));
+}
 const byDateDesc = (a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id));
 
 export function normalizeVehicles(raw) {
@@ -184,22 +214,24 @@ const normalizers = {
       .map(x => ({ id: id(x.id), label: str(x.label, 60), everyKm: int(x.everyKm, 1e6), everyMonths: int(x.everyMonths, 240), lastDate: date(x.lastDate), lastKm: int(x.lastKm) }))
       .filter(x => x.id && x.label && (x.everyKm || x.everyMonths)),
   fixed: raw =>
-    asArray(raw)
-      .filter(isObj)
-      .map(x => ({
-        id: id(x.id),
-        label: str(x.label, 80),
-        category: oneOf(x.category, FIXED_CATEGORIES, 'Autre'),
-        amount: num(x.amount, 1e6),
-        period: x.period === 'year' ? 'year' : 'month',
-        start: date(x.start),
-        end: date(x.end),
-        // Entrée « Carburant » générée par l'estimation automatique (coûts) plutôt que saisie à la main.
-        auto: Boolean(x.auto),
-        fuelConsumption: num(x.fuelConsumption, 100),
-        fuelPrice: num(x.fuelPrice, 1000)
-      }))
-      .filter(x => x.id && x.amount && x.start),
+    repairAutoFuelOverlaps(
+      asArray(raw)
+        .filter(isObj)
+        .map(x => ({
+          id: id(x.id),
+          label: str(x.label, 80),
+          category: oneOf(x.category, FIXED_CATEGORIES, 'Autre'),
+          amount: num(x.amount, 1e6),
+          period: x.period === 'year' ? 'year' : 'month',
+          start: date(x.start),
+          end: date(x.end),
+          // Entrée « Carburant » générée par l'estimation automatique (coûts) plutôt que saisie à la main.
+          auto: Boolean(x.auto),
+          fuelConsumption: num(x.fuelConsumption, 100),
+          fuelPrice: num(x.fuelPrice, 1000)
+        }))
+        .filter(x => x.id && x.amount && x.start)
+    ),
   loan: raw => {
     const x = isObj(raw) ? raw : {};
     return {
