@@ -27,7 +27,7 @@ export const DOC_TYPES = {
   vehicle: ['Assurance', 'Contrôle technique', 'Carte grise', 'Garantie', 'Vignette Crit’Air', 'Facture', 'Autre'],
   bike: ['Facture', 'Garantie', 'Assurance vol', 'Marquage Bicycode', 'Autre']
 };
-export const FIXED_CATEGORIES = ['Assurance', 'Stationnement', 'Abonnement', 'Péage / badge', 'Autre'];
+export const FIXED_CATEGORIES = ['Assurance', 'Stationnement', 'Abonnement', 'Péage / badge', 'Carburant', 'Autre'];
 export const LOAN_TYPES = { none: 'Payé comptant', credit: 'Crédit', loa: 'LOA', lld: 'LLD' };
 
 /** Rappels proposés à la création (modifiables). */
@@ -129,6 +129,8 @@ export function parseFieldKey(key) {
 export const asArray = v => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const str = (v, max = 200) => (typeof v === 'string' ? v : v === null || v === undefined ? '' : String(v)).trim().slice(0, max);
+/** Pièce jointe (image ou PDF) en data URL : jamais tronquée (la couper corromprait le fichier), rejetée si trop lourde ou de type inattendu. */
+const fileUrl = v => (typeof v === 'string' && /^data:(image\/|application\/pdf)/.test(v) && v.length <= 7_000_000 ? v : '');
 const num = (v, max = 1e9) => {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? Math.min(max, Math.round(n * 100) / 100) : 0;
@@ -187,7 +189,19 @@ const normalizers = {
   fixed: raw =>
     asArray(raw)
       .filter(isObj)
-      .map(x => ({ id: id(x.id), label: str(x.label, 80), category: oneOf(x.category, FIXED_CATEGORIES, 'Autre'), amount: num(x.amount, 1e6), period: x.period === 'year' ? 'year' : 'month', start: date(x.start), end: date(x.end) }))
+      .map(x => ({
+        id: id(x.id),
+        label: str(x.label, 80),
+        category: oneOf(x.category, FIXED_CATEGORIES, 'Autre'),
+        amount: num(x.amount, 1e6),
+        period: x.period === 'year' ? 'year' : 'month',
+        start: date(x.start),
+        end: date(x.end),
+        // Entrée « Carburant » générée par l'estimation automatique (coûts) plutôt que saisie à la main.
+        auto: Boolean(x.auto),
+        fuelConsumption: num(x.fuelConsumption, 100),
+        fuelPrice: num(x.fuelPrice, 1000)
+      }))
       .filter(x => x.id && x.amount && x.start),
   loan: raw => {
     const x = isObj(raw) ? raw : {};
@@ -205,7 +219,7 @@ const normalizers = {
   docs: raw =>
     asArray(raw)
       .filter(isObj)
-      .map(x => ({ id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000) }))
+      .map(x => ({ id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000), file: fileUrl(x.file), fileName: str(x.fileName, 150) }))
       .filter(x => x.id)
       .sort((a, b) => (a.expiry || '9999').localeCompare(b.expiry || '9999')),
   parts: raw =>
@@ -220,14 +234,7 @@ export const DEFAULTS = { maintenance: [], reminders: [], fuel: [], fixed: [], l
 /** Styles graphiques proposés (le premier est celui par défaut). */
 export const STYLES = [
   { id: 'graphite', name: 'Graphite', hint: 'Sobre' },
-  { id: 'racing', name: 'Racing', hint: 'Rouge corsa' },
-  { id: 'neon', name: 'Néon', hint: 'Électrique' },
-  { id: 'atelier', name: 'Atelier', hint: 'Vintage' },
-  { id: 'british', name: 'British', hint: 'Vert anglais' },
-  { id: 'rallye', name: 'Rallye terre', hint: 'Livrée course' },
-  { id: 'futuriste', name: 'Électrique', hint: 'Futuriste' },
-  { id: 'italia', name: 'Classic Italia', hint: 'Collection' },
-  { id: 'offroad', name: 'Offroad désert', hint: 'Expédition' }
+  { id: 'british', name: 'British', hint: 'Vert anglais' }
 ];
 
 export function normalizeKey(key, value) {

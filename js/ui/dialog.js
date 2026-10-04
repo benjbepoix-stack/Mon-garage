@@ -79,6 +79,21 @@ function buildDialog(inner) {
 
 const dispose = el => setTimeout(() => el.remove(), ANIMATION_MS + 50);
 
+/** Affiche une photo en grand (plein écran, fond sombre, fermeture au clic/Échap). */
+export function openPhotoLightbox(src, alt = '') {
+  if (!src) return;
+  const el = document.createElement('div');
+  el.className = 'sheet-backdrop sheet-backdrop--dialog sheet-backdrop--photo';
+  el.hidden = true;
+  el.innerHTML = `
+    <div class="sheet sheet--photo" role="dialog" aria-modal="true" tabindex="-1">
+      <button type="button" class="icon-btn icon-btn--glass photo-lightbox__close" data-close aria-label="Fermer">${icon('close', 20)}</button>
+      <img class="photo-lightbox__img" src="${src}" alt="${esc(alt)}">
+    </div>`;
+  document.body.appendChild(el);
+  openSheet(el, { focus: false, onClose: () => dispose(el) });
+}
+
 /**
  * Confirmation asynchrone.
  * @returns {Promise<boolean>}

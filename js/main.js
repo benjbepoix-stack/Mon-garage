@@ -5,7 +5,7 @@ import { isBike } from './core/schema.js';
 import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
-import { initDialogs, confirmDialog } from './ui/dialog.js';
+import { initDialogs, confirmDialog, openPhotoLightbox } from './ui/dialog.js';
 import { applyTheme, renderStylePicker } from './ui/theme.js';
 import { STYLES } from './core/schema.js';
 import { renderStatus } from './ui/status.js';
@@ -212,6 +212,12 @@ const OPENERS = {
 };
 
 function onClick(e) {
+  const photoBtn = e.target.closest('[data-photo]');
+  if (photoBtn) {
+    const img = photoBtn.querySelector('img');
+    if (img?.src) openPhotoLightbox(img.src, img.alt);
+    return;
+  }
   const card = e.target.closest('[data-vehicle]');
   if (card) return openVehicleView(card.dataset.vehicle);
   const add = e.target.closest('[data-new]');

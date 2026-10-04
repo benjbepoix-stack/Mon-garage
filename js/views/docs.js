@@ -5,13 +5,27 @@ import { todayKey, formatKey } from '../core/dates.js';
 import { docStatus } from '../core/calc.js';
 import { DOC_TYPES, makeId } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
-import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
-import { toast } from '../ui/toast.js';
+import { openSheet, closeSheet, confirmDialog, openPhotoLightbox } from '../ui/dialog.js';
+import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
-import { LEVEL_LABEL } from './common.js';
+import { LEVEL_LABEL, readDocFile } from './common.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeric' });
+
+let pendingFile = '';
+let pendingFileName = '';
+
+function openAttachment(file, name) {
+  if (file.startsWith('data:image/')) return openPhotoLightbox(file, name);
+  const a = document.createElement('a');
+  a.href = file;
+  a.download = name || 'document.pdf';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
 function row(d) {
   const s = docStatus(d);
@@ -20,8 +34,16 @@ function row(d) {
     <span class="row__icon">${icon('doc', 18)}</span>
     <div class="row__body"><span class="row__title">${esc(d.type)}${d.label ? ` <span class="row__soft">· ${esc(d.label)}</span>` : ''}</span><span class="row__sub">${esc(when)}</span>
       ${d.expiry ? `<span class="row__tags"><span class="level is-${s.level}">${s.level === 'late' ? 'Expiré' : LEVEL_LABEL[s.level]}</span></span>` : ''}</div>
+    ${d.file ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-file="${esc(d.id)}" aria-label="Voir la pièce jointe" title="Pièce jointe">${icon('paperclip', 17)}</button>` : ''}
     ${d.expiry && s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 17)}</button>` : ''}
   </div>`;
+}
+
+function showAttachment(file, name) {
+  $('#docFileCurrent').hidden = !file;
+  $('#docFileName').textContent = name || (file.startsWith('data:image/') ? 'Photo' : 'Document PDF');
+  $('#docFileIcon').innerHTML = file.startsWith('data:image/') ? icon('image', 16) : icon('doc', 16);
+  $('#docFileLabel').querySelector('span:last-of-type').textContent = file ? 'Remplacer' : 'Ajouter un fichier';
 }
 
 export function renderDocs(v, f) {
@@ -42,6 +64,10 @@ export function openDoc(id = null) {
   form.elements.label.value = d?.label || '';
   form.elements.expiry.value = d?.expiry || '';
   form.elements.note.value = d?.note || '';
+  pendingFile = d?.file || '';
+  pendingFileName = d?.fileName || '';
+  $('#docFileInput').value = '';
+  showAttachment(pendingFile, pendingFileName);
   $('#docTitle').textContent = d ? 'Modifier le document' : 'Nouveau document';
   $('#docDelete').hidden = !d;
   openSheet('docSheet', { focus: false });
@@ -61,7 +87,7 @@ function onSubmit(e) {
   if (!valid) return showErrors(form, errors);
   const v = store.active();
   const list = store.field('docs', v.id);
-  const item = { id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note };
+  const item = { id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, file: pendingFile, fileName: pendingFileName };
   store.setField('docs', val.editId ? list.map(x => (x.id === val.editId ? item : x)) : [...list, item], v.id);
   closeSheet('docSheet');
   if (item.expiry && item.expiry >= todayKey()) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
@@ -82,7 +108,31 @@ async function remove() {
 export function initDocs() {
   $('#docForm').addEventListener('submit', onSubmit);
   $('#docDelete').addEventListener('click', remove);
+  $('#docFileInput').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      pendingFile = await readDocFile(file);
+      pendingFileName = file.name;
+      showAttachment(pendingFile, pendingFileName);
+    } catch (error) {
+      toastError(error.message);
+    } finally {
+      e.target.value = '';
+    }
+  });
+  $('#docFileRemove').addEventListener('click', () => {
+    pendingFile = '';
+    pendingFileName = '';
+    showAttachment('', '');
+  });
   $('#docList').addEventListener('click', e => {
+    const fileBtn = e.target.closest('[data-doc-file]');
+    if (fileBtn) {
+      const d = store.field('docs', store.active().id).find(x => x.id === fileBtn.dataset.docFile);
+      if (d?.file) openAttachment(d.file, d.fileName);
+      return;
+    }
     const r = e.target.closest('[data-doc]');
     if (!r) return;
     const v = store.active();

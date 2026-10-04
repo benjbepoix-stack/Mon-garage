@@ -159,6 +159,23 @@
           <header class="section__head"><h2 class="section__title">Achat &amp; financement</h2><button type="button" class="link-btn" data-open="purchase">Modifier</button></header>
           <div class="card" id="financeCard"></div>
         </section>
+        <section class="section" id="fuelFixedSection">
+          <header class="section__head"><div><h2 class="section__title" id="ffTitle">Carburant (frais fixe)</h2><p class="card__sub">Estimation mensuelle, sans saisir chaque plein</p></div></header>
+          <div class="card" id="fuelFixedCard">
+            <div class="form-grid">
+              <div class="field"><label class="field__label" for="ffConsumption" id="ffConsumptionLabel">Consommation · L/100 km</label><input class="input" id="ffConsumption" inputmode="decimal" placeholder="Ex. 6,5" autocomplete="off"></div>
+              <div class="field"><label class="field__label" for="ffPrice" id="ffPriceLabel">Prix du carburant · €/L</label><input class="input" id="ffPrice" inputmode="decimal" placeholder="Ex. 1,85" autocomplete="off"></div>
+            </div>
+            <div class="field">
+              <span class="field__label">Km moyen / mois</span>
+              <p class="field__value" id="ffKmMonth">—</p>
+              <p class="field__help">Calculé automatiquement depuis l’achat (ou la 1ʳᵉ saisie) et le dernier kilométrage connu.</p>
+            </div>
+            <p class="fuel-fixed__estimate" id="ffEstimate"></p>
+            <div class="form-actions form-actions--end"><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
+            <p class="field__help">Modifier la consommation ou le prix ne change pas les mois déjà passés : seule l’estimation à venir change.</p>
+          </div>
+        </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Frais fixes</h2><p class="card__sub">Assurance, stationnement, abonnements…</p></div><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
           <div class="card card--list" id="fixedList"></div>
@@ -249,7 +266,7 @@
           <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
           <div class="field"><label class="field__label" for="maGarage">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div>
         </div>
-        <div class="field" id="maReminderField"><label class="field__label" for="maReminder">Rappel à remettre à zéro</label><select class="input select" id="maReminder" name="reminder"></select><p class="field__help">Le prochain entretien est recalculé à partir de cette date et de ce kilométrage.</p></div>
+        <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
         <div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="maintenanceDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer l’entretien</span></button>
@@ -401,6 +418,19 @@
         <div class="field"><label class="field__label" for="doLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div>
         <div class="field"><label class="field__label" for="doExpiry">Date d’échéance <span class="field__opt">(facultatif)</span></label><input class="input" id="doExpiry" type="date" name="expiry"><p class="field__help">Une alerte apparaît 30 jours avant.</p></div>
         <div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div>
+        <div class="field">
+          <span class="field__label">Pièce jointe <span class="field__opt">(photo ou PDF, facultatif)</span></span>
+          <div class="file-attach">
+            <div class="file-attach__current" id="docFileCurrent" hidden>
+              <span class="file-attach__icon" id="docFileIcon"></span>
+              <span class="file-attach__name" id="docFileName"></span>
+              <button type="button" class="icon-btn icon-btn--sm" id="docFileRemove" aria-label="Retirer la pièce jointe"><span data-icon="close" data-size="16"></span></button>
+            </div>
+            <label class="btn btn--ghost btn--sm file-attach__btn" id="docFileLabel"><span data-icon="upload" data-size="16"></span><span>Ajouter un fichier</span>
+              <input type="file" id="docFileInput" accept="image/*,application/pdf" class="photo-picker__input">
+            </label>
+          </div>
+        </div>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="docDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le document</span></button>
       </form>

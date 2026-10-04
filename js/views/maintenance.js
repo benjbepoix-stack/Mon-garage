@@ -1,5 +1,5 @@
 /* Entretiens : plan d'entretien (rappels date / km) et historique. */
-import { $, esc } from '../core/utils.js';
+import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
 import { reminderStatus, currentKm, daysUntil } from '../core/calc.js';
@@ -86,9 +86,17 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
   form.elements.cost.value = x ? numInput(x.cost) : '';
   form.elements.garage.value = x?.garage || '';
   form.elements.note.value = x?.note || '';
-  form.elements.reminder.innerHTML = `<option value="">— Aucun —</option>${f.reminders.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('')}`;
+  // Pré-coche le rappel correspondant au type choisi (ou celui d'où vient « Fait ») ; les autres restent décochables/cochables à la main.
   const match = reminder || (!x && f.reminders.find(r => r.label.toLowerCase() === form.elements.type.value.toLowerCase()));
-  form.elements.reminder.value = match ? match.id : '';
+  const preChecked = new Set(match ? [match.id] : []);
+  $('#maReminderList').innerHTML = f.reminders.length
+    ? f.reminders
+        .map(
+          r =>
+            `<label class="check-row"><input type="checkbox" name="reminders" value="${esc(r.id)}" ${preChecked.has(r.id) ? 'checked' : ''}><span>${esc(r.label)}</span></label>`
+        )
+        .join('')
+    : '<p class="check-list__empty">Aucun rappel créé pour l’instant.</p>';
   $('#maReminderField').hidden = !f.reminders.length;
   $('#maintenanceTitle').textContent = x ? 'Modifier l’entretien' : 'Nouvel entretien';
   $('#maintenanceDelete').hidden = !x;
@@ -117,9 +125,10 @@ function onMaintenanceSubmit(e) {
   const item = { id: existing ? existing.id : makeId(), type: val.type, label: val.label, date: val.date, km: toNumber(val.km) || 0, cost: toNumber(val.cost) || 0, garage: val.garage, note: val.note };
   const list = existing ? f.maintenance.map(m => (m === existing ? item : m)) : [...f.maintenance, item];
   const patch = { maintenance: list };
-  // Remise à zéro du rappel choisi (si cet entretien est le plus récent)
-  if (val.reminder) {
-    patch.reminders = f.reminders.map(r => (r.id === val.reminder && (!r.lastDate || item.date >= r.lastDate) ? { ...r, lastDate: item.date, lastKm: item.km || r.lastKm } : r));
+  // Remise à zéro de tous les rappels cochés (si cet entretien est le plus récent pour chacun)
+  const checkedIds = new Set($$('#maReminderList input[name="reminders"]:checked').map(c => c.value));
+  if (checkedIds.size) {
+    patch.reminders = f.reminders.map(r => (checkedIds.has(r.id) && (!r.lastDate || item.date >= r.lastDate) ? { ...r, lastDate: item.date, lastKm: item.km || r.lastKm } : r));
   }
   store.setKeys(Object.fromEntries(Object.entries(patch).map(([k, value]) => [fieldKey(v.id, k), value])));
   closeSheet('maintenanceSheet');
@@ -213,6 +222,9 @@ async function sendReminderToCarnet(card) {
 export function initMaintenance() {
   $('#maintenanceForm').addEventListener('submit', onMaintenanceSubmit);
   $('#maintenanceDelete').addEventListener('click', removeMaintenance);
+  $('#maReminderList').addEventListener('change', e => {
+    e.target.closest('.check-row')?.classList.toggle('is-checked', e.target.checked);
+  });
   $('#reminderForm').addEventListener('submit', onReminderSubmit);
   $('#reminderDelete').addEventListener('click', removeReminder);
   $('#panel-maintenance').addEventListener('click', e => {

@@ -268,6 +268,13 @@
 .dialog__actions--stack { grid-template-columns: 1fr; }
 .dialog__form { display: flex; flex-direction: column; gap: var(--sp-4); text-align: left; }
 
+/* Photo en grand (lightbox) */
+.sheet-backdrop--photo { align-items: center; padding: var(--sp-4); }
+.sheet--photo { width: auto; max-width: 100%; max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px); padding: 0; background: transparent; border: 0; border-radius: var(--r-xl); box-shadow: none; transform: scale(.94); opacity: 0; transition: transform var(--dur-slow) var(--ease-spring), opacity var(--dur) var(--ease); }
+.sheet-backdrop--photo.is-open .sheet--photo { transform: none; opacity: 1; }
+.photo-lightbox__img { display: block; max-width: 100%; max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px); border-radius: var(--r-lg); object-fit: contain; }
+.photo-lightbox__close { position: absolute; top: calc(var(--safe-top) + 10px); right: 10px; }
+
 @media (min-width: 720px) {
   .sheet-backdrop { align-items: center; padding: var(--sp-6); }
   .sheet {

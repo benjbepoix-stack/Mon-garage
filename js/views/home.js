@@ -43,20 +43,22 @@ function syncAlerts(all) {
 function card(v) {
   const f = fieldsOf(v.id);
   const next = alerts(v, f)[0];
+  const hasImg = v.hasPhoto && store.photo(v.id);
   const pills = isBike(v) ? [v.bikeType, v.bikeSize, v.bikeGroupset, kmOf(v, f) ? km(kmOf(v, f)) : ''] : [v.year, kmOf(v, f) ? km(kmOf(v, f)) : '', v.fuel, v.plate];
-  return `<button type="button" class="gcard" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
-    <div class="gcard__photo${v.hasPhoto && store.photo(v.id) ? ' has-img' : ''}">${photoHtml(v, 56, { full: true })}
-      ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span></span>` : ''}
-    </div>
-    <div class="gcard__body">
+  return `<article class="gcard">
+    ${hasImg
+      ? `<button type="button" class="gcard__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 30)}</button>`
+      : `<div class="gcard__photo">${photoHtml(v, 30)}</div>`}
+    <button type="button" class="gcard__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
       <div class="gcard__text">
         <div class="gcard__name">${esc(v.name)}</div>
         ${v.brand || v.model ? `<div class="gcard__sub">${esc([v.brand, v.model].filter(Boolean).join(' · '))}</div>` : ''}
         ${pills.some(Boolean) ? `<div class="gcard__pills">${pills.filter(Boolean).map(p => `<span class="pill">${esc(p)}</span>`).join('')}</div>` : ''}
+        ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span></span>` : ''}
       </div>
       <span class="gcard__chevron">${icon('chevronRight', 20)}</span>
-    </div>
-  </button>`;
+    </button>
+  </article>`;
 }
 
 export function renderHome() {

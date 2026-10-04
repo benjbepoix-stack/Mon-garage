@@ -78,3 +78,22 @@ export function compressPhoto(file, maxSide = 1200, quality = 0.78) {
     img.src = url;
   });
 }
+
+/**
+ * Lit une pièce jointe de document (image ou PDF) en data URL pour la stocker.
+ * Les images sont recompressées comme les photos de véhicule ; un PDF est gardé tel quel,
+ * avec une limite de taille (la base de données reste légère et partagée entre appareils).
+ */
+export function readDocFile(file, maxBytes = 4 * 1024 * 1024) {
+  if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+    if (file.size > maxBytes) return Promise.reject(new Error(`PDF trop lourd (max ${Math.round(maxBytes / 1024 / 1024)} Mo).`));
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Fichier illisible.'));
+      reader.readAsDataURL(file);
+    });
+  }
+  if (file.type.startsWith('image/')) return compressPhoto(file, 1600, 0.8);
+  return Promise.reject(new Error('Formats acceptés : photo ou PDF.'));
+}
