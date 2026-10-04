@@ -63,11 +63,16 @@ function card(v) {
 
 export function renderHome() {
   const all = store.vehicles();
-  const cars = all.filter(v => !isBike(v));
-  const bikes = all.filter(isBike);
+  const active = all.filter(v => !v.archived);
+  const archived = all.filter(v => v.archived);
+  const cars = active.filter(v => !isBike(v));
+  const bikes = active.filter(isBike);
   $('#vehicleCount').textContent = cars.length;
   $('#bikeCount').textContent = bikes.length;
   $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans ton garage.</div>';
   $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans ton garage.</div>';
-  syncAlerts(all);
+  $('#archivesLink').hidden = !archived.length;
+  if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
+  // Les véhicules archivés (vendus, accidentés…) ne remontent pas d'échéances vers Carnet.
+  syncAlerts(active);
 }

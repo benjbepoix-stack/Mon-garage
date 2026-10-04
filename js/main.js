@@ -14,7 +14,7 @@ import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
 import { renderHome } from './views/home.js';
-import { initVehicles, openVehicle } from './views/vehicles.js';
+import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
 import { initFuel } from './views/fuel.js';
@@ -278,6 +278,7 @@ async function init() {
   $('#backBtn').addEventListener('click', goHome);
   $('#editVehicleBtn').addEventListener('click', () => store.active() && openVehicle(store.active().kind, store.activeId()));
   $('#settingsBtn').addEventListener('click', () => openSheet('settingsSheet'));
+  $('#archivesLink').addEventListener('click', openArchives);
   $('#stylePicker').addEventListener('click', e => {
     const pick = e.target.closest('[data-style-pick]')?.dataset.stylePick;
     if (pick && pick !== store.style()) store.setKeys({ style: pick });

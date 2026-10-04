@@ -90,6 +90,7 @@
         <div class="garage-cards" id="bikeCards"></div>
         <button type="button" class="add-tile" data-new="bike"><span data-icon="plus" data-size="20"></span><span>Ajouter un vélo</span></button>
       </section>
+      <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
       <p class="account" id="accountLine"></p>
       <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
     </section>
@@ -218,9 +219,25 @@
           <button type="button" class="link-btn" id="photoRemove" hidden>Retirer la photo</button>
         </div>
         <div class="field"><label class="field__label" for="veNotes">Notes <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="2" placeholder="Informations complémentaires…"></textarea></div>
+        <p class="archive-banner" id="veArchiveBanner" hidden></p>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost" id="vehicleArchive" hidden></button>
         <button type="button" class="btn btn--ghost btn--danger-text" id="vehicleDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer du garage</span></button>
       </form>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop sheet-backdrop--dialog" id="archiveFormSheet" hidden>
+    <div class="sheet sheet--dialog" role="dialog" aria-modal="true" aria-labelledby="archiveFormTitle" tabindex="-1" id="archiveFormContent"></div>
+  </div>
+
+  <div class="sheet-backdrop" id="archivesSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="archivesTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="archivesTitle">Véhicules archivés</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="sheet__scroll">
+        <div class="card card--list" id="archivesList"></div>
+      </div>
     </div>
   </div>
 

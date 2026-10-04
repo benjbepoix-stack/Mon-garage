@@ -118,6 +118,8 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 .gcard__alert.is-late i { background: var(--danger); }
 .add-tile { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; margin-top: var(--sp-3); border-radius: var(--r-lg); border: 1px dashed var(--border-strong); color: var(--text-2); font-weight: 750; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
 .add-tile:hover { background: var(--surface-2); color: var(--text); }
+.archives-link { display: flex; align-items: center; justify-content: center; gap: 6px; margin: var(--sp-2) auto 0; }
+.archive-banner { padding: 10px 12px; border-radius: var(--r-md); background: var(--amber-soft); border: 1px solid color-mix(in srgb, var(--amber) 35%, var(--border)); color: var(--amber); font-size: var(--fs-sm); font-weight: 650; }
 .empty-card { padding: var(--sp-5); border-radius: var(--r-lg); border: 1px dashed var(--border); color: var(--text-3); text-align: center; font-size: var(--fs-sm); }
 .account { margin-top: var(--sp-6); text-align: center; color: var(--text-3); font-size: var(--fs-xs); }
 

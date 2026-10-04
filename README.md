@@ -38,6 +38,9 @@ Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème so
 ## Carte véhicule (accueil) et photo en grand
 Chaque carte de l'accueil affiche une vignette (80 px), distincte du bouton qui ouvre la fiche : toucher la photo l'affiche en plein écran (sans ouvrir la fiche), toucher le reste de la carte ouvre la fiche. Sous le nom : seulement la marque, le modèle et, pour un véhicule, la plaque d'immatriculation (pas l'année, le kilométrage ni la motorisation) ; l'échéance la plus urgente s'affiche en dessous.
 
+## Archiver un véhicule (vendu, accidenté…)
+Depuis la fiche d'un véhicule existant, « Déclarer vendu / accidenté… » demande un motif (vendu, accidenté / épave, volé, autre) et une date, puis masque le véhicule de l'accueil — ses entretiens, coûts, documents et rappels sont conservés, pas supprimés, et il ne remonte plus dans le pop-up des entretiens en retard ni vers Carnet. Un lien « Archives (N) » apparaît en bas de l'accueil dès qu'au moins un véhicule est archivé : il liste les véhicules archivés avec leur motif et leur date, permet de rouvrir leur fiche (consultation et modification normales) ou de les restaurer (bouton dédié, ou directement depuis leur fiche).
+
 ## Pièces jointes des documents
 Chaque document (onglet Documents) peut avoir plusieurs pièces jointes — photos ou PDF (scan de la carte grise, de l'attestation d'assurance, et son avenant…) — ajoutées en une ou plusieurs fois depuis le formulaire (10 maximum par document). S'il n'y en a qu'une, le trombone l'ouvre directement (photo en grand, PDF téléchargé — ouverture native sur iPhone) ; s'il y en a plusieurs, un badge affiche leur nombre et le trombone rouvre la fiche du document pour les lister et les ouvrir une à une. Les images sont réduites comme les photos de véhicule ; chaque fichier est limité à 4 Mo.
 

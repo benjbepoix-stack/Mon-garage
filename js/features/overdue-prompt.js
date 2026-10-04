@@ -17,7 +17,7 @@ let checked = false;
 
 function collectOverdue() {
   const out = [];
-  store.vehicles().forEach(v => {
+  store.vehicles().filter(v => !v.archived).forEach(v => {
     const f = fieldsOf(v.id);
     alerts(v, f)
       .filter(a => a.kind === 'reminder' && a.level === 'late')

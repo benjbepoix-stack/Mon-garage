@@ -1,10 +1,12 @@
-/* Fiche véhicule / vélo : création, modification, photo, suppression. */
+/* Fiche véhicule / vélo : création, modification, photo, suppression, archivage. */
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { FUELS, BIKE_TYPES, DEFAULT_PARTS, presetReminders, fieldKey, photoKey, makeId } from '../core/schema.js';
+import { FUELS, BIKE_TYPES, DEFAULT_PARTS, ARCHIVE_REASONS, presetReminders, fieldKey, photoKey, makeId, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
+import { todayKey, formatKey } from '../core/dates.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
+import { icon } from '../ui/icons.js';
 import { toNumber, intInput, positive, compressPhoto } from './common.js';
 
 let photo = null; // data-URL en cours, '' = retirée, null = inchangée
@@ -19,6 +21,8 @@ function syncKind() {
   const edit = Boolean(form().elements.editId.value);
   $('#vehicleTitle').textContent = `${edit ? 'Modifier' : 'Ajouter'} ${k === 'bike' ? 'un vélo' : 'un véhicule'}`;
   $('#veName').placeholder = k === 'bike' ? 'Ex. Canyon Ultimate' : 'Ex. Audi A5 Coupé';
+  $('#veBrand').placeholder = k === 'bike' ? 'Ex. Canyon' : 'Ex. Audi';
+  $('#veModel').placeholder = k === 'bike' ? 'Ex. Ultimate CF SL' : 'Ex. A5 Coupé';
 }
 
 function showPhoto(src) {
@@ -27,6 +31,20 @@ function showPhoto(src) {
   else $('#photoPreview').removeAttribute('src');
   $('#photoEmpty').hidden = Boolean(src);
   $('#photoRemove').hidden = !src;
+}
+
+/** Bandeau et bouton d'archivage de la fiche en cours (masqués hors édition). */
+function syncArchiveUI(v) {
+  const banner = $('#veArchiveBanner');
+  const btn = $('#vehicleArchive');
+  btn.hidden = !v;
+  if (!v) {
+    banner.hidden = true;
+    return;
+  }
+  banner.hidden = !v.archived;
+  if (v.archived) banner.textContent = `Archivé · ${v.archivedReason}${v.archivedDate ? ` · ${formatKey(v.archivedDate)}` : ''}`;
+  btn.innerHTML = v.archived ? `${icon('refresh', 18)}<span>Restaurer ce véhicule</span>` : `${icon('archive', 18)}<span>Déclarer vendu / accidenté…</span>`;
 }
 
 export function openVehicle(k = 'vehicle', id = null) {
@@ -45,6 +63,7 @@ export function openVehicle(k = 'vehicle', id = null) {
   }
   showPhoto(v?.hasPhoto ? store.photo(v.id) : '');
   $('#vehicleDelete').hidden = !v;
+  syncArchiveUI(v);
   syncKind();
   openSheet('vehicleSheet', { focus: false });
 }
@@ -117,6 +136,61 @@ async function remove() {
   onDeleted(id);
 }
 
+/* ---------- Archivage (vendu, accidenté…) ---------- */
+function openArchiveForm(v) {
+  $('#archiveFormContent').innerHTML = `
+    <div class="dialog__icon">${icon('archive', 22)}</div>
+    <h2 class="dialog__title" id="archiveFormTitle">Archiver ${esc(v.name)}</h2>
+    <p class="dialog__message">${esc(v.name)} sera masqué de l’accueil (entretiens, coûts et documents sont conservés).</p>
+    <form class="dialog__form" id="archiveForm" novalidate>
+      <div class="field">
+        <label class="field__label" for="arReason">Motif</label>
+        <select class="input select" id="arReason" name="reason">${ARCHIVE_REASONS.map(r => `<option>${esc(r)}</option>`).join('')}</select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="arDate">Date</label>
+        <input class="input" id="arDate" name="date" type="date" value="${todayKey()}" max="${todayKey()}" required>
+      </div>
+      <div class="dialog__actions">
+        <button type="button" class="btn btn--ghost" data-close>Annuler</button>
+        <button type="submit" class="btn btn--primary">Archiver</button>
+      </div>
+    </form>`;
+  $('#archiveForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const reason = $('#arReason').value;
+    const date = $('#arDate').value || todayKey();
+    store.updateVehicle(v.id, { archived: true, archivedReason: reason, archivedDate: date });
+    closeSheet('archiveFormSheet');
+    closeSheet('vehicleSheet');
+    toast(`${v.name} archivé`);
+  });
+  openSheet('archiveFormSheet', { focus: false });
+}
+
+/** @returns {Promise<boolean>} vrai si restauré (faux si l'utilisateur a annulé). */
+async function restore(v) {
+  const ok = await confirmDialog({ title: `Restaurer ${v.name} ?`, message: 'Il réapparaîtra à l’accueil.', confirmLabel: 'Restaurer' });
+  if (!ok) return false;
+  store.updateVehicle(v.id, { archived: false, archivedReason: '', archivedDate: '' });
+  toast(`${v.name} restauré`);
+  return true;
+}
+
+function archiveRow(v) {
+  return `<div class="row" data-archived="${esc(v.id)}">
+    <span class="row__icon">${icon(isBike(v) ? 'bike' : 'car', 18)}</span>
+    <div class="row__body"><span class="row__title">${esc(v.name)}</span><span class="row__sub">${esc(v.archivedReason)}${v.archivedDate ? ` · ${esc(formatKey(v.archivedDate))}` : ''}</span></div>
+    <button type="button" class="icon-btn icon-btn--sm" data-restore aria-label="Restaurer ${esc(v.name)}">${icon('refresh', 17)}</button>
+  </div>`;
+}
+
+export function openArchives() {
+  const list = store.vehicles().filter(v => v.archived);
+  $('#archivesList').innerHTML = list.length ? list.map(archiveRow).join('') : `<div class="empty-state"><p>Aucun véhicule archivé.</p></div>`;
+  openSheet('archivesSheet');
+}
+
 export function initVehicles({ deleted }) {
   onDeleted = deleted;
   $('#veFuel').innerHTML = `<option value="">Choisir</option>${FUELS.map(x => `<option>${esc(x)}</option>`).join('')}`;
@@ -124,6 +198,28 @@ export function initVehicles({ deleted }) {
   form().addEventListener('submit', onSubmit);
   $('#kindSwitch').addEventListener('change', syncKind);
   $('#vehicleDelete').addEventListener('click', remove);
+  $('#vehicleArchive').addEventListener('click', async () => {
+    const v = store.vehicle(form().elements.editId.value);
+    if (!v) return;
+    if (v.archived) {
+      if (await restore(v)) closeSheet('vehicleSheet');
+    } else {
+      openArchiveForm(v);
+    }
+  });
+  $('#archivesList').addEventListener('click', async e => {
+    const restoreBtn = e.target.closest('[data-restore]');
+    const row = e.target.closest('[data-archived]');
+    if (!row) return;
+    const v = store.vehicle(row.dataset.archived);
+    if (!v) return;
+    if (restoreBtn) {
+      if (await restore(v)) openArchives();
+    } else {
+      closeSheet('archivesSheet');
+      openVehicle(v.kind, v.id);
+    }
+  });
   $('#photoRemove').addEventListener('click', () => {
     photo = '';
     $('#photoInput').value = '';

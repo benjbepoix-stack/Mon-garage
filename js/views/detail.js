@@ -37,7 +37,7 @@ function renderHero(v, f) {
   $('#vehicleHero').innerHTML = `
     <div class="vhero__photo">${photoHtml(v, 34)}</div>
     <div class="vhero__body">
-      <p class="vhero__sub">${esc(sub.filter(Boolean).join(' · ') || (isBike(v) ? 'Vélo' : 'Véhicule'))}</p>
+      <p class="vhero__sub">${esc(sub.filter(Boolean).join(' · ') || (isBike(v) ? 'Vélo' : 'Véhicule'))}${v.archived ? ` <span class="level is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>
       <button type="button" class="vhero__km" data-open="km" aria-label="Mettre à jour le compteur">${icon('gauge', 17)}<span>${esc(km(kmOf(v, f)))}</span><small>Mettre à jour</small></button>
     </div>`;
 }

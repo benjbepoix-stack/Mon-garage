@@ -32,6 +32,7 @@ export const DOC_TYPES = {
 };
 export const FIXED_CATEGORIES = ['Assurance', 'Stationnement', 'Abonnement', 'Péage / badge', 'Carburant', 'Autre'];
 export const LOAN_TYPES = { none: 'Payé comptant', credit: 'Crédit', loa: 'LOA', lld: 'LLD' };
+export const ARCHIVE_REASONS = ['Vendu', 'Accidenté / épave', 'Volé', 'Autre'];
 
 /** Rappels proposés à la création (modifiables). */
 export const DEFAULT_REMINDERS = {
@@ -211,7 +212,10 @@ export function normalizeVehicles(raw) {
       purchasePrice: num(v.purchasePrice),
       purchaseKm: int(v.purchaseKm),
       resaleValue: num(v.resaleValue),
-      hasPhoto: Boolean(v.hasPhoto)
+      hasPhoto: Boolean(v.hasPhoto),
+      archived: Boolean(v.archived),
+      archivedReason: Boolean(v.archived) ? oneOf(v.archivedReason, ARCHIVE_REASONS, 'Autre') : '',
+      archivedDate: Boolean(v.archived) ? date(v.archivedDate) : ''
     }))
     .filter(v => v.id);
 }
