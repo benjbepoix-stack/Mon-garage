@@ -2,7 +2,7 @@
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { reminderStatus, currentKm, daysUntil } from '../core/calc.js';
+import { reminderStatus, currentKm } from '../core/calc.js';
 import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
@@ -21,16 +21,23 @@ let sent = new Set(readJSON(SENT_KEY, []));
 const saveSent = () => write(SENT_KEY, JSON.stringify([...sent]));
 const sentKey = (id, s) => `${id}@${s.nextDate || s.nextKm || 'na'}`;
 
-function reminderCard(r, current) {
-  const s = reminderStatus(r, current);
-  const byKm = r.everyKm && r.lastKm ? (current - r.lastKm) / r.everyKm : 0;
-  const byDate = r.everyMonths && r.lastDate ? -daysUntil(r.lastDate) / (r.everyMonths * 30.44) : 0;
-  const ratio = Math.max(0, Math.min(1, Math.max(byKm, byDate)));
+/** Ligne « Dernier : … » d'un rappel. */
+function lastText(r, s, v) {
+  if (s.base.neverDone) {
+    const since = [v.purchaseDate ? fmtDate(v.purchaseDate) : '', km(v.purchaseKm || 0)].filter(Boolean).join(' · ');
+    return `Jamais fait depuis l’achat (${since})${!v.purchaseDate && r.everyMonths ? ' : date d’achat à renseigner sur la fiche' : ''}`;
+  }
+  if (r.lastDate || r.lastKm) return `Dernier : ${[r.lastDate ? fmtDate(r.lastDate) : '', r.lastKm ? km(r.lastKm) : ''].filter(Boolean).join(' · ')}`;
+  return 'Dernière fois inconnue : touchez pour la renseigner (ou « jamais réalisé »)';
+}
+
+function reminderCard(r, v, current) {
+  const s = reminderStatus(r, v, current);
   // Un seul « tous les » devant les deux critères (pas de répétition) pour rester court sur une ligne.
   const everyParts = [r.everyKm ? km(r.everyKm) : '', r.everyMonths ? `${r.everyMonths} mois` : ''].filter(Boolean);
   const every = everyParts.length ? `Tous les ${everyParts.join(' ou ')}` : '';
   const next = [s.nextKm ? km(s.nextKm) : '', s.nextDate ? fmtDate(s.nextDate) : ''].filter(Boolean).join(' ou ');
-  const last = r.lastDate || r.lastKm ? `Dernier : ${[r.lastDate ? fmtDate(r.lastDate) : '', r.lastKm ? km(r.lastKm) : ''].filter(Boolean).join(' · ')}` : 'Dernière fois inconnue : touchez pour la renseigner';
+  const last = lastText(r, s, v);
   const canSend = s.level === 'late' || s.level === 'soon';
   const isSent = canSend && sent.has(sentKey(r.id, s));
   return `<article class="due card is-${s.level}" data-reminder="${esc(r.id)}">
@@ -39,7 +46,7 @@ function reminderCard(r, current) {
       <button type="button" class="due__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="due__title">${esc(r.label)}</span><span class="due__sub">${esc(every)}</span></button>
       <span class="level is-${s.level}">${LEVEL_LABEL[s.level]}</span>
     </div>
-    ${s.level !== 'unknown' ? `<div class="due__bar"><span style="--value:${Math.round(ratio * 100)}%"></span></div>` : ''}
+    ${s.level !== 'unknown' ? `<div class="due__bar"><span style="--value:${Math.round(s.ratio * 100)}%"></span></div>` : ''}
     <div class="due__foot"><span>${next ? `Prochain : ${esc(next)}` : esc(last)}</span>
       <div class="due__actions">
         ${canSend ? `<button type="button" class="icon-btn icon-btn--sm" data-reminder-send ${isSent ? 'disabled' : ''} aria-label="${isSent ? 'Déjà envoyée à Carnet' : 'Envoyer à Carnet'}" title="${isSent ? 'Envoyée ✓' : 'Carnet'}">${icon(isSent ? 'check' : 'upload', 16)}</button>` : ''}
@@ -62,7 +69,7 @@ function maintenanceRow(x) {
 export function renderMaintenance(v, f) {
   const current = currentKm(v, f);
   $('#reminderList').innerHTML = f.reminders.length
-    ? f.reminders.map(r => reminderCard(r, current)).join('')
+    ? f.reminders.map(r => reminderCard(r, v, current)).join('')
     : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
@@ -147,7 +154,7 @@ function onMaintenanceSubmit(e) {
   // Remise à zéro de tous les rappels cochés (si cet entretien est le plus récent pour chacun)
   const checkedIds = new Set($$('#maReminderList input[name="reminders"]:checked').map(c => c.value));
   if (checkedIds.size) {
-    patch.reminders = f.reminders.map(r => (checkedIds.has(r.id) && (!r.lastDate || item.date >= r.lastDate) ? { ...r, lastDate: item.date, lastKm: item.km || r.lastKm } : r));
+    patch.reminders = f.reminders.map(r => (checkedIds.has(r.id) && (!r.lastDate || item.date >= r.lastDate) ? { ...r, lastDate: item.date, lastKm: item.km || r.lastKm, neverDone: false } : r));
   }
   store.setKeys(Object.fromEntries(Object.entries(patch).map(([k, value]) => [fieldKey(v.id, k), value])));
   closeSheet('maintenanceSheet');
@@ -180,9 +187,28 @@ export function openReminder(id = null) {
   form.elements.everyMonths.value = intInput(r?.everyMonths);
   form.elements.lastDate.value = r?.lastDate || '';
   form.elements.lastKm.value = intInput(r?.lastKm);
+  form.elements.neverDone.checked = Boolean(r?.neverDone);
+  syncNeverDone();
   $('#reminderTitle').textContent = r ? `Rappel · ${r.label}` : 'Nouveau rappel';
   $('#reminderDelete').hidden = !r;
   openSheet('reminderSheet', { focus: false });
+}
+
+/** « Jamais réalisé depuis l'achat » : masque la saisie du dernier entretien et rappelle le point de départ utilisé. */
+function syncNeverDone() {
+  const form = $('#reminderForm');
+  const on = form.elements.neverDone.checked;
+  const v = store.active();
+  $('#reLastFields').hidden = on;
+  if (on) clearErrors(form);
+  const help = $('#reNeverHelp');
+  help.hidden = !on;
+  if (on) {
+    const since = [v.purchaseDate ? `le ${fmtDate(v.purchaseDate)}` : '', `à ${km(v.purchaseKm || 0)}`].filter(Boolean).join(' ');
+    help.textContent = v.purchaseDate
+      ? `Échéance comptée depuis l’achat (${since}).`
+      : `Échéance comptée depuis l’achat (${since}). Renseignez la date d’achat sur la fiche du véhicule pour le critère en mois.`;
+  }
 }
 
 const reminderSchema = {
@@ -197,11 +223,20 @@ function onReminderSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const val = formValues(form);
-  const { valid, errors } = validate(val, reminderSchema);
+  const neverDone = form.elements.neverDone.checked;
+  const { valid, errors } = validate(neverDone ? { ...val, lastDate: '', lastKm: '' } : val, reminderSchema);
   if (!valid) return showErrors(form, errors);
   const v = store.active();
   const list = store.field('reminders', v.id);
-  const item = { id: val.editId || makeId(), label: val.label, everyKm: toNumber(val.everyKm) || 0, everyMonths: toNumber(val.everyMonths) || 0, lastDate: val.lastDate, lastKm: toNumber(val.lastKm) || 0 };
+  const item = {
+    id: val.editId || makeId(),
+    label: val.label,
+    everyKm: toNumber(val.everyKm) || 0,
+    everyMonths: toNumber(val.everyMonths) || 0,
+    lastDate: neverDone ? '' : val.lastDate,
+    lastKm: neverDone ? 0 : toNumber(val.lastKm) || 0,
+    neverDone
+  };
   store.setField('reminders', val.editId ? list.map(r => (r.id === val.editId ? item : r)) : [...list, item], v.id);
   closeSheet('reminderSheet');
   toast(val.editId ? 'Rappel modifié' : 'Rappel ajouté');
@@ -224,7 +259,7 @@ async function sendReminderToCarnet(card) {
   const f = fieldsOf(v.id);
   const r = f.reminders.find(x => x.id === card.dataset.reminder);
   if (!r) return;
-  const s = reminderStatus(r, currentKm(v, f));
+  const s = reminderStatus(r, v, currentKm(v, f));
   const key = sentKey(r.id, s);
   if (sent.has(key)) return;
   const noteParts = [s.nextKm ? `vers ${km(s.nextKm)}` : '', s.nextDate ? `vers le ${fmtDate(s.nextDate)}` : ''].filter(Boolean);
@@ -249,6 +284,7 @@ export function initMaintenance() {
     e.target.closest('.check-row')?.classList.toggle('is-checked', e.target.checked);
   });
   $('#reminderForm').addEventListener('submit', onReminderSubmit);
+  $('#reNeverDone').addEventListener('change', syncNeverDone);
   $('#reminderDelete').addEventListener('click', removeReminder);
   $('#panel-maintenance').addEventListener('click', e => {
     const card = e.target.closest('[data-reminder]');

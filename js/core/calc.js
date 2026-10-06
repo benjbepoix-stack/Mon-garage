@@ -177,18 +177,32 @@ export function costSummary(v, f, today = todayKey()) {
 /* ---------- Échéances ---------- */
 const SOON_DAYS = 30;
 
+/**
+ * Point de départ d'un rappel : le dernier entretien fait, ou — rappel marqué « jamais réalisé
+ * depuis l'achat » — la date et le kilométrage d'achat du véhicule (0 km si non renseigné : véhicule neuf).
+ */
+export function reminderBase(r, v) {
+  if (r.neverDone) return { date: v?.purchaseDate || '', km: v?.purchaseKm || 0, hasKm: true, neverDone: true };
+  return { date: r.lastDate, km: r.lastKm, hasKm: Boolean(r.lastKm), neverDone: false };
+}
+
 /** État d'un rappel d'entretien (date et/ou kilométrage, au premier atteint). */
-export function reminderStatus(r, km, today = todayKey()) {
-  const nextKm = r.everyKm && r.lastKm ? r.lastKm + r.everyKm : null;
-  const nextDate = r.everyMonths && r.lastDate ? addMonthsToDate(r.lastDate, r.everyMonths) : null;
-  if (nextKm === null && nextDate === null) return { level: 'unknown', nextKm, nextDate, kmLeft: null, daysLeft: null };
+export function reminderStatus(r, v, km, today = todayKey()) {
+  const base = reminderBase(r, v);
+  const nextKm = r.everyKm && base.hasKm ? base.km + r.everyKm : null;
+  const nextDate = r.everyMonths && base.date ? addMonthsToDate(base.date, r.everyMonths) : null;
+  // Avancement (0 à 1) sur le critère le plus avancé, depuis le point de départ.
+  const byKm = nextKm !== null ? (km - base.km) / r.everyKm : 0;
+  const byDate = nextDate ? -daysUntil(base.date, today) / (r.everyMonths * 30.44) : 0;
+  const ratio = Math.max(0, Math.min(1, Math.max(byKm, byDate)));
+  if (nextKm === null && nextDate === null) return { level: 'unknown', base, nextKm, nextDate, kmLeft: null, daysLeft: null, ratio: 0 };
   const kmLeft = nextKm !== null ? nextKm - km : null;
   const daysLeft = nextDate ? daysUntil(nextDate, today) : null;
   const soonKm = r.everyKm ? Math.min(1500, Math.max(150, r.everyKm * 0.1)) : 0;
   let level = 'ok';
   if ((kmLeft !== null && kmLeft <= 0) || (daysLeft !== null && daysLeft < 0)) level = 'late';
   else if ((kmLeft !== null && kmLeft <= soonKm) || (daysLeft !== null && daysLeft <= SOON_DAYS)) level = 'soon';
-  return { level, nextKm, nextDate, kmLeft, daysLeft };
+  return { level, base, nextKm, nextDate, kmLeft, daysLeft, ratio };
 }
 
 export function docStatus(d, today = todayKey()) {
@@ -212,7 +226,7 @@ export function alerts(v, f, today = todayKey()) {
   const km = currentKm(v, f);
   const out = [];
   f.reminders.forEach(r => {
-    const s = reminderStatus(r, km, today);
+    const s = reminderStatus(r, v, km, today);
     if (s.level === 'unknown') return;
     // On retient le critère le plus proche (km ou date)
     const byKm = s.kmLeft !== null ? s.kmLeft / Math.max(1, r.everyKm) : Infinity;

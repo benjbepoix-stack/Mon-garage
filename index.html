@@ -312,7 +312,9 @@
           <div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12"></div>
         </div>
         <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas.</p>
-        <div class="form-grid">
+        <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span>Jamais réalisé depuis l’achat</span></label>
+        <p class="field__help" id="reNeverHelp" hidden></p>
+        <div class="form-grid" id="reLastFields">
           <div class="field"><label class="field__label" for="reLastDate">Dernier fait le</label><input class="input" id="reLastDate" type="date" name="lastDate"></div>
           <div class="field"><label class="field__label" for="reLastKm">à … km</label><input class="input" id="reLastKm" name="lastKm" inputmode="numeric"></div>
         </div>

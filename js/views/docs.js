@@ -5,7 +5,8 @@ import { todayKey, formatKey } from '../core/dates.js';
 import { docStatus } from '../core/calc.js';
 import { DOC_TYPES, makeId } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
-import { openSheet, closeSheet, confirmDialog, openPhotoLightbox } from '../ui/dialog.js';
+import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
+import { openAttachment } from '../ui/attachment-viewer.js';
 import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
@@ -15,17 +16,6 @@ const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeri
 const MAX_FILES = 10;
 
 let pendingFiles = [];
-
-function openAttachment(file, name) {
-  if (file.startsWith('data:image/')) return openPhotoLightbox(file, name);
-  const a = document.createElement('a');
-  a.href = file;
-  a.download = name || 'document.pdf';
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
 
 function row(d) {
   const s = docStatus(d);

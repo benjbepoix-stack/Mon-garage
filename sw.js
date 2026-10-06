@@ -3,7 +3,9 @@
    secours hors ligne. L'app-shell est aussi pré-mis en cache à l'installation,
    pour qu'un tout premier lancement hors ligne (au garage, en concession…)
    affiche l'app au lieu d'un écran blanc. */
-const CACHE = 'mon-garage-v12';
+const CACHE = 'mon-garage-v13';
+// pdf.js (visionneuse PDF des documents) : servi par cdnjs, version figée → cache d'abord.
+const PDFJS_PREFIX = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 
 const PRECACHE_URLS = [
   './',
@@ -31,6 +33,7 @@ const PRECACHE_URLS = [
   './js/services/firebase.js',
   './js/services/storage.js',
   './js/services/carnet-sync.js',
+  './js/ui/attachment-viewer.js',
   './js/ui/charts.js',
   './js/ui/dialog.js',
   './js/ui/icons.js',
@@ -73,6 +76,22 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+  if (e.request.method === 'GET' && e.request.url.startsWith(PDFJS_PREFIX)) {
+    e.respondWith(
+      caches.match(e.request).then(
+        hit =>
+          hit ||
+          fetch(e.request).then(res => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then(c => c.put(e.request, copy));
+            }
+            return res;
+          })
+      )
+    );
+    return;
+  }
   // Firebase (auth + base de données), polices… : non concernés.
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(

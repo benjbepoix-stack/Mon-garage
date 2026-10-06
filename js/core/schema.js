@@ -230,7 +230,9 @@ const normalizers = {
   reminders: raw =>
     asArray(raw)
       .filter(isObj)
-      .map(x => ({ id: id(x.id), label: str(x.label, 60), everyKm: int(x.everyKm, 1e6), everyMonths: int(x.everyMonths, 240), lastDate: date(x.lastDate), lastKm: int(x.lastKm) }))
+      .map(x => ({ id: id(x.id), label: str(x.label, 60), everyKm: int(x.everyKm, 1e6), everyMonths: int(x.everyMonths, 240), lastDate: date(x.lastDate), lastKm: int(x.lastKm),
+        // Jamais réalisé depuis l'achat : l'échéance se compte depuis la date et le km d'achat du véhicule.
+        neverDone: Boolean(x.neverDone) && !date(x.lastDate) && !int(x.lastKm) }))
       .filter(x => x.id && x.label && (x.everyKm || x.everyMonths)),
   fixed: raw =>
     repairAutoFuelOverlaps(

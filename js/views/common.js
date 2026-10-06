@@ -89,7 +89,16 @@ export function readDocFile(file, maxBytes = 4 * 1024 * 1024) {
     if (file.size > maxBytes) return Promise.reject(new Error(`PDF trop lourd (max ${Math.round(maxBytes / 1024 / 1024)} Mo).`));
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
+      reader.onload = () => {
+        // Certains sélecteurs (iPhone, Drive…) ne donnent pas de type : le data-URL sortirait en
+        // « application/octet-stream », refusé au stockage, et la pièce jointe disparaîtrait.
+        const result = String(reader.result || '');
+        const comma = result.indexOf(',');
+        if (comma < 0) return reject(new Error('Fichier illisible.'));
+        const body = result.slice(comma + 1);
+        if (!atob(body.slice(0, 8)).startsWith('%PDF')) return reject(new Error('Ce fichier n’est pas un PDF valide.'));
+        resolve(`data:application/pdf;base64,${body}`);
+      };
       reader.onerror = () => reject(new Error('Fichier illisible.'));
       reader.readAsDataURL(file);
     });

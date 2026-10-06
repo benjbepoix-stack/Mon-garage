@@ -471,3 +471,16 @@
 .cal-card__sync { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: var(--fs-xs); color: var(--amber); font-weight: 650; }
 .cal-card__sync.is-ok { color: var(--accent); }
 .cal-hint { font-size: 11.5px; color: var(--text-3); }
+
+/* Visionneuse PDF (pièces jointes des documents) : plein écran, pages rendues dans l'app */
+.sheet-backdrop.sheet-backdrop--pdf { align-items: stretch; padding: 0; }
+.sheet-backdrop--pdf .sheet--pdf { width: 100%; max-width: none; height: 100dvh; max-height: none; padding: 0; border: 0; border-radius: 0; background: var(--bg, var(--surface-solid)); }
+.pdf-viewer__bar { display: flex; align-items: center; gap: var(--sp-2); padding: calc(var(--safe-top) + 8px) 10px 8px; background: var(--surface-solid); border-bottom: 1px solid var(--border); flex: none; }
+.pdf-viewer__bar [data-zoom] { font-size: 20px; font-weight: 700; line-height: 1; }
+.pdf-viewer__title { flex: 1; min-width: 0; font-weight: 750; font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-viewer__pages { color: var(--text-3); font-size: var(--fs-xs); font-weight: 650; white-space: nowrap; }
+.pdf-viewer__scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px 12px calc(12px + var(--safe-bottom)); background: var(--surface-3); }
+.pdf-viewer__pages-list { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 0 auto; min-width: 100%; }
+.pdf-viewer__page { display: block; width: 100%; height: auto; background: #fff; border-radius: 4px; box-shadow: var(--shadow-lg); }
+.pdf-viewer__status { margin: var(--sp-6) auto; max-width: 420px; text-align: center; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
+.pdf-viewer__open { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-3); }
