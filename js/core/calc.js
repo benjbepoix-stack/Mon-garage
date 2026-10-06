@@ -177,12 +177,15 @@ export function costSummary(v, f, today = todayKey()) {
 /* ---------- Échéances ---------- */
 const SOON_DAYS = 30;
 
+/** Mise en service d'un véhicule : sa mise en circulation (carte grise), ou son achat pour un vélo. */
+export const serviceStartDate = v => (v?.kind === 'bike' ? v?.purchaseDate : v?.registrationDate) || '';
+
 /**
- * Point de départ d'un rappel : le dernier entretien fait, ou — rappel marqué « jamais réalisé
- * depuis l'achat » — la date et le kilométrage d'achat du véhicule (0 km si non renseigné : véhicule neuf).
+ * Point de départ d'un rappel : le dernier entretien fait, ou — rappel marqué « jamais réalisé » —
+ * la mise en circulation du véhicule (achat pour un vélo), à 0 km.
  */
 export function reminderBase(r, v) {
-  if (r.neverDone) return { date: v?.purchaseDate || '', km: v?.purchaseKm || 0, hasKm: true, neverDone: true };
+  if (r.neverDone) return { date: serviceStartDate(v), km: 0, hasKm: true, neverDone: true };
   return { date: r.lastDate, km: r.lastKm, hasKm: Boolean(r.lastKm), neverDone: false };
 }
 

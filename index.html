@@ -199,6 +199,9 @@
           <div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div>
           <div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div>
         </div>
+        <div class="form-grid" data-kind="vehicle">
+          <div class="field field--span"><label class="field__label" for="veRegDate">Mise en circulation <span class="field__opt">(carte grise, case B)</span></label><input class="input" id="veRegDate" type="date" name="registrationDate"></div>
+        </div>
         <div class="form-grid">
           <div class="field" data-kind="vehicle"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div>
           <div class="field" data-kind="bike"><label class="field__label" for="veBikeType">Type de vélo</label><select class="input select" id="veBikeType" name="bikeType"></select></div>
@@ -312,7 +315,7 @@
           <div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12"></div>
         </div>
         <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas.</p>
-        <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span>Jamais réalisé depuis l’achat</span></label>
+        <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span id="reNeverLabel">Jamais réalisé depuis la mise en circulation</span></label>
         <p class="field__help" id="reNeverHelp" hidden></p>
         <div class="form-grid" id="reLastFields">
           <div class="field"><label class="field__label" for="reLastDate">Dernier fait le</label><input class="input" id="reLastDate" type="date" name="lastDate"></div>

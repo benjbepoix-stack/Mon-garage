@@ -59,6 +59,7 @@ export function openVehicle(k = 'vehicle', id = null) {
   if (v) {
     ['name', 'brand', 'model', 'plate', 'fuel', 'bikeType', 'bikeSize', 'bikeGroupset', 'bikeWheels', 'notes'].forEach(key => (f.elements[key].value = v[key] || ''));
     f.elements.year.value = v.year || '';
+    f.elements.registrationDate.value = v.registrationDate || '';
     f.elements.mileage.value = intInput(v.mileage);
   }
   showPhoto(v?.hasPhoto ? store.photo(v.id) : '');
@@ -74,6 +75,7 @@ const schema = {
   model: [rules.maxLength(60)],
   year: [positive('L’année', { integer: true, max: 2100 }), v => (v && (Number(v) < 1900 || Number(v) > new Date().getFullYear() + 1) ? 'Année invalide.' : null)],
   mileage: [positive('Le kilométrage', { integer: true, max: 3000000 })],
+  registrationDate: [rules.date(), v => (v && v > todayKey() ? 'Cette date est dans le futur.' : null)],
   plate: [rules.maxLength(20)],
   notes: [rules.maxLength(2000)]
 };
@@ -93,6 +95,7 @@ function onSubmit(e) {
     brand: v.brand,
     model: v.model,
     year: v.year,
+    registrationDate: v.kind === 'bike' || existing?.kind === 'bike' ? '' : v.registrationDate,
     mileage: toNumber(v.mileage) || 0,
     fuel: v.fuel,
     plate: v.plate,

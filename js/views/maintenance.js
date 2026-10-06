@@ -2,7 +2,7 @@
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { reminderStatus, currentKm } from '../core/calc.js';
+import { reminderStatus, currentKm, serviceStartDate } from '../core/calc.js';
 import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
@@ -21,11 +21,16 @@ let sent = new Set(readJSON(SENT_KEY, []));
 const saveSent = () => write(SENT_KEY, JSON.stringify([...sent]));
 const sentKey = (id, s) => `${id}@${s.nextDate || s.nextKm || 'na'}`;
 
+/** « depuis la mise en circulation » (véhicule) ou « depuis l'achat » (vélo). */
+const sinceLabel = v => (isBike(v) ? 'l’achat' : 'la mise en circulation');
+/** Où renseigner la date de départ manquante. */
+const missingStartHint = v => (isBike(v) ? 'date d’achat à renseigner (onglet Coûts)' : 'date de mise en circulation à renseigner sur la fiche');
+
 /** Ligne « Dernier : … » d'un rappel. */
 function lastText(r, s, v) {
   if (s.base.neverDone) {
-    const since = [v.purchaseDate ? fmtDate(v.purchaseDate) : '', km(v.purchaseKm || 0)].filter(Boolean).join(' · ');
-    return `Jamais fait depuis l’achat (${since})${!v.purchaseDate && r.everyMonths ? ' : date d’achat à renseigner sur la fiche' : ''}`;
+    const start = serviceStartDate(v);
+    return `Jamais fait depuis ${sinceLabel(v)}${start ? ` (${fmtDate(start)})` : ''}${!start && r.everyMonths ? ` : ${missingStartHint(v)}` : ''}`;
   }
   if (r.lastDate || r.lastKm) return `Dernier : ${[r.lastDate ? fmtDate(r.lastDate) : '', r.lastKm ? km(r.lastKm) : ''].filter(Boolean).join(' · ')}`;
   return 'Dernière fois inconnue : touchez pour la renseigner (ou « jamais réalisé »)';
@@ -188,6 +193,7 @@ export function openReminder(id = null) {
   form.elements.lastDate.value = r?.lastDate || '';
   form.elements.lastKm.value = intInput(r?.lastKm);
   form.elements.neverDone.checked = Boolean(r?.neverDone);
+  $('#reNeverLabel').textContent = `Jamais réalisé depuis ${sinceLabel(v)}`;
   syncNeverDone();
   $('#reminderTitle').textContent = r ? `Rappel · ${r.label}` : 'Nouveau rappel';
   $('#reminderDelete').hidden = !r;
@@ -204,10 +210,10 @@ function syncNeverDone() {
   const help = $('#reNeverHelp');
   help.hidden = !on;
   if (on) {
-    const since = [v.purchaseDate ? `le ${fmtDate(v.purchaseDate)}` : '', `à ${km(v.purchaseKm || 0)}`].filter(Boolean).join(' ');
-    help.textContent = v.purchaseDate
-      ? `Échéance comptée depuis l’achat (${since}).`
-      : `Échéance comptée depuis l’achat (${since}). Renseignez la date d’achat sur la fiche du véhicule pour le critère en mois.`;
+    const start = serviceStartDate(v);
+    help.textContent = start
+      ? `Échéance comptée depuis ${sinceLabel(v)} (le ${fmtDate(start)}, à 0 km).`
+      : `Échéance comptée depuis ${sinceLabel(v)}, à 0 km. Pour le critère en mois : ${missingStartHint(v)}.`;
   }
 }
 

@@ -209,6 +209,8 @@ export function normalizeVehicles(raw) {
       bikeGroupset: str(v.bikeGroupset, 60),
       notes: str(v.notes, 2000),
       purchaseDate: date(v.purchaseDate),
+      // Date de mise en circulation (1re immatriculation, carte grise case B) : départ des rappels « jamais réalisés ».
+      registrationDate: v.kind === 'bike' ? '' : date(v.registrationDate),
       purchasePrice: num(v.purchasePrice),
       purchaseKm: int(v.purchaseKm),
       resaleValue: num(v.resaleValue),
@@ -231,7 +233,7 @@ const normalizers = {
     asArray(raw)
       .filter(isObj)
       .map(x => ({ id: id(x.id), label: str(x.label, 60), everyKm: int(x.everyKm, 1e6), everyMonths: int(x.everyMonths, 240), lastDate: date(x.lastDate), lastKm: int(x.lastKm),
-        // Jamais réalisé depuis l'achat : l'échéance se compte depuis la date et le km d'achat du véhicule.
+        // Jamais réalisé : l'échéance se compte depuis la mise en circulation (0 km) — l'achat pour un vélo.
         neverDone: Boolean(x.neverDone) && !date(x.lastDate) && !int(x.lastKm) }))
       .filter(x => x.id && x.label && (x.everyKm || x.everyMonths)),
   fixed: raw =>

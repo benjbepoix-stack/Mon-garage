@@ -226,7 +226,7 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 [data-kind][hidden], [data-loan][hidden] { display: none !important; }
 
 /* Aligne les champs d'une même ligne (form-grid) même quand un libellé passe sur 2 lignes, partout dans l'app. */
-.form-grid .field__label { min-height: 2.9em; display: flex; align-items: flex-end; }
+.form-grid .field__label { min-height: 2.9em; display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: .3em; }
 
 @media (min-width: 720px) {
   .garage-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }

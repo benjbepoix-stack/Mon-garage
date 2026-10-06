@@ -43,6 +43,7 @@ function buildBody(v, f) {
     : [
         ['Marque / modèle', [v.brand, v.model].filter(Boolean).join(' ') || '—'],
         ['Année', v.year || '—'],
+        ['Mise en circulation', v.registrationDate ? fmtDate(v.registrationDate) : '—'],
         ['Immatriculation', v.plate || '—'],
         ['Carburant', v.fuel || '—'],
         ['Kilométrage', km(current)]
