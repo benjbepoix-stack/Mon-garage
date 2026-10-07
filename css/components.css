@@ -485,3 +485,11 @@
 .pdf-viewer__page { display: block; width: 100%; height: auto; background: #fff; border-radius: 4px; box-shadow: var(--shadow-lg); }
 .pdf-viewer__status { margin: var(--sp-6) auto; max-width: 420px; text-align: center; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
 .pdf-viewer__open { display: inline-flex; align-items: center; gap: 6px; margin-top: var(--sp-3); }
+
+/* ---------- Champs secondaires repliés ---------- */
+.more-fields { margin: 2px 0 4px; }
+.more-fields > summary { display: inline-flex; align-items: center; gap: 6px; padding: 6px 2px; cursor: pointer; list-style: none; font-size: var(--fs-sm); font-weight: 750; color: var(--accent); }
+.more-fields > summary::-webkit-details-marker { display: none; }
+.more-fields > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+.more-fields[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.more-fields[open] > summary { margin-bottom: 8px; }
