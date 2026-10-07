@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark" data-style="graphite" class="is-auth-pending">
+<html lang="fr" data-theme="dark" data-style="acier" class="is-auth-pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -29,13 +29,13 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/views/garage.css">
+  <link rel="stylesheet" href="css/minimal.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
 
 <body>
-  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
-
+  
   <!-- ================= CONNEXION ================= -->
   <div class="auth" id="authScreen" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <div class="auth__card">
@@ -257,10 +257,6 @@
             <label><input type="radio" name="theme" value="dark"><span>Sombre</span></label>
             <label><input type="radio" name="theme" value="light"><span>Clair</span></label>
           </div>
-        </div>
-        <div class="field">
-          <span class="field__label">Style graphique</span>
-          <div class="style-picker" id="stylePicker" role="group" aria-label="Style graphique"></div>
         </div>
       </div>
     </div>

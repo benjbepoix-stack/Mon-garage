@@ -3,7 +3,7 @@
    secours hors ligne. L'app-shell est aussi pré-mis en cache à l'installation,
    pour qu'un tout premier lancement hors ligne (au garage, en concession…)
    affiche l'app au lieu d'un écran blanc. */
-const CACHE = 'mon-garage-v15';
+const CACHE = 'mon-garage-v16';
 // pdf.js (visionneuse PDF des documents) : servi par cdnjs, version figée → cache d'abord.
 const PDFJS_PREFIX = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 
@@ -18,6 +18,7 @@ const PRECACHE_URLS = [
   './css/layout.css',
   './css/styles.css',
   './css/views/garage.css',
+  './css/minimal.css',
   './js/main.js',
   './js/config/firebase-config.js',
   './js/core/calc.js',

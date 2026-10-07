@@ -287,10 +287,7 @@ const normalizers = {
 export const DEFAULTS = { maintenance: [], reminders: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [] };
 
 /** Styles graphiques proposés (le premier est celui par défaut). */
-export const STYLES = [
-  { id: 'graphite', name: 'Graphite', hint: 'Sobre' },
-  { id: 'british', name: 'British', hint: 'Vert anglais' }
-];
+export const STYLES = [{ id: 'acier', name: 'Acier', hint: 'Gris argent' }];
 
 export function normalizeKey(key, value) {
   if (key === 'vehicles') return normalizeVehicles(value);

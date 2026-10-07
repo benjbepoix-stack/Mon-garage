@@ -75,3 +75,6 @@ Sur la fiche d'un véhicule (onglet Aperçu) → « Exporter le dossier de reven
 python3 -m http.server 8000
 ```
 puis http://localhost:8000.
+
+## Style
+Style minimaliste commun aux apps (anthracite, cartes pleines), couleur **Acier** (gris argent), thème sombre ou clair. Logo : volant acier avec la ligne d'horizon commune aux logos des apps.

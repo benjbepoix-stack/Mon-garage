@@ -279,7 +279,7 @@ async function init() {
   $('#editVehicleBtn').addEventListener('click', () => store.active() && openVehicle(store.active().kind, store.activeId()));
   $('#settingsBtn').addEventListener('click', () => openSheet('settingsSheet'));
   $('#archivesLink').addEventListener('click', openArchives);
-  $('#stylePicker').addEventListener('click', e => {
+  $('#stylePicker')?.addEventListener('click', e => {
     const pick = e.target.closest('[data-style-pick]')?.dataset.stylePick;
     if (pick && pick !== store.style()) store.setKeys({ style: pick });
   });
