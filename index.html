@@ -196,22 +196,22 @@
           <div class="field"><label class="field__label" for="veModel">Modèle</label><input class="input" id="veModel" name="model" maxlength="60" placeholder="Ex. A5 Coupé" autocomplete="off"></div>
         </div>
         <div class="form-grid" data-kind="vehicle">
-          
-          
+          <div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div>
+          <div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div>
         </div>
         <div class="form-grid" data-kind="vehicle">
-          
+          <div class="field field--span"><label class="field__label" for="veRegDate">Mise en circulation <span class="field__opt">(carte grise, case B)</span></label><input class="input" id="veRegDate" type="date" name="registrationDate"></div>
         </div>
         <div class="form-grid">
-          
+          <div class="field" data-kind="vehicle"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div>
           <div class="field" data-kind="bike"><label class="field__label" for="veBikeType">Type de vélo</label><select class="input select" id="veBikeType" name="bikeType"></select></div>
           <div class="field"><label class="field__label" for="veMileage">Kilométrage actuel</label><input class="input" id="veMileage" name="mileage" inputmode="numeric" placeholder="Ex. 75 000"></div>
         </div>
         <div class="form-grid" data-kind="bike">
-          
-          
+          <div class="field"><label class="field__label" for="veSize">Taille / cadre</label><input class="input" id="veSize" name="bikeSize" maxlength="30" placeholder="Ex. 56 / L"></div>
+          <div class="field"><label class="field__label" for="veGroupset">Groupe</label><input class="input" id="veGroupset" name="bikeGroupset" maxlength="60" placeholder="Ex. Ultegra Di2"></div>
         </div>
-        
+        <div class="field" data-kind="bike"><label class="field__label" for="veWheels">Roues</label><input class="input" id="veWheels" name="bikeWheels" maxlength="60" placeholder="Ex. carbone 50 mm"></div>
         <div class="field">
           <span class="field__label">Photo</span>
           <label class="photo-picker" id="photoPicker">
@@ -223,7 +223,7 @@
         </div>
         
         <p class="archive-banner" id="veArchiveBanner" hidden></p>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="form-grid"><div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div><div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div><div class="field field--span"><label class="field__label" for="veRegDate">Mise en circulation <span class="field__opt">(carte grise, case B)</span></label><input class="input" id="veRegDate" type="date" name="registrationDate"></div><div class="field" data-kind="vehicle"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div><div class="field"><label class="field__label" for="veSize">Taille / cadre</label><input class="input" id="veSize" name="bikeSize" maxlength="30" placeholder="Ex. 56 / L"></div><div class="field"><label class="field__label" for="veGroupset">Groupe</label><input class="input" id="veGroupset" name="bikeGroupset" maxlength="60" placeholder="Ex. Ultegra Di2"></div><div class="field" data-kind="bike"><label class="field__label" for="veWheels">Roues</label><input class="input" id="veWheels" name="bikeWheels" maxlength="60" placeholder="Ex. carbone 50 mm"></div><div class="field"><label class="field__label" for="veNotes">Notes <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="2" placeholder="Informations complémentaires…"></textarea></div></div></details>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="veNotes">Notes <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="2" placeholder="Informations complémentaires…"></textarea></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost" id="vehicleArchive" hidden></button>
         <button type="button" class="btn btn--ghost btn--danger-text" id="vehicleDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer du garage</span></button>
@@ -297,7 +297,7 @@
         <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
         <div class="field" id="maPartField" hidden><span class="field__label">Composants à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maPartList"></div><p class="field__help">Chaque composant coché repart de cette date et de ce kilométrage, comme avec « Remplacé » dans l’onglet Usure.</p></div>
         
-        <details class="more-fields"><summary>Plus de détails</summary><div class="form-grid"><div class="field"><label class="field__label" for="maLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="maLabel" name="label" maxlength="120" placeholder="Ex. Vidange + filtres" autocomplete="off"></div><div class="field"><label class="field__label" for="maGarage" id="maGarageLabel">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div><div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div></div></details>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="maLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="maLabel" name="label" maxlength="120" placeholder="Ex. Vidange + filtres" autocomplete="off"></div><div class="field"><label class="field__label" for="maGarage" id="maGarageLabel">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div><div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="maintenanceDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer l’entretien</span></button>
       </form>
@@ -345,7 +345,7 @@
           <div class="field"><label class="field__label" for="paDate">Monté le</label><input class="input" id="paDate" type="date" name="installedDate"></div>
           <div class="field"><label class="field__label" for="paKm">au compteur (km)</label><input class="input" id="paKm" name="installedKm" inputmode="numeric"></div>
         </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="form-grid"><div class="field"><label class="field__label" for="paCost">Prix · € <span class="field__opt">(facultatif)</span></label><input class="input" id="paCost" name="cost" inputmode="decimal" placeholder="0,00"></div></div></details>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="paCost">Prix · € <span class="field__opt">(facultatif)</span></label><input class="input" id="paCost" name="cost" inputmode="decimal" placeholder="0,00"></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="partDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le composant</span></button>
       </form>
@@ -412,7 +412,11 @@
           <div class="field"><label class="field__label" for="fiAmount">Montant · €</label><input class="input" id="fiAmount" name="amount" inputmode="decimal" placeholder="0,00"></div>
           <div class="field"><label class="field__label" for="fiPeriod">Fréquence</label><select class="input select" id="fiPeriod" name="period"><option value="month">Par mois</option><option value="year">Par an</option></select></div>
         </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="form-grid"><div class="field"><label class="field__label" for="fiLabel">Libellé <span class="field__opt">(facultatif)</span></label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div><div class="field"><label class="field__label" for="fiStart">Depuis le</label><input class="input" id="fiStart" type="date" name="start"></div><div class="field"><label class="field__label" for="fiEnd">Jusqu’au <span class="field__opt">(facultatif)</span></label><input class="input" id="fiEnd" type="date" name="end"></div></div></details>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="fiStart">Depuis le</label><input class="input" id="fiStart" type="date" name="start"></div>
+          
+        </div>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="fiLabel">Libellé <span class="field__opt">(facultatif)</span></label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div><div class="field"><label class="field__label" for="fiEnd">Jusqu’au <span class="field__opt">(facultatif)</span></label><input class="input" id="fiEnd" type="date" name="end"></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="fixedDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer</span></button>
       </form>
@@ -439,7 +443,7 @@
             </label>
           </div>
         </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="form-grid"><div class="field"><label class="field__label" for="doLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div><div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div></div></details>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="doLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div><div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="docDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le document</span></button>
       </form>
