@@ -10,6 +10,7 @@ import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { renderBarChart, renderDonut } from '../ui/charts.js';
 import { euro, euroRound, km, toNumber, numInput, intInput, positive, capitalize, fieldsOf } from './common.js';
+import { renderExpenses } from './expenses.js';
 
 /* Catégorie gérée par l'estimation automatique de l'onglet Carburant : jamais proposée
    à la main ici, et jamais listée parmi les frais fixes (voir js/views/fuel.js). */
@@ -21,7 +22,8 @@ const CATS = [
   ['loan', 'Financement', 'var(--series-1)'],
   ['maintenance', 'Entretien', 'var(--series-2)'],
   ['fuel', 'Carburant', 'var(--series-3)'],
-  ['fixed', 'Frais fixes', 'var(--series-4)']
+  ['fixed', 'Frais fixes', 'var(--series-4)'],
+  ['other', 'Autres dépenses', 'var(--series-6)']
 ];
 const monthLabel = (m, opts) => new Date(`${m}-01T12:00:00`).toLocaleDateString('fr-FR', opts);
 
@@ -120,6 +122,7 @@ export function renderCosts(v, f) {
   renderSplit(s);
   renderFinance(v, f, s);
   renderFixed(f);
+  renderExpenses(v, f);
 }
 
 /* ---------- Achat & financement ---------- */

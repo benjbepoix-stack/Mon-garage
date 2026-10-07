@@ -110,7 +110,7 @@ function fixedFor(item, month) {
   return item.period === 'year' ? item.amount / 12 : item.amount;
 }
 
-export const COST_KEYS = ['purchase', 'loan', 'maintenance', 'fuel', 'fixed'];
+export const COST_KEYS = ['purchase', 'loan', 'maintenance', 'fuel', 'fixed', 'other'];
 
 /** Entrée « Carburant » générée par l'estimation automatique (onglet Carburant), pas un frais fixe saisi à la main. */
 const isAutoFuelFixed = x => x.category === 'Carburant' && x.auto;
@@ -127,13 +127,15 @@ export function monthCosts(v, f, month, schedule = loanSchedule(v, f.loan)) {
     loan: schedule.payments[month] || 0,
     maintenance: f.maintenance.filter(inMonth).reduce((s, x) => s + x.cost, 0),
     fuel: fuelEstimate,
-    fixed: otherFixed
+    fixed: otherFixed,
+    // Autres dépenses ponctuelles, hors entretien (roues, équipement…).
+    other: (f.expenses || []).filter(inMonth).reduce((s, x) => s + x.cost, 0)
   };
 }
 
 /** Premier mois pertinent (achat, financement ou première saisie). */
 export function firstMonth(v, f, schedule = loanSchedule(v, f.loan)) {
-  const candidates = [v.purchaseDate, ...f.maintenance.map(x => x.date), ...f.fixed.map(x => x.start)].filter(Boolean).map(monthOf);
+  const candidates = [v.purchaseDate, ...f.maintenance.map(x => x.date), ...(f.expenses || []).map(x => x.date), ...f.fixed.map(x => x.start)].filter(Boolean).map(monthOf);
   if (schedule.startMonth) candidates.push(schedule.startMonth);
   candidates.push(...Object.keys(schedule.oneOffs));
   return candidates.sort()[0] || null;
@@ -157,7 +159,7 @@ export function costSummary(v, f, today = todayKey()) {
   const realCost = paid + remainingDebt - resale;
   const monthsOwned = first ? Math.max(1, monthDiff(first, now) + 1) : 0;
   const km = Math.max(0, currentKm(v, f) - (v.purchaseKm || 0));
-  const usage = totals.maintenance + totals.fuel + totals.fixed;
+  const usage = totals.maintenance + totals.fuel + totals.fixed + totals.other;
   return {
     schedule,
     totals,
@@ -237,7 +239,7 @@ export function alerts(v, f, today = todayKey()) {
     const useKm = byKm <= byDate;
     const left = useKm ? s.kmLeft : s.daysLeft;
     const text = useKm ? (left <= 0 ? `dépassée de ${fmtKm(left)}` : `dans ${fmtKm(left)}`) : left < 0 ? `en retard de ${fmtDays(left)}` : `dans ${fmtDays(left)}`;
-    out.push({ kind: 'reminder', id: r.id, level: s.level, title: r.label, text, score: Math.min(byKm, byDate) });
+    out.push({ kind: 'reminder', id: r.id, level: s.level, title: r.label, text, due: s.nextDate || '', score: Math.min(byKm, byDate) });
   });
   f.docs.forEach(d => {
     const s = docStatus(d, today);
@@ -245,7 +247,7 @@ export function alerts(v, f, today = todayKey()) {
     const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : `expire dans ${fmtDays(s.daysLeft)}`;
     // Le type reste toujours visible (ex. « Contrôle technique ») : un libellé personnalisé
     // s'ajoute en complément, il ne le remplace pas (cohérent avec la liste de l'onglet Documents).
-    out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label ? `${d.type} · ${d.label}` : d.type, text, score: s.daysLeft / 365 });
+    out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label ? `${d.type} · ${d.label}` : d.type, text, due: d.expiry, score: s.daysLeft / 365 });
   });
   f.parts.forEach(p => {
     const s = partStatus(p, km);

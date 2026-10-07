@@ -7,15 +7,16 @@ import { DOC_TYPES, makeId } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
-import { toast, toastError } from '../ui/toast.js';
+import { createFileField } from '../ui/file-field.js';
+import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
-import { LEVEL_LABEL, readDocFile } from './common.js';
+import { SOURCE_LABEL } from '../features/linked-doc.js';
+import { LEVEL_LABEL } from './common.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeric' });
-const MAX_FILES = 10;
 
-let pendingFiles = [];
+let fileField = null;
 
 function row(d) {
   const s = docStatus(d);
@@ -24,23 +25,10 @@ function row(d) {
   return `<div class="row" data-edit data-doc="${esc(d.id)}">
     <span class="row__icon">${icon('doc', 18)}</span>
     <div class="row__body"><span class="row__title">${esc(d.type)}${d.label ? ` <span class="row__soft">· ${esc(d.label)}</span>` : ''}</span><span class="row__sub">${esc(when)}</span>
-      ${d.expiry ? `<span class="row__tags"><span class="level is-${s.level}">${s.level === 'late' ? 'Expiré' : LEVEL_LABEL[s.level]}</span></span>` : ''}</div>
+      ${d.expiry || d.source ? `<span class="row__tags">${d.expiry ? `<span class="level is-${s.level}">${s.level === 'late' ? 'Expiré' : LEVEL_LABEL[s.level]}</span>` : ''}${d.source ? `<span class="level is-none">${SOURCE_LABEL[d.source]}</span>` : ''}</span>` : ''}</div>
     ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-file="${esc(d.id)}" aria-label="${n > 1 ? `Voir les pièces jointes (${n})` : 'Voir la pièce jointe'}" title="${n > 1 ? `${n} pièces jointes` : 'Pièce jointe'}">${icon('paperclip', 17)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
     ${d.expiry && s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 17)}</button>` : ''}
   </div>`;
-}
-
-function renderPendingFiles() {
-  $('#docFilesList').innerHTML = pendingFiles
-    .map(
-      (pf, i) => `<div class="file-attach__current" data-file-index="${i}">
-        <span class="file-attach__icon">${pf.file.startsWith('data:image/') ? icon('image', 16) : icon('doc', 16)}</span>
-        <span class="file-attach__name">${esc(pf.fileName || (pf.file.startsWith('data:image/') ? 'Photo' : 'Document PDF'))}</span>
-        <button type="button" class="icon-btn icon-btn--sm" data-file-remove="${i}" aria-label="Retirer cette pièce jointe">${icon('close', 16)}</button>
-      </div>`
-    )
-    .join('');
-  $('#docFileLabel').querySelector('span:last-of-type').textContent = pendingFiles.length ? 'Ajouter d’autres fichiers' : 'Ajouter des fichiers';
 }
 
 export function renderDocs(v, f) {
@@ -61,9 +49,7 @@ export function openDoc(id = null) {
   form.elements.label.value = d?.label || '';
   form.elements.expiry.value = d?.expiry || '';
   form.elements.note.value = d?.note || '';
-  pendingFiles = d?.files ? d.files.map(x => ({ ...x })) : [];
-  $('#docFileInput').value = '';
-  renderPendingFiles();
+  fileField.set(d?.files || []);
   $('#docTitle').textContent = d ? 'Modifier le document' : 'Nouveau document';
   $('#docDelete').hidden = !d;
   openSheet('docSheet', { focus: false });
@@ -83,7 +69,9 @@ function onSubmit(e) {
   if (!valid) return showErrors(form, errors);
   const v = store.active();
   const list = store.field('docs', v.id);
-  const item = { id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files: pendingFiles };
+  const existing = val.editId ? list.find(x => x.id === val.editId) : null;
+  // Un document relié à un entretien ou à une dépense garde ce lien (source, sourceId).
+  const item = { ...(existing || {}), id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files: fileField.get() };
   store.setField('docs', val.editId ? list.map(x => (x.id === val.editId ? item : x)) : [...list, item], v.id);
   closeSheet('docSheet');
   if (item.expiry && item.expiry >= todayKey()) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
@@ -95,7 +83,8 @@ async function remove() {
   const id = $('#docForm').elements.editId.value;
   const list = store.field('docs', v.id);
   const d = list.find(x => x.id === id);
-  if (!d || !(await confirmDialog({ title: 'Supprimer ce document ?', message: d.type, confirmLabel: 'Supprimer', danger: true }))) return;
+  const message = d?.source ? `${d.label}. ${d.source === 'expense' ? 'La dépense reste enregistrée' : 'L’entretien reste enregistré'}, sans facture.` : d?.type;
+  if (!d || !(await confirmDialog({ title: 'Supprimer ce document ?', message, confirmLabel: 'Supprimer', danger: true }))) return;
   store.setField('docs', list.filter(x => x !== d), v.id);
   closeSheet('docSheet');
   toast('Document supprimé');
@@ -104,43 +93,7 @@ async function remove() {
 export function initDocs() {
   $('#docForm').addEventListener('submit', onSubmit);
   $('#docDelete').addEventListener('click', remove);
-  $('#docFileInput').addEventListener('change', async e => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const room = MAX_FILES - pendingFiles.length;
-    if (room <= 0) {
-      toastError(`${MAX_FILES} pièces jointes maximum par document.`);
-      e.target.value = '';
-      return;
-    }
-    const errors = [];
-    for (const file of files.slice(0, room)) {
-      // eslint-disable-next-line no-await-in-loop
-      try {
-        const data = await readDocFile(file);
-        pendingFiles.push({ id: makeId(), file: data, fileName: file.name });
-      } catch (error) {
-        errors.push(`${file.name} : ${error.message}`);
-      }
-    }
-    if (files.length > room) errors.push(`${MAX_FILES} pièces jointes maximum par document : ${files.length - room} fichier(s) ignoré(s).`);
-    renderPendingFiles();
-    if (errors.length) toastError(errors.join(' '));
-    e.target.value = '';
-  });
-  $('#docFilesList').addEventListener('click', e => {
-    const removeBtn = e.target.closest('[data-file-remove]');
-    if (removeBtn) {
-      pendingFiles.splice(Number(removeBtn.dataset.fileRemove), 1);
-      renderPendingFiles();
-      return;
-    }
-    const pill = e.target.closest('[data-file-index]');
-    if (pill) {
-      const pf = pendingFiles[Number(pill.dataset.fileIndex)];
-      if (pf) openAttachment(pf.file, pf.fileName);
-    }
-  });
+  fileField = createFileField({ list: '#docFilesList', input: '#docFileInput', label: '#docFileLabel' });
   $('#docList').addEventListener('click', e => {
     const fileBtn = e.target.closest('[data-doc-file]');
     if (fileBtn) {

@@ -55,7 +55,8 @@ async function flushAlertsSync() {
   pending = null;
   if (!digests) return;
   for (const [vehicleId, digest] of digests) {
-    const key = digest ? JSON.stringify(digest) : null;
+    // updatedAt exclu de la comparaison : on n'envoie que si le contenu a changé.
+    const key = digest ? JSON.stringify({ ...digest, updatedAt: '' }) : null;
     if (lastSent.get(vehicleId) === key) continue; // rien de changé depuis le dernier envoi
     try {
       const res = await fetch(`${DB_URL}/app/garage_alerts/${vehicleId}.json`, {

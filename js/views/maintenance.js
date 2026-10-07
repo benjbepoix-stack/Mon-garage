@@ -11,8 +11,12 @@ import { icon } from '../ui/icons.js';
 import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
 import { readJSON, write } from '../services/storage.js';
 import { pushReminderToCarnet } from '../services/carnet-sync.js';
+import { createFileField } from '../ui/file-field.js';
+import { openAttachment } from '../ui/attachment-viewer.js';
+import { linkedDoc, withLinkedDoc, withoutLinkedDoc } from '../features/linked-doc.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'short', year: 'numeric' });
+let invoiceField = null;
 
 /* Rappels déjà envoyés vers Carnet, pour ne pas les renvoyer en double tant
  * que leur échéance n'a pas changé : clé = `${reminderId}@${échéance}`. */
@@ -62,11 +66,13 @@ function reminderCard(r, v, current) {
   </article>`;
 }
 
-function maintenanceRow(x) {
+function maintenanceRow(x, docs) {
   const sub = [fmtDate(x.date), x.km ? km(x.km) : '', x.garage].filter(Boolean).join(' · ');
+  const n = linkedDoc(docs, x.id)?.files.length || 0;
   return `<div class="row" data-edit data-maintenance="${esc(x.id)}">
     <span class="row__icon">${icon('wrench', 18)}</span>
     <div class="row__body"><span class="row__title">${esc(x.type)}${x.label ? ` <span class="row__soft">· ${esc(x.label)}</span>` : ''}</span><span class="row__sub">${esc(sub)}</span></div>
+    ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-invoice aria-label="Voir la facture" title="Facture">${icon('paperclip', 16)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
     <div class="row__amount">${x.cost ? esc(euro(x.cost)) : '—'}</div>
   </div>`;
 }
@@ -78,7 +84,7 @@ export function renderMaintenance(v, f) {
     : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
-  $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(maintenanceRow).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
+  $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(x => maintenanceRow(x, f.docs)).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
 }
 
 /* ---------- Entretien ---------- */
@@ -103,6 +109,7 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
   form.elements.garage.value = x?.garage || '';
   $('#maGarageLabel').innerHTML = `${bike ? 'Atelier' : 'Garage'} <span class="field__opt">(facultatif)</span>`;
   form.elements.note.value = x?.note || '';
+  invoiceField.set(x ? linkedDoc(f.docs, x.id)?.files : []);
   // Pré-coche le rappel correspondant au type choisi (ou celui d'où vient « Fait ») ; les autres restent décochables/cochables à la main.
   const match = reminder || (!x && f.reminders.find(r => r.label.toLowerCase() === form.elements.type.value.toLowerCase()));
   const preChecked = new Set(match ? [match.id] : []);
@@ -150,7 +157,8 @@ function onMaintenanceSubmit(e) {
   const existing = val.editId ? f.maintenance.find(m => m.id === val.editId) : null;
   const item = { id: existing ? existing.id : makeId(), type: val.type, label: val.label, date: val.date, km: toNumber(val.km) || 0, cost: toNumber(val.cost) || 0, garage: val.garage, note: val.note };
   const list = existing ? f.maintenance.map(m => (m === existing ? item : m)) : [...f.maintenance, item];
-  const patch = { maintenance: list };
+  // Facture jointe : rangée automatiquement dans l'onglet Documents (document « Facture » relié).
+  const patch = { maintenance: list, docs: withLinkedDoc(f.docs, { source: 'maintenance', sourceId: item.id, title: item.label ? `${item.type} · ${item.label}` : item.type, date: item.date, files: invoiceField.get() }) };
   // Remise à zéro de l'usure des composants (vélo) cochés, comme le bouton « Remplacé » de l'onglet Usure.
   const checkedPartIds = new Set($$('#maPartList input[name="parts"]:checked').map(c => c.value));
   if (checkedPartIds.size) {
@@ -170,9 +178,11 @@ async function removeMaintenance() {
   const v = store.active();
   const id = $('#maintenanceForm').elements.editId.value;
   const list = store.field('maintenance', v.id);
+  const docs = store.field('docs', v.id);
   const x = list.find(m => m.id === id);
-  if (!x || !(await confirmDialog({ title: 'Supprimer cet entretien ?', message: `${x.type} — ${fmtDate(x.date)}`, confirmLabel: 'Supprimer', danger: true }))) return;
-  store.setField('maintenance', list.filter(m => m !== x), v.id);
+  const invoice = x && linkedDoc(docs, x.id);
+  if (!x || !(await confirmDialog({ title: 'Supprimer cet entretien ?', message: `${x.type} — ${fmtDate(x.date)}${invoice ? ' · sa facture sera aussi retirée des documents' : ''}`, confirmLabel: 'Supprimer', danger: true }))) return;
+  store.setKeys({ [fieldKey(v.id, 'maintenance')]: list.filter(m => m !== x), [fieldKey(v.id, 'docs')]: withoutLinkedDoc(docs, x.id) });
   closeSheet('maintenanceSheet');
   toast('Entretien supprimé');
 }
@@ -280,7 +290,15 @@ async function sendReminderToCarnet(card) {
   }
 }
 
+/** Facture d'un entretien : ouverte directement (un fichier) ou depuis la fiche de l'entretien (plusieurs). */
+function openInvoice(id) {
+  const files = linkedDoc(store.field('docs', store.activeId()), id)?.files || [];
+  if (files.length === 1) openAttachment(files[0].file, files[0].fileName);
+  else openMaintenance(id);
+}
+
 export function initMaintenance() {
+  invoiceField = createFileField({ list: '#maFilesList', input: '#maFileInput', label: '#maFileLabel', empty: 'Joindre la facture', more: 'Ajouter un fichier' });
   $('#maintenanceForm').addEventListener('submit', onMaintenanceSubmit);
   $('#maintenanceDelete').addEventListener('click', removeMaintenance);
   $('#maReminderList').addEventListener('change', e => {
@@ -298,6 +316,7 @@ export function initMaintenance() {
     if (card && e.target.closest('[data-reminder-done]')) return openMaintenance(null, { reminderId: card.dataset.reminder });
     if (card && e.target.closest('[data-reminder-edit]')) return openReminder(card.dataset.reminder);
     const row = e.target.closest('[data-maintenance]');
+    if (row && e.target.closest('[data-invoice]')) return openInvoice(row.dataset.maintenance);
     if (row) openMaintenance(row.dataset.maintenance);
   });
 }

@@ -3,7 +3,7 @@
    secours hors ligne. L'app-shell est aussi pré-mis en cache à l'installation,
    pour qu'un tout premier lancement hors ligne (au garage, en concession…)
    affiche l'app au lieu d'un écran blanc. */
-const CACHE = 'mon-garage-v16';
+const CACHE = 'mon-garage-v17';
 // pdf.js (visionneuse PDF des documents) : servi par cdnjs, version figée → cache d'abord.
 const PDFJS_PREFIX = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 
@@ -29,14 +29,17 @@ const PRECACHE_URLS = [
   './js/core/validation.js',
   './js/features/calendar-prompt.js',
   './js/features/ics.js',
+  './js/features/linked-doc.js',
   './js/features/overdue-prompt.js',
   './js/features/resale-dossier.js',
+  './js/services/budget-sync.js',
+  './js/services/carnet-sync.js',
   './js/services/firebase.js',
   './js/services/storage.js',
-  './js/services/carnet-sync.js',
   './js/ui/attachment-viewer.js',
   './js/ui/charts.js',
   './js/ui/dialog.js',
+  './js/ui/file-field.js',
   './js/ui/icons.js',
   './js/ui/status.js',
   './js/ui/theme.js',
@@ -45,6 +48,7 @@ const PRECACHE_URLS = [
   './js/views/costs.js',
   './js/views/detail.js',
   './js/views/docs.js',
+  './js/views/expenses.js',
   './js/views/fuel.js',
   './js/views/home.js',
   './js/views/maintenance.js',

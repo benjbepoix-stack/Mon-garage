@@ -21,6 +21,9 @@ import { initFuel } from './views/fuel.js';
 import { initParts, openPart } from './views/parts.js';
 import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/costs.js';
 import { initDocs, openDoc } from './views/docs.js';
+import { initExpenses, openExpense } from './views/expenses.js';
+import { scheduleBudgetSync, enableBudgetSync } from './services/budget-sync.js';
+import { fieldsOf } from './views/common.js';
 
 const LAST_UID = 'garage_last_uid';
 let view = 'home';
@@ -89,6 +92,8 @@ function render() {
   document.title = detail ? `${v.name} · Mon Garage` : 'Mon Garage';
   if (detail) renderDetail();
   else renderHome();
+  // Dépenses publiées vers Mon Budget (tous véhicules, archivés compris : la dépense a bien eu lieu).
+  scheduleBudgetSync(store.vehicles().map(vehicle => ({ vehicle, field: fieldsOf(vehicle.id) })));
 }
 
 /* ---------- Connexion ---------- */
@@ -214,6 +219,7 @@ const OPENERS = {
   part: () => openPart(),
   purchase: () => openPurchase(),
   fixed: () => openFixed(),
+  expense: () => openExpense(),
   doc: () => openDoc()
 };
 
@@ -261,6 +267,7 @@ async function init() {
   initParts();
   initCosts();
   initDocs();
+  initExpenses();
   initOverduePrompt({ onView: goToReminder });
   initAuthUI();
 
@@ -312,6 +319,7 @@ async function init() {
     renderStatus('local', 'Données enregistrées sur cet appareil');
     $('#accountLine').textContent = 'Données enregistrées sur cet appareil (synchronisation à venir).';
     checkOverdue();
+    enableBudgetSync();
     return;
   }
   showAuth('loading');
@@ -321,6 +329,7 @@ async function init() {
     onRemote: remote => {
       store.applyRemote(remote);
       checkOverdue();
+      enableBudgetSync();
     },
     onStatus: renderStatus,
     onError: message => toastError(`Synchronisation : ${message}`),

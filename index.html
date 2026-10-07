@@ -167,6 +167,10 @@
           <header class="section__head"><div><h2 class="section__title">Frais fixes</h2><p class="card__sub">Assurance, stationnement, abonnements…</p></div><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
           <div class="card card--list" id="fixedList"></div>
         </section>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Autres dépenses</h2><p class="card__sub" id="expensesSub">Achats hors entretien : roues, équipement, accessoires…</p></div><button type="button" class="add-btn" data-open="expense" aria-label="Ajouter une dépense"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="card card--list" id="expenseList"></div>
+        </section>
       </div>
 
       <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
@@ -286,9 +290,16 @@
           <div class="field"><label class="field__label" for="maDate">Date</label><input class="input" id="maDate" type="date" name="date"></div>
           <div class="field"><label class="field__label" for="maKm">Kilométrage</label><input class="input" id="maKm" name="km" inputmode="numeric" autocomplete="off"></div>
         </div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
-          
+        <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+        <div class="field">
+          <span class="field__label">Facture <span class="field__opt">(photo ou PDF, facultatif)</span></span>
+          <div class="file-attach">
+            <div id="maFilesList"></div>
+            <label class="btn btn--ghost btn--sm file-attach__btn" id="maFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
+              <input type="file" id="maFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
+            </label>
+          </div>
+          <p class="field__help">Rangée automatiquement dans l’onglet Documents.</p>
         </div>
         <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
         <div class="field" id="maPartField" hidden><span class="field__label">Composants à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maPartList"></div><p class="field__help">Chaque composant coché repart de cette date et de ce kilométrage, comme avec « Remplacé » dans l’onglet Usure.</p></div>
@@ -415,6 +426,36 @@
         <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="fiLabel">Libellé <span class="field__opt">(facultatif)</span></label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div><div class="field"><label class="field__label" for="fiEnd">Jusqu’au <span class="field__opt">(facultatif)</span></label><input class="input" id="fiEnd" type="date" name="end"></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost btn--danger-text" id="fixedDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Autre dépense -->
+  <div class="sheet-backdrop" id="expenseSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="expenseTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="expenseTitle">Nouvelle dépense</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <form class="form sheet__scroll" id="expenseForm" novalidate>
+        <input type="hidden" name="editId">
+        <div class="field"><label class="field__label" for="exLabel">Dépense</label><input class="input" id="exLabel" name="label" maxlength="120" autocomplete="off"></div>
+        <div class="form-grid">
+          <div class="field"><label class="field__label" for="exCategory">Catégorie</label><select class="input select" id="exCategory" name="category"></select></div>
+          <div class="field"><label class="field__label" for="exDate">Date</label><input class="input" id="exDate" type="date" name="date"></div>
+        </div>
+        <div class="field"><label class="field__label" for="exCost">Montant · €</label><input class="input" id="exCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+        <div class="field">
+          <span class="field__label">Facture <span class="field__opt">(photo ou PDF, facultatif)</span></span>
+          <div class="file-attach">
+            <div id="exFilesList"></div>
+            <label class="btn btn--ghost btn--sm file-attach__btn" id="exFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
+              <input type="file" id="exFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
+            </label>
+          </div>
+          <p class="field__help">Rangée automatiquement dans l’onglet Documents.</p>
+        </div>
+        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="exNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="exNote" name="note" maxlength="1000" rows="2" placeholder="Magasin, référence, garantie…"></textarea></div></div></details>
+        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <button type="button" class="btn btn--ghost btn--danger-text" id="expenseDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer la dépense</span></button>
       </form>
     </div>
   </div>

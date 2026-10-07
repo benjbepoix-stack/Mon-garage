@@ -10,18 +10,20 @@ import { scheduleAlertsSync } from '../services/carnet-sync.js';
 let knownVehicleIds = new Set();
 
 /**
- * Résumé des échéances d'un véhicule, pour le widget en lecture seule de
- * Carnet (3 plus urgentes, retard et bientôt uniquement — un véhicule à
- * jour n'a rien à signaler).
+ * Résumé des échéances d'un véhicule, pour Carnet (lecture seule) : tout ce
+ * qui est en retard ou à moins de 30 jours (8 maximum), avec la date
+ * d'échéance quand elle existe (`due`, AAAA-MM-JJ) pour que Carnet puisse
+ * l'afficher dans son calendrier et anticiper un rendez-vous. Un véhicule à
+ * jour n'a rien à signaler.
  */
 function alertsDigest(v, f) {
-  const urgent = alerts(v, f).filter(a => a.level === 'late' || a.level === 'soon').slice(0, 3);
+  const urgent = alerts(v, f).filter(a => a.level === 'late' || a.level === 'soon').slice(0, 8);
   return {
     vehicleId: v.id,
     vehicleName: String(v.name || '').slice(0, 100),
     kind: isBike(v) ? 'bike' : 'vehicle',
     updatedAt: new Date().toISOString(),
-    alerts: urgent.map(a => ({ id: a.id, level: a.level, title: a.title, text: a.text }))
+    alerts: urgent.map(a => ({ id: a.id, level: a.level, title: a.title, text: a.text, ...(a.due ? { due: a.due } : {}) }))
   };
 }
 

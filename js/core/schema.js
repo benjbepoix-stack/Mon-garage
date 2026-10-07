@@ -10,6 +10,7 @@
  *   v_<id>_loan         financement (crédit, LOA, LLD)
  *   v_<id>_docs         documents et échéances
  *   v_<id>_parts        composants suivis en usure (vélos)
+ *   v_<id>_expenses     autres dépenses ponctuelles, hors entretien (roues, équipement…)
  *   activeId, theme, style
  *
  * v_<id>_fuel (pleins saisis à la main) a existé mais a été retiré : le carburant ne
@@ -18,7 +19,7 @@
  */
 import { isDateKey } from './dates.js';
 
-export const FIELDS = ['maintenance', 'reminders', 'fixed', 'loan', 'docs', 'parts'];
+export const FIELDS = ['maintenance', 'reminders', 'fixed', 'loan', 'docs', 'parts', 'expenses'];
 
 export const FUELS = ['Essence', 'Diesel', 'Hybride', 'Hybride rechargeable', 'Électrique', 'GPL', 'Autre'];
 export const BIKE_TYPES = ['Route', 'Gravel', 'VTT', 'VTC', 'Vélo électrique', 'Autre'];
@@ -31,6 +32,11 @@ export const DOC_TYPES = {
   bike: ['Facture', 'Garantie', 'Assurance vol', 'Marquage Bicycode', 'Autre']
 };
 export const FIXED_CATEGORIES = ['Assurance', 'Stationnement', 'Abonnement', 'Péage / badge', 'Carburant', 'Autre'];
+/** Autres dépenses ponctuelles, hors entretien (achats, améliorations, équipement…). */
+export const EXPENSE_CATEGORIES = {
+  vehicle: ['Équipement', 'Accessoires', 'Pneus & jantes', 'Amélioration', 'Nettoyage & esthétique', 'Amende / PV', 'Autre'],
+  bike: ['Roues', 'Pièces & amélioration', 'Accessoires', 'Équipement', 'Vêtements', 'Autre']
+};
 export const LOAN_TYPES = { none: 'Payé comptant', credit: 'Crédit', loa: 'LOA', lld: 'LLD' };
 export const ARCHIVE_REASONS = ['Vendu', 'Accidenté / épave', 'Volé', 'Autre'];
 
@@ -175,6 +181,7 @@ function repairAutoFuelOverlaps(list) {
 }
 const byDateDesc = (a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id));
 const MAX_DOC_FILES = 10;
+const DOC_SOURCES = ['maintenance', 'expense'];
 
 /**
  * Pièces jointes d'un document : plusieurs fichiers possibles (`files`). Reprend aussi l'ancien
@@ -274,17 +281,28 @@ const normalizers = {
   docs: raw =>
     asArray(raw)
       .filter(isObj)
-      .map(x => ({ id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000), files: normalizeDocFiles(x) }))
+      .map(x => {
+        const doc = { id: id(x.id), type: str(x.type, 40) || 'Autre', label: str(x.label, 120), expiry: date(x.expiry), note: str(x.note, 1000), files: normalizeDocFiles(x) };
+        // Facture jointe à un entretien ou à une autre dépense (voir js/features/linked-doc.js).
+        if (DOC_SOURCES.includes(x.source) && id(x.sourceId)) Object.assign(doc, { source: x.source, sourceId: id(x.sourceId) });
+        return doc;
+      })
       .filter(x => x.id)
       .sort((a, b) => (a.expiry || '9999').localeCompare(b.expiry || '9999')),
   parts: raw =>
     asArray(raw)
       .filter(isObj)
       .map(x => ({ id: id(x.id), name: str(x.name, 60), installedKm: int(x.installedKm), installedDate: date(x.installedDate), limitKm: int(x.limitKm, 1e6), cost: num(x.cost) }))
-      .filter(x => x.id && x.name)
+      .filter(x => x.id && x.name),
+  expenses: raw =>
+    asArray(raw)
+      .filter(isObj)
+      .map(x => ({ id: id(x.id), date: date(x.date), category: str(x.category, 40) || 'Autre', label: str(x.label, 120), cost: num(x.cost), note: str(x.note, 1000) }))
+      .filter(x => x.id && x.date && x.label)
+      .sort(byDateDesc)
 };
 
-export const DEFAULTS = { maintenance: [], reminders: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [] };
+export const DEFAULTS = { maintenance: [], reminders: [], fixed: [], loan: normalizers.loan(null), docs: [], parts: [], expenses: [] };
 
 /** Styles graphiques proposés (le premier est celui par défaut). */
 export const STYLES = [{ id: 'acier', name: 'Acier', hint: 'Gris argent' }];
