@@ -6,24 +6,15 @@ import { reminderStatus, currentKm, serviceStartDate } from '../core/calc.js';
 import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
-import { toast, toastError } from '../ui/toast.js';
+import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
-import { readJSON, write } from '../services/storage.js';
-import { pushReminderToCarnet } from '../services/carnet-sync.js';
 import { createFileField } from '../ui/file-field.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
 import { linkedDoc, withLinkedDoc, withoutLinkedDoc } from '../features/linked-doc.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'short', year: 'numeric' });
 let invoiceField = null;
-
-/* Rappels déjà envoyés vers Carnet, pour ne pas les renvoyer en double tant
- * que leur échéance n'a pas changé : clé = `${reminderId}@${échéance}`. */
-const SENT_KEY = 'garage_reminders_sent';
-let sent = new Set(readJSON(SENT_KEY, []));
-const saveSent = () => write(SENT_KEY, JSON.stringify([...sent]));
-const sentKey = (id, s) => `${id}@${s.nextDate || s.nextKm || 'na'}`;
 
 /** « depuis la mise en circulation » (véhicule) ou « depuis l'achat » (vélo). */
 const sinceLabel = v => (isBike(v) ? 'l’achat' : 'la mise en circulation');
@@ -47,8 +38,6 @@ function reminderCard(r, v, current) {
   const every = everyParts.length ? `Tous les ${everyParts.join(' ou ')}` : '';
   const next = [s.nextKm ? km(s.nextKm) : '', s.nextDate ? fmtDate(s.nextDate) : ''].filter(Boolean).join(' ou ');
   const last = lastText(r, s, v);
-  const canSend = s.level === 'late' || s.level === 'soon';
-  const isSent = canSend && sent.has(sentKey(r.id, s));
   return `<article class="due card is-${s.level}" data-reminder="${esc(r.id)}">
     <div class="due__head">
       <span class="row__icon">${icon('wrench', 18)}</span>
@@ -58,7 +47,6 @@ function reminderCard(r, v, current) {
     ${s.level !== 'unknown' ? `<div class="due__bar"><span style="--value:${Math.round(s.ratio * 100)}%"></span></div>` : ''}
     <div class="due__foot"><span>${next ? `Prochain : ${esc(next)}` : esc(last)}</span>
       <div class="due__actions">
-        ${canSend ? `<button type="button" class="icon-btn icon-btn--sm" data-reminder-send ${isSent ? 'disabled' : ''} aria-label="${isSent ? 'Déjà envoyée à Carnet' : 'Envoyer à Carnet'}" title="${isSent ? 'Envoyée ✓' : 'Carnet'}">${icon(isSent ? 'check' : 'upload', 16)}</button>` : ''}
         <button type="button" class="icon-btn icon-btn--sm" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 16)}</button>
       </div>
     </div>
@@ -269,27 +257,6 @@ async function removeReminder() {
   toast('Rappel supprimé');
 }
 
-/** Envoie un rappel d'entretien comme tâche datée dans le planning de Carnet. */
-async function sendReminderToCarnet(card) {
-  const v = store.active();
-  const f = fieldsOf(v.id);
-  const r = f.reminders.find(x => x.id === card.dataset.reminder);
-  if (!r) return;
-  const s = reminderStatus(r, v, currentKm(v, f));
-  const key = sentKey(r.id, s);
-  if (sent.has(key)) return;
-  const noteParts = [s.nextKm ? `vers ${km(s.nextKm)}` : '', s.nextDate ? `vers le ${fmtDate(s.nextDate)}` : ''].filter(Boolean);
-  try {
-    await pushReminderToCarnet({ vehicleName: v.name, label: r.label, date: s.nextDate || '', note: noteParts.join(' · ') });
-    sent.add(key);
-    saveSent();
-    toast(`${r.label} envoyé au planning de Carnet`);
-    renderMaintenance(v, f);
-  } catch (error) {
-    toastError(`Carnet injoignable : ${error.message}`);
-  }
-}
-
 /** Facture d'un entretien : ouverte directement (un fichier) ou depuis la fiche de l'entretien (plusieurs). */
 function openInvoice(id) {
   const files = linkedDoc(store.field('docs', store.activeId()), id)?.files || [];
@@ -312,7 +279,6 @@ export function initMaintenance() {
   $('#reminderDelete').addEventListener('click', removeReminder);
   $('#panel-maintenance').addEventListener('click', e => {
     const card = e.target.closest('[data-reminder]');
-    if (card && e.target.closest('[data-reminder-send]')) return sendReminderToCarnet(card);
     if (card && e.target.closest('[data-reminder-done]')) return openMaintenance(null, { reminderId: card.dataset.reminder });
     if (card && e.target.closest('[data-reminder-edit]')) return openReminder(card.dataset.reminder);
     const row = e.target.closest('[data-maintenance]');

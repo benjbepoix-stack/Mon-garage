@@ -74,7 +74,8 @@ function onSubmit(e) {
   const item = { ...(existing || {}), id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files: fileField.get() };
   store.setField('docs', val.editId ? list.map(x => (x.id === val.editId ? item : x)) : [...list, item], v.id);
   closeSheet('docSheet');
-  if (item.expiry && item.expiry >= todayKey()) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
+  // Proposé seulement pour une échéance nouvelle ou modifiée (pas à chaque retouche du document).
+  if (item.expiry && item.expiry >= todayKey() && item.expiry !== existing?.expiry) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
   else toast(val.editId ? 'Document modifié' : 'Document ajouté');
 }
 

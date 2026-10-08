@@ -35,3 +35,4 @@ body { background: var(--bg); }
 .btn--primary { background: var(--gradient-accent); color: var(--accent-ink); border: 0; box-shadow: var(--shadow-accent); }
 .input, .select, .textarea { background: var(--field); border-color: transparent; }
 .sheet { background: var(--surface-solid); }
+:root[data-style] .gcard::after { display: none; } /* cartes pleines, comme les autres apps */

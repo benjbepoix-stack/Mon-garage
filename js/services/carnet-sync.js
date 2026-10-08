@@ -1,76 +1,60 @@
 /*
  * Liaison avec l'app Carnet (Mon tableau de bord), base Firebase partagée
- * sans mot de passe (même « choix assumé » que Trace et Échappée) :
+ * sans mot de passe (même « choix assumé » que Trace et Échappée).
  *
- *  - pushReminderToCarnet() : envoi manuel d'un rappel d'entretien comme
- *    tâche datée dans l'onglet Accueil de Carnet (action explicite,
- *    déclenchée par un bouton).
- *  - scheduleAlertsSync() : synchronisation automatique, en arrière-plan,
- *    d'un résumé des échéances par véhicule (pour le widget « Garage »
- *    affiché sur l'accueil de Carnet). Best-effort : une erreur (hors
- *    ligne, règles Firebase pas encore déployées côté Carnet…) est
- *    ignorée silencieusement et retentée au prochain changement.
+ * Résumé des échéances (section « Garage » de Carnet, en lecture seule) :
+ * en arrière-plan, Garage publie pour chaque véhicule actif ce qui est en
+ * retard ou à moins de 30 jours. Le nœud `app/garage_alerts` est réécrit en
+ * entier à chaque changement : un véhicule vendu, archivé ou supprimé (ici ou
+ * sur un autre appareil) disparaît donc aussi de Carnet. Best-effort : une
+ * erreur (hors ligne, règles Firebase pas encore déployées côté Carnet…) est
+ * ignorée et retentée au prochain changement.
+ *
+ * L'ancien bouton « Envoyer à Carnet » (une tâche par rappel) a été retiré :
+ * Carnet affiche déjà ces échéances automatiquement, il créait des doublons.
  */
 const DB_URL = 'https://dashboard---projet-default-rtdb.europe-west1.firebasedatabase.app';
-const makeId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
-/** Envoie un rappel d'entretien comme tâche datée dans le planning de Carnet. */
-export async function pushReminderToCarnet({ vehicleName, label, date, note }) {
-  const id = makeId();
-  const payload = {
-    id,
-    title: `Entretien : ${vehicleName} — ${label}`.slice(0, 100),
-    date: date || '',
-    time: '',
-    note: String(note || '').slice(0, 500)
-  };
-  const res = await fetch(`${DB_URL}/app/dashboard/tasks/${id}.json`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error(`Carnet indisponible (${res.status})`);
-  return id;
-}
-
-/* ---------- Résumé des échéances (widget en lecture seule côté Carnet) ---------- */
-const lastSent = new Map();
+let lastSent = null;
 let timer = null;
 let pending = null;
+let enabled = false;
 
 /**
- * Planifie (avec un court débounce) l'envoi du résumé des échéances de
- * chaque véhicule. `digestsByVehicleId` : Map<vehicleId, digest|null>
- * (digest = { vehicleId, vehicleName, kind, updatedAt, alerts }, ou null
- * pour un véhicule supprimé — le nœud correspondant est alors effacé).
+ * À appeler une fois les données du compte réellement chargées : un appareil pas
+ * encore synchronisé (liste vide) effacerait sinon les échéances affichées dans Carnet.
  */
-export function scheduleAlertsSync(digestsByVehicleId) {
-  pending = digestsByVehicleId;
+export function enableAlertsSync() {
+  enabled = true;
+  if (pending) schedule();
+}
+
+function schedule() {
   clearTimeout(timer);
   timer = setTimeout(flushAlertsSync, 1500);
+}
+
+/** `digests` : { vehicleId: digest } pour tous les véhicules actifs. */
+export function scheduleAlertsSync(digests) {
+  pending = digests;
+  if (enabled) schedule();
 }
 
 async function flushAlertsSync() {
   const digests = pending;
   pending = null;
   if (!digests) return;
-  for (const [vehicleId, digest] of digests) {
-    // updatedAt exclu de la comparaison : on n'envoie que si le contenu a changé.
-    const key = digest ? JSON.stringify({ ...digest, updatedAt: '' }) : null;
-    if (lastSent.get(vehicleId) === key) continue; // rien de changé depuis le dernier envoi
-    try {
-      const res = await fetch(`${DB_URL}/app/garage_alerts/${vehicleId}.json`, {
-        method: digest ? 'PUT' : 'DELETE',
-        headers: digest ? { 'Content-Type': 'application/json' } : undefined,
-        body: digest ? JSON.stringify(digest) : undefined
-      });
-      if (res.ok) {
-        if (digest) lastSent.set(vehicleId, key);
-        else lastSent.delete(vehicleId);
-      }
-      // Échec silencieux : pas de blocage de l'app Garage pour une fonctionnalité annexe.
-    } catch {
-      /* best-effort */
-    }
+  // updatedAt exclu de la comparaison : on n'envoie que si le contenu a changé.
+  const key = JSON.stringify(Object.values(digests).map(d => ({ ...d, updatedAt: '' })));
+  if (key === lastSent) return;
+  try {
+    const res = await fetch(`${DB_URL}/app/garage_alerts.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(digests)
+    });
+    if (res.ok) lastSent = key;
+  } catch {
+    /* best-effort */
   }
 }

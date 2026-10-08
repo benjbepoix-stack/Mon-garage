@@ -13,7 +13,7 @@ import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
-import { renderHome } from './views/home.js';
+import { renderHome, publishAlerts } from './views/home.js';
 import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
@@ -23,6 +23,7 @@ import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/cos
 import { initDocs, openDoc } from './views/docs.js';
 import { initExpenses, openExpense } from './views/expenses.js';
 import { scheduleBudgetSync, enableBudgetSync } from './services/budget-sync.js';
+import { enableAlertsSync } from './services/carnet-sync.js';
 import { fieldsOf } from './views/common.js';
 
 const LAST_UID = 'garage_last_uid';
@@ -52,10 +53,11 @@ function openVehicleView(id) {
   location.hash = hashFor(id);
 }
 
+/** Depuis le pop-up des retards : fiche du véhicule, onglet Entretiens, saisie de l'entretien (rappel coché). */
 function goToReminder(vehicleId, reminderId) {
   location.hash = hashFor(vehicleId, 'maintenance');
   route();
-  openReminder(reminderId);
+  openMaintenance(null, { reminderId });
 }
 
 function goTab(tab) {
@@ -94,6 +96,14 @@ function render() {
   else renderHome();
   // Dépenses publiées vers Mon Budget (tous véhicules, archivés compris : la dépense a bien eu lieu).
   scheduleBudgetSync(store.vehicles().map(vehicle => ({ vehicle, field: fieldsOf(vehicle.id) })));
+  // Échéances publiées vers Carnet (véhicules actifs).
+  publishAlerts();
+}
+
+/** Données du compte chargées (cloud reçu, ou appareil seul) : liaisons avec Mon Budget et Carnet autorisées. */
+function enableLinks() {
+  enableBudgetSync();
+  enableAlertsSync();
 }
 
 /* ---------- Connexion ---------- */
@@ -199,6 +209,8 @@ function initAuthUI() {
     hideAuth();
     $('#accountLine').textContent = 'Mode hors ligne : données de cet appareil uniquement.';
     toast('Mode hors ligne', { type: 'info' });
+    // Pop-up des entretiens en retard : une fois l'écran de connexion fermé, pas par-dessus.
+    checkOverdue();
   });
   $('#logoutBtn').addEventListener('click', async () => {
     if (!currentUser()) return;
@@ -319,7 +331,7 @@ async function init() {
     renderStatus('local', 'Données enregistrées sur cet appareil');
     $('#accountLine').textContent = 'Données enregistrées sur cet appareil (synchronisation à venir).';
     checkOverdue();
-    enableBudgetSync();
+    enableLinks();
     return;
   }
   showAuth('loading');
@@ -329,17 +341,14 @@ async function init() {
     onRemote: remote => {
       store.applyRemote(remote);
       checkOverdue();
-      enableBudgetSync();
+      enableLinks();
     },
     onStatus: renderStatus,
     onError: message => toastError(`Synchronisation : ${message}`),
     onAck: store.acknowledge,
     getSnapshot: store.cloudSnapshot
   });
-  if (!ok) {
-    showAuth('offline');
-    checkOverdue();
-  }
+  if (!ok) showAuth('offline');
 }
 
 init();

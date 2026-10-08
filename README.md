@@ -23,16 +23,15 @@ database.rules.json     règles Realtime Database (chaque compte ne voit que ses
 ## Logo
 Volant à quatre branches, vert anglais et or (`icon.svg`, décliné en `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`), aussi utilisé comme logo sur l'écran de connexion.
 
-## Réglages (thème et style graphique)
-Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème sombre/clair et style graphique, appliqués par les attributs `data-theme` / `data-style` qui surchargent les tokens de couleur (`css/styles.css`).
-- **Graphite** (par défaut) · **British** (vert anglais et laiton)
+## Réglages (thème)
+Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème sombre/clair. Un seul style graphique, **Acier**, appliqué à tous les comptes (attribut `data-style`).
 
 ## Plan d'entretien pré-rempli
 À la création d'une fiche, le plan d'entretien (rappels) est pré-rempli automatiquement selon la motorisation choisie (essence, diesel, hybride, électrique, GPL) pour une voiture, ou selon le type de vélo (VTT, vélo électrique…). Ce sont des préconisations généralisées à partir des usages courants (vidange, distribution, freins, liquide de frein, filtre à air, batterie 12 V, refroidissement de la batterie pour l'électrique…), pas le carnet d'entretien exact du modèle précis — chaque rappel reste modifiable ou supprimable ensuite. Détail dans `js/core/schema.js` (`FUEL_REMINDERS`, `BIKE_TYPE_REMINDERS`).
 
 ## Lien avec Carnet (Mon tableau de bord)
-- **Envoi manuel d'un rappel** : sur chaque rappel d'entretien en retard ou bientôt dû (onglet Entretien), le bouton « Carnet » l'ajoute comme tâche datée dans l'onglet Accueil de l'app **Carnet** — via sa base Firebase partagée (même choix assumé, sans mot de passe, que pour Trace et Échappée). Un rappel déjà envoyé ne peut pas être renvoyé en double tant que son échéance n'a pas changé. Détail dans `js/services/carnet-sync.js`.
-- **Échéances dans Carnet** : en arrière-plan, à chaque ouverture de l'accueil, Garage publie automatiquement les échéances en retard ou à moins de 30 jours (8 par véhicule maximum, avec leur date quand elle existe) vers `app/garage_alerts` de la même base partagée — pur résumé, aucune donnée personnelle ou financière. Carnet s'y abonne en direct (lecture seule, aucune écriture) et affiche une carte « Garage » sur son accueil, mise à jour en temps réel. Fonctionnalité annexe et best-effort : si l'écriture échoue (hors ligne, règles pas encore déployées côté Carnet), l'app Garage continue de fonctionner normalement et retentera au prochain changement.
+- **Échéances dans Carnet** : en arrière-plan, une fois les données du compte chargées, Garage publie automatiquement les échéances en retard ou à moins de 30 jours de chaque véhicule actif (8 par véhicule maximum, avec leur date quand elle existe) vers `app/garage_alerts` de la base partagée de Carnet — pur résumé, aucune donnée personnelle ou financière. Le nœud est réécrit en entier à chaque changement : un véhicule vendu, archivé ou supprimé (ici ou sur un autre appareil) disparaît aussi de Carnet. Carnet s'y abonne en direct (lecture seule) : section « Garage » de l'onglet Tâches, calendrier du mois et pop-up des retards. Best-effort : si l'écriture échoue (hors ligne, règles pas encore déployées côté Carnet), l'app continue normalement et retentera au prochain changement. Détail dans `js/services/carnet-sync.js`.
+- L'ancien bouton « Envoyer à Carnet » d'un rappel a été retiré : Carnet affiche déjà ces échéances automatiquement, il créait des doublons.
   ⚠️ Ce chemin (`garage_alerts`) doit être autorisé dans les règles Firebase de la base de **Carnet** (`database.rules.json` de ce dépôt) — voir le README de Carnet pour l'étape de déploiement, à faire une seule fois depuis la console Firebase.
 
 ## Carte véhicule (accueil) et photo en grand
@@ -60,7 +59,7 @@ Les entretiens (avec un coût) et autres dépenses datés **à partir du 1er oct
 Dans un rappel d'entretien, la case « Jamais réalisé depuis la mise en circulation » remplace la saisie du dernier entretien : l'échéance et la barre d'avancement se comptent alors depuis la date de mise en circulation du véhicule (champ de la fiche véhicule, case B de la carte grise), à 0 km. Pour un vélo (pas de carte grise), le départ est la date d'achat (onglet Coûts), à 0 km. Sans cette date, seul le critère en km s'applique et la carte du rappel indique où la renseigner. Dès qu'un entretien coche ce rappel, il repart normalement de cet entretien.
 
 ## Rappels en retard à l'ouverture
-Au lancement de l'app (une fois par session), si un ou plusieurs rappels d'entretien sont en retard — tous véhicules confondus —, une fenêtre les signale un par un (véhicule, rappel, retard) avec un bouton « Suivant » s'il y en a plusieurs, puis « Terminé » sur le dernier ; « Voir ce rappel » ouvre directement sa fiche dans l'onglet Entretien du véhicule concerné.
+Au lancement de l'app (une fois par session, après l'écran de connexion), si des rappels d'entretien sont en retard — tous véhicules confondus —, une fenêtre les liste en une seule fois (véhicule, rappel, retard). Un appui sur une ligne ouvre directement la saisie de l'entretien, rappel déjà coché ; un seul bouton « Fermer ».
 
 ## Remise à zéro groupée des rappels et des composants d'usure
 À chaque entretien enregistré (onglet Entretien), plusieurs rappels peuvent être cochés d'un coup (ex. vidange + filtre à huile + filtre à air faits le même jour) : chacun repart de la date et du kilométrage de cet entretien. Pour un vélo, les composants suivis en usure (onglet Usure : chaîne, pneus, plaquettes…) peuvent aussi être cochés et remis à zéro en même temps, sans repasser par le bouton « Remplacé ».

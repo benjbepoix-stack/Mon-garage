@@ -6,7 +6,7 @@
  */
 import { readJSON, write } from '../services/storage.js';
 import { sameJSON } from './utils.js';
-import { normalizeKey, isKnownKey, fieldKey, photoKey, DEFAULTS, FIELDS, DEFAULT_REMINDERS, DEFAULT_PARTS, makeId } from './schema.js';
+import { normalizeKey, isKnownKey, fieldKey, photoKey, DEFAULTS, FIELDS, DEFAULT_REMINDERS, DEFAULT_PARTS, makeId, STYLES } from './schema.js';
 
 export const BASE = 'mon_garage_v2_';
 const UNSYNCED_KEY = 'garage_unsynced';
@@ -112,7 +112,8 @@ export const vehicle = id => vehicles().find(v => v.id === id) || null;
 export const activeId = () => (vehicle(data.activeId) ? data.activeId : null);
 export const active = () => vehicle(activeId());
 export const theme = () => data.theme || 'dark';
-export const style = () => data.style || 'graphite';
+/** Un seul style graphique (Acier) : le même rendu pour tous les comptes, anciens comme nouveaux. */
+export const style = () => STYLES[0].id;
 export const photo = id => data[photoKey(id)] || '';
 
 /** Champ d'un véhicule (copie modifiable). */

@@ -224,7 +224,10 @@ export function partStatus(p, km) {
 
 const LEVEL_ORDER = { late: 0, soon: 1, ok: 2 };
 const fmtKm = n => `${Math.round(Math.abs(n)).toLocaleString('fr-FR')} km`;
-const fmtDays = n => (Math.abs(n) <= 1 ? (n < 0 ? 'hier' : n === 0 ? 'aujourd’hui' : 'demain') : `${Math.abs(n)} j`);
+const fmtDays = n => `${Math.abs(n)} j`;
+/** Échéance en clair : « aujourd’hui », « demain », « dans 12 j », « en retard de 3 j » (jamais « dans demain »). */
+const dueIn = (n, { late = 'en retard de', soon = 'dans' } = {}) =>
+  n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n < 0 ? `${late} ${fmtDays(n)}` : `${soon} ${fmtDays(n)}`;
 
 /** Toutes les échéances d'un véhicule, les plus urgentes d'abord. */
 export function alerts(v, f, today = todayKey()) {
@@ -238,13 +241,13 @@ export function alerts(v, f, today = todayKey()) {
     const byDate = s.daysLeft !== null ? s.daysLeft / Math.max(1, r.everyMonths * 30) : Infinity;
     const useKm = byKm <= byDate;
     const left = useKm ? s.kmLeft : s.daysLeft;
-    const text = useKm ? (left <= 0 ? `dépassée de ${fmtKm(left)}` : `dans ${fmtKm(left)}`) : left < 0 ? `en retard de ${fmtDays(left)}` : `dans ${fmtDays(left)}`;
+    const text = useKm ? (left <= 0 ? `dépassée de ${fmtKm(left)}` : `dans ${fmtKm(left)}`) : dueIn(left);
     out.push({ kind: 'reminder', id: r.id, level: s.level, title: r.label, text, due: s.nextDate || '', score: Math.min(byKm, byDate) });
   });
   f.docs.forEach(d => {
     const s = docStatus(d, today);
     if (s.level === 'none') return;
-    const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : `expire dans ${fmtDays(s.daysLeft)}`;
+    const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : s.daysLeft <= 1 ? `expire ${dueIn(s.daysLeft)}` : `expire dans ${fmtDays(s.daysLeft)}`;
     // Le type reste toujours visible (ex. « Contrôle technique ») : un libellé personnalisé
     // s'ajoute en complément, il ne le remplace pas (cohérent avec la liste de l'onglet Documents).
     out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label ? `${d.type} · ${d.label}` : d.type, text, due: d.expiry, score: s.daysLeft / 365 });
