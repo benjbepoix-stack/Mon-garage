@@ -8,11 +8,12 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
 import { createFileField } from '../ui/file-field.js';
-import { toast } from '../ui/toast.js';
+import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { offerCalendar } from '../features/calendar-prompt.js';
 import { SOURCE_LABEL } from '../features/linked-doc.js';
 import { LEVEL_LABEL } from './common.js';
+import { deleteFiles } from '../services/files.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -61,20 +62,36 @@ function calendarEvent(v, d) {
   return { id: `garage-${v.id}-doc-${d.id}`, title: `🚗 ${d.type}${d.label ? ` · ${d.label}` : ''} — ${v.name}`, date: d.expiry, description: d.note, alarmMinutes: 0 };
 }
 
-function onSubmit(e) {
+async function onSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const val = formValues(form);
   const { valid, errors } = validate(val, schema);
   if (!valid) return showErrors(form, errors);
   const v = store.active();
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  let files;
+  try {
+    // Pièces jointes rangées hors du nœud synchronisé (appareil + cloud) avant d'enregistrer le document.
+    files = await fileField.commit();
+  } catch (error) {
+    console.error('[documents] pièces jointes', error);
+    toastError('Pièces jointes non enregistrées. Réessayez.');
+    return;
+  } finally {
+    submit.disabled = false;
+  }
+  // Compte changé pendant l'enregistrement des fichiers : rien n'est écrit dans l'autre compte.
+  if (!store.vehicle(v.id)) return;
   const list = store.field('docs', v.id);
   const existing = val.editId ? list.find(x => x.id === val.editId) : null;
   // Un document relié à un entretien ou à une dépense garde ce lien (source, sourceId).
-  const item = { ...(existing || {}), id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files: fileField.get() };
+  const item = { ...(existing || {}), id: val.editId || makeId(), type: val.type, label: val.label, expiry: val.expiry, note: val.note, files };
   store.setField('docs', val.editId ? list.map(x => (x.id === val.editId ? item : x)) : [...list, item], v.id);
   closeSheet('docSheet');
-  if (item.expiry && item.expiry >= todayKey()) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
+  // Proposé seulement pour une échéance nouvelle ou modifiée (pas à chaque retouche du document).
+  if (item.expiry && item.expiry >= todayKey() && item.expiry !== existing?.expiry) offerCalendar(calendarEvent(v, item), { heading: 'Ajouter l’échéance au calendrier ?' });
   else toast(val.editId ? 'Document modifié' : 'Document ajouté');
 }
 
@@ -86,6 +103,7 @@ async function remove() {
   const message = d?.source ? `${d.label}. ${d.source === 'expense' ? 'La dépense reste enregistrée' : 'L’entretien reste enregistré'}, sans facture.` : d?.type;
   if (!d || !(await confirmDialog({ title: 'Supprimer ce document ?', message, confirmLabel: 'Supprimer', danger: true }))) return;
   store.setField('docs', list.filter(x => x !== d), v.id);
+  deleteFiles(d.files);
   closeSheet('docSheet');
   toast('Document supprimé');
 }
@@ -100,7 +118,7 @@ export function initDocs() {
       const d = store.field('docs', store.active().id).find(x => x.id === fileBtn.dataset.docFile);
       if (!d?.files.length) return;
       // Une seule pièce jointe : ouverture directe. Plusieurs : la fiche liste chacune individuellement.
-      if (d.files.length === 1) openAttachment(d.files[0].file, d.files[0].fileName);
+      if (d.files.length === 1) openAttachment(d.files[0]);
       else openDoc(d.id);
       return;
     }

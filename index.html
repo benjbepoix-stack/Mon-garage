@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Suivi de vos véhicules et vélos : entretiens, carburant, coûts, documents.">
-  <meta name="theme-color" content="#0d1018">
+  <meta name="theme-color" content="#16171c">
   <meta name="color-scheme" content="dark light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -18,7 +18,15 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
   <script>
-    try { if (JSON.parse(localStorage.getItem('mon_garage_v2_theme')) === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+    // Anti-flash : thème appliqué avant l'affichage. « Auto » (défaut, et ancien défaut « Sombre »
+    // pas encore migré par js/main.js) suit le réglage clair / sombre de l'appareil.
+    try {
+      var th = JSON.parse(localStorage.getItem('mon_garage_v2_theme'));
+      if (th === 'dark' && !localStorage.getItem('garage_theme_auto')) th = 'auto';
+      if (th !== 'dark' && th !== 'light') th = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = th;
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f4f4f7' : '#16171c');
+    } catch (e) {}
     try { var st = JSON.parse(localStorage.getItem('mon_garage_v2_style')); if (typeof st === 'string') document.documentElement.dataset.style = st; } catch (e) {}
   </script>
 
@@ -44,7 +52,7 @@
       <div class="auth__loading" id="authLoading"><span class="spinner"></span><span>Chargement…</span></div>
       <form class="form auth__form" id="authForm" novalidate hidden>
         <h1 class="auth__title" id="authTitle">Connexion</h1>
-        <p class="auth__sub" id="authSub">Retrouvez vos véhicules sur tous vos appareils.</p>
+        <p class="auth__sub" id="authSub">Même compte que Ma Maison, Carnet, Allure et Mon budget.</p>
         <div class="field"><label class="field__label" for="authEmail">E-mail</label><input class="input" id="authEmail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="vous@email.fr" required></div>
         <div class="field" id="authPasswordField"><label class="field__label" for="authPassword">Mot de passe</label><input class="input" id="authPassword" name="password" type="password" autocomplete="current-password" placeholder="6 caractères minimum" required></div>
         <p class="auth__error" id="authError" role="alert"></p>
@@ -258,9 +266,11 @@
         <div class="field">
           <span class="field__label">Thème</span>
           <div class="segmented segmented--types" id="themeSwitch">
+            <label><input type="radio" name="theme" value="auto"><span>Auto</span></label>
             <label><input type="radio" name="theme" value="dark"><span>Sombre</span></label>
             <label><input type="radio" name="theme" value="light"><span>Clair</span></label>
           </div>
+          <p class="field__help">Auto suit le réglage clair / sombre de l’appareil.</p>
         </div>
       </div>
     </div>
@@ -299,7 +309,7 @@
               <input type="file" id="maFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
             </label>
           </div>
-          <p class="field__help">Rangée automatiquement dans l’onglet Documents.</p>
+          <p class="field__help">Rangée automatiquement dans l’onglet Docs.</p>
         </div>
         <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
         <div class="field" id="maPartField" hidden><span class="field__label">Composants à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maPartList"></div><p class="field__help">Chaque composant coché repart de cette date et de ce kilométrage, comme avec « Remplacé » dans l’onglet Usure.</p></div>
@@ -451,7 +461,7 @@
               <input type="file" id="exFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
             </label>
           </div>
-          <p class="field__help">Rangée automatiquement dans l’onglet Documents.</p>
+          <p class="field__help">Rangée automatiquement dans l’onglet Docs.</p>
         </div>
         <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="exNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="exNote" name="note" maxlength="1000" rows="2" placeholder="Magasin, référence, garantie…"></textarea></div></div></details>
         <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>

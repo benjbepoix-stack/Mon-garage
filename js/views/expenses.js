@@ -10,11 +10,12 @@ import { todayKey, formatKey } from '../core/dates.js';
 import { EXPENSE_CATEGORIES, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
-import { toast } from '../ui/toast.js';
+import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { createFileField } from '../ui/file-field.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
 import { linkedDoc, withLinkedDoc, withoutLinkedDoc } from '../features/linked-doc.js';
+import { deleteFiles } from '../services/files.js';
 import { euro, toNumber, numInput, positive, fieldsOf } from './common.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -71,19 +72,34 @@ const schema = {
   note: [rules.maxLength(1000)]
 };
 
-function onSubmit(e) {
+async function onSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const val = formValues(form);
   const { valid, errors } = validate(val, schema);
   if (!valid) return showErrors(form, errors);
   const v = store.active();
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  let files;
+  try {
+    // Facture rangée hors du nœud synchronisé (appareil + cloud) avant d'enregistrer la dépense.
+    files = await invoiceField.commit();
+  } catch (error) {
+    console.error('[dépense] facture', error);
+    toastError('Facture non enregistrée. Réessayez.');
+    return;
+  } finally {
+    submit.disabled = false;
+  }
+  // Compte changé pendant l'enregistrement des fichiers : rien n'est écrit dans l'autre compte.
+  if (!store.vehicle(v.id)) return;
   const f = fieldsOf(v.id);
   const item = { id: val.editId || makeId(), date: val.date, category: val.category, label: val.label, cost: toNumber(val.cost), note: val.note };
   const list = val.editId ? f.expenses.map(x => (x.id === val.editId ? item : x)) : [...f.expenses, item];
   store.setKeys({
     [fieldKey(v.id, 'expenses')]: list,
-    [fieldKey(v.id, 'docs')]: withLinkedDoc(f.docs, { source: 'expense', sourceId: item.id, title: item.label, date: item.date, files: invoiceField.get() })
+    [fieldKey(v.id, 'docs')]: withLinkedDoc(f.docs, { source: 'expense', sourceId: item.id, title: item.label, date: item.date, files })
   });
   closeSheet('expenseSheet');
   toast(val.editId ? 'Dépense modifiée' : 'Dépense ajoutée');
@@ -97,6 +113,7 @@ async function remove() {
   const invoice = x && linkedDoc(f.docs, x.id);
   if (!x || !(await confirmDialog({ title: 'Supprimer cette dépense ?', message: `${x.label} — ${euro(x.cost)}${invoice ? ' · sa facture sera aussi retirée des documents' : ''}`, confirmLabel: 'Supprimer', danger: true }))) return;
   store.setKeys({ [fieldKey(v.id, 'expenses')]: f.expenses.filter(e => e !== x), [fieldKey(v.id, 'docs')]: withoutLinkedDoc(f.docs, x.id) });
+  deleteFiles(invoice?.files);
   closeSheet('expenseSheet');
   toast('Dépense supprimée');
 }
@@ -110,7 +127,7 @@ export function initExpenses() {
     if (!r) return;
     if (e.target.closest('[data-invoice]')) {
       const files = linkedDoc(store.field('docs', store.activeId()), r.dataset.expense)?.files || [];
-      if (files.length === 1) return openAttachment(files[0].file, files[0].fileName);
+      if (files.length === 1) return openAttachment(files[0]);
     }
     openExpense(r.dataset.expense);
   });

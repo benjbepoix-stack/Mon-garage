@@ -6,7 +6,7 @@
  */
 import { readJSON, write } from '../services/storage.js';
 import { sameJSON } from './utils.js';
-import { normalizeKey, isKnownKey, fieldKey, photoKey, DEFAULTS, FIELDS, DEFAULT_REMINDERS, DEFAULT_PARTS, makeId } from './schema.js';
+import { normalizeKey, normalizeVehicles, isKnownKey, fieldKey, photoKey, DEFAULTS, FIELDS, DEFAULT_REMINDERS, DEFAULT_PARTS, makeId, STYLES } from './schema.js';
 
 export const BASE = 'mon_garage_v2_';
 const UNSYNCED_KEY = 'garage_unsynced';
@@ -111,8 +111,9 @@ export const vehicles = () => data.vehicles || [];
 export const vehicle = id => vehicles().find(v => v.id === id) || null;
 export const activeId = () => (vehicle(data.activeId) ? data.activeId : null);
 export const active = () => vehicle(activeId());
-export const theme = () => data.theme || 'dark';
-export const style = () => data.style || 'graphite';
+export const theme = () => data.theme || 'auto';
+/** Un seul style graphique (Acier) : le même rendu pour tous les comptes, anciens comme nouveaux. */
+export const style = () => STYLES[0].id;
 export const photo = id => data[photoKey(id)] || '';
 
 /** Champ d'un véhicule (copie modifiable). */
@@ -194,6 +195,24 @@ export function applyRemote(remote) {
   }
   if (changed.length) notify(changed, 'remote');
   return changed;
+}
+
+/**
+ * Premier compte utilisé sur cet appareil, et compte déjà rempli : les données du compte priment
+ * (les modifications faites sans compte, par exemple en « Continuer hors ligne », ne remplacent
+ * rien dans le compte) ; les véhicules créés sur l'appareil et absents du compte y sont ajoutés
+ * avec leurs données, pour ne rien perdre. L'envoi en attente doit avoir été abandonné avant.
+ */
+export function adoptRemote(remote) {
+  const incoming = remote && typeof remote === 'object' ? remote : {};
+  const inAccount = new Set(normalizeVehicles(incoming.vehicles).map(v => v.id));
+  const extra = vehicles().filter(v => !inAccount.has(v.id));
+  const keep = {};
+  extra.forEach(v => Object.keys(removalPatch(v.id)).forEach(k => k in data && (keep[k] = data[k])));
+  unsynced = {};
+  persistUnsynced();
+  applyRemote(incoming);
+  if (extra.length) setKeys({ ...keep, vehicles: [...vehicles(), ...extra] });
 }
 
 /** Efface toutes les données locales (changement de compte). */

@@ -63,6 +63,10 @@ export function closeSheet(target) {
 }
 
 export const isOpen = id => stack.some(s => s.el.id === id);
+/** Ferme toutes les fenêtres ouvertes (déconnexion : rien de l'ancien compte au-dessus de l'écran de connexion). */
+export function closeAllSheets() {
+  while (stack.length) closeSheet(stack[stack.length - 1].el);
+}
 export const closeTop = () => stack.length && closeSheet(stack[stack.length - 1].el);
 
 export function initDialogs() {

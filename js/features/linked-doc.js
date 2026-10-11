@@ -2,8 +2,10 @@
  * Factures jointes à un entretien ou à une autre dépense : elles sont rangées
  * automatiquement dans l'onglet Documents, sous forme d'un document « Facture »
  * relié à sa saisie d'origine (`sourceId`). Une seule source de vérité : les
- * fichiers vivent dans le document, le formulaire d'entretien ou de dépense
- * ne fait que l'alimenter.
+ * pièces jointes vivent dans le document (métadonnées { id, name, mime } ; le
+ * contenu est rangé hors du nœud synchronisé, voir js/services/files.js), le
+ * formulaire d'entretien ou de dépense ne fait que l'alimenter. Les fichiers
+ * d'une facture retirée sont supprimés par l'appelant (deleteFiles).
  */
 import { makeId } from '../core/schema.js';
 import { formatKey } from '../core/dates.js';

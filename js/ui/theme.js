@@ -1,17 +1,37 @@
-/* Thème clair / sombre et style graphique (réglés depuis la feuille Réglages), avec transition fluide et barre d'état iOS assortie. */
+/*
+ * Thème Auto / Sombre / Clair et style graphique (réglés depuis la feuille
+ * Réglages), avec transition fluide et barre d'état iOS assortie. « Auto » suit
+ * le réglage clair / sombre de l'appareil, en direct ; data-theme vaut
+ * toujours dark ou light (le CSS ne connaît que ces deux valeurs).
+ */
 import { $, $$ } from '../core/utils.js';
 
+const BAR_COLORS = { dark: '#16171c', light: '#f4f4f7' };
+const media = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
+let choice = 'auto';
+let currentStyle = 'acier';
+
+/** auto → dark ou light selon l'appareil. */
+export const resolveTheme = theme => (theme === 'dark' || theme === 'light' ? theme : media?.matches ? 'light' : 'dark');
+
 export function applyTheme(theme, style, { animate = false } = {}) {
+  choice = theme;
+  currentStyle = style;
   const root = document.documentElement;
-  if (animate) {
+  const resolved = resolveTheme(theme);
+  if (animate && root.dataset.theme !== resolved) {
     root.classList.add('theme-transition');
     setTimeout(() => root.classList.remove('theme-transition'), 450);
   }
-  root.dataset.theme = theme;
+  root.dataset.theme = resolved;
   root.dataset.style = style;
-  const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
-  if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', BAR_COLORS[resolved]);
 }
+
+// Choix « Auto » : bascule en même temps que l'appareil (mode sombre automatique le soir…).
+media?.addEventListener?.('change', () => {
+  if (choice === 'auto') applyTheme(choice, currentStyle, { animate: true });
+});
 
 /** Coche le thème actif dans la feuille Réglages. */
 export function renderThemeSwitch(theme) {

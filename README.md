@@ -8,8 +8,9 @@ HTML/CSS/JavaScript purs (modules ES, sans build) + Firebase gratuit (Auth e-mai
 index.html              accueil (cartes) et fiche véhicule à onglets
 css/                    tokens, thème graphite (sombre / clair), composants, vues
 js/core/                schéma des données, store (local + synchro clé par clé), calculs (coûts, prêt, conso, échéances)
-js/services/            Firebase, stockage local
-js/features/            export calendrier .ics / Outlook, dossier de revente imprimable
+js/services/            Firebase, stockage local, pièces jointes (files.js), liens Carnet / Mon budget
+js/features/            export calendrier .ics / Outlook, dossier de revente imprimable,
+                        migration des pièces jointes
 js/ui/                  icônes, toasts, fenêtres, graphiques
 js/views/               accueil, fiche, entretiens, carburant, usure, coûts, documents
 js/config/              configuration Firebase (null = fonctionnement local)
@@ -19,21 +20,25 @@ database.rules.json     règles Realtime Database (chaque compte ne voit que ses
 ## Données
 - Local : `localStorage`, préfixe `mon_garage_v2_` ; les données de la première version (`monGarage_v1`) sont reprises automatiquement.
 - Cloud : `users/<uid>/garage`, une clé par rubrique et par véhicule ; photos réduites (JPEG ~1200 px).
+- Pièces jointes des documents : hors du nœud synchronisé (voir « Pièces jointes des documents »), `users/<uid>/garage_files/<id>` + IndexedDB `mon_garage_files`.
+- Projet Firebase **test-e27e9**, commun aux 5 apps : un seul compte (e-mail / mot de passe) pour Mon Garage, Ma Maison, Carnet, Allure et Mon budget (écran de connexion : « Même compte que Ma Maison, Carnet, Allure et Mon budget. »). Les règles (`database.rules.json`) n'autorisent que `users/<uid>` du compte connecté : les nouveaux nœuds (`garage_files`, `carnet/garage_alerts`, `budget/linked/garage`) n'ont rien à republier.
+- Changement de compte sur l'appareil (`garage_last_uid`) : données locales, écritures et envois de fichiers en attente de l'ancien compte effacés ; une copie ou un envoi de pièce jointe commencé pour l'ancien compte est abandonné (jamais rangé ni envoyé dans le nouveau) ; rien n'est publié vers Carnet ni Mon budget avant le chargement des données du nouveau compte.
+- Premier compte utilisé sur un appareil qui a servi sans compte (« Continuer hors ligne ») : compte vide → les données de l'appareil deviennent celles du compte ; compte déjà rempli → ses données priment (les saisies faites sans compte ne remplacent rien), et les véhicules créés sur l'appareil y sont ajoutés avec leurs données et pièces jointes. Protection gardée jusqu'à la réception des données du compte (`garage_adopt_uid`).
+- Lecture du compte refusée : pastille « Local », rien n'est publié vers Carnet ni Mon budget ; une nouvelle connexion relance la synchronisation sans recharger l'app (l'erreur et les réponses de la session précédente sont oubliées).
+- Déconnexion (ici, ou depuis une autre app de la famille : session commune) : les fenêtres ouvertes sont refermées avant l'écran de connexion.
 
 ## Logo
 Volant à quatre branches, vert anglais et or (`icon.svg`, décliné en `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`), aussi utilisé comme logo sur l'écran de connexion.
 
-## Réglages (thème et style graphique)
-Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème sombre/clair et style graphique, appliqués par les attributs `data-theme` / `data-style` qui surchargent les tokens de couleur (`css/styles.css`).
-- **Graphite** (par défaut) · **British** (vert anglais et laiton)
+## Réglages (thème)
+Bouton réglages (en-tête de l'accueil) → feuille « Réglages » : thème **Auto** (par défaut : suit le réglage clair / sombre de l'iPhone, `prefers-color-scheme`, en direct), Sombre ou Clair. Un thème « Sombre » enregistré (ancien défaut) devient « Auto » une seule fois (drapeau `garage_theme_auto`, sur l'appareil puis à la première réception des données du compte) ; « Clair » reste « Clair » ; un choix fait dans les réglages n'est plus jamais migré. Le script anti-flash de `index.html` résout « Auto » avant l'affichage ; `data-theme` vaut toujours `dark` ou `light` (CSS inchangé) et la couleur de la barre d'état suit (`#16171c` sombre, `#f4f4f7` clair). Un seul style graphique, **Acier**, appliqué à tous les comptes (attribut `data-style`).
 
 ## Plan d'entretien pré-rempli
 À la création d'une fiche, le plan d'entretien (rappels) est pré-rempli automatiquement selon la motorisation choisie (essence, diesel, hybride, électrique, GPL) pour une voiture, ou selon le type de vélo (VTT, vélo électrique…). Ce sont des préconisations généralisées à partir des usages courants (vidange, distribution, freins, liquide de frein, filtre à air, batterie 12 V, refroidissement de la batterie pour l'électrique…), pas le carnet d'entretien exact du modèle précis — chaque rappel reste modifiable ou supprimable ensuite. Détail dans `js/core/schema.js` (`FUEL_REMINDERS`, `BIKE_TYPE_REMINDERS`).
 
 ## Lien avec Carnet (Mon tableau de bord)
-- **Envoi manuel d'un rappel** : sur chaque rappel d'entretien en retard ou bientôt dû (onglet Entretien), le bouton « Carnet » l'ajoute comme tâche datée dans l'onglet Accueil de l'app **Carnet** — via sa base Firebase partagée (même choix assumé, sans mot de passe, que pour Trace et Échappée). Un rappel déjà envoyé ne peut pas être renvoyé en double tant que son échéance n'a pas changé. Détail dans `js/services/carnet-sync.js`.
-- **Échéances dans Carnet** : en arrière-plan, à chaque ouverture de l'accueil, Garage publie automatiquement les échéances en retard ou à moins de 30 jours (8 par véhicule maximum, avec leur date quand elle existe) vers `app/garage_alerts` de la même base partagée — pur résumé, aucune donnée personnelle ou financière. Carnet s'y abonne en direct (lecture seule, aucune écriture) et affiche une carte « Garage » sur son accueil, mise à jour en temps réel. Fonctionnalité annexe et best-effort : si l'écriture échoue (hors ligne, règles pas encore déployées côté Carnet), l'app Garage continue de fonctionner normalement et retentera au prochain changement.
-  ⚠️ Ce chemin (`garage_alerts`) doit être autorisé dans les règles Firebase de la base de **Carnet** (`database.rules.json` de ce dépôt) — voir le README de Carnet pour l'étape de déploiement, à faire une seule fois depuis la console Firebase.
+- **Échéances dans Carnet** : en arrière-plan, une fois les données du compte chargées, Garage publie automatiquement les échéances en retard ou à moins de 30 jours de chaque véhicule actif (8 par véhicule maximum, avec leur date quand elle existe) dans le nœud de Carnet **du même compte** : `users/<uid>/carnet/garage_alerts` (même projet Firebase, écriture par le SDK via `linkSet` de `js/services/firebase.js` — plus aucun `fetch` vers l'ancienne base publique de Carnet). Format inchangé : `{ <vehicleId>: { vehicleId, vehicleName, kind, updatedAt, alerts } }`, pur résumé, aucune donnée financière. Le nœud est réécrit en entier à chaque changement : un véhicule vendu, archivé ou supprimé (ici ou sur un autre appareil) disparaît aussi de Carnet, qui le lit sans jamais l'écrire (section « Garage » de l'onglet Tâches, calendrier du mois et pop-up des retards). Contenu inchangé = pas d'envoi ; best-effort : une erreur est ignorée et retentée au prochain changement. **Sans compte (mode hors ligne) : rien n'est publié.** Détail dans `js/services/carnet-sync.js`.
+- L'ancien bouton « Envoyer à Carnet » d'un rappel a été retiré : Carnet affiche déjà ces échéances automatiquement, il créait des doublons.
 
 ## Carte véhicule (accueil) et photo en grand
 Chaque carte de l'accueil affiche une vignette (80 px), distincte du bouton qui ouvre la fiche : toucher la photo l'affiche en plein écran (sans ouvrir la fiche), toucher le reste de la carte ouvre la fiche. Sous le nom : seulement la marque, le modèle et, pour un véhicule, la plaque d'immatriculation (pas l'année, le kilométrage ni la motorisation) ; l'échéance la plus urgente s'affiche en dessous.
@@ -41,26 +46,33 @@ Chaque carte de l'accueil affiche une vignette (80 px), distincte du bouton qui 
 ## Archiver un véhicule (vendu, accidenté…)
 Depuis la fiche d'un véhicule existant, « Déclarer vendu / accidenté… » demande un motif (vendu, accidenté / épave, volé, autre) et une date, puis masque le véhicule de l'accueil — ses entretiens, coûts, documents et rappels sont conservés, pas supprimés, et il ne remonte plus dans le pop-up des entretiens en retard ni vers Carnet. Un lien « Archives (N) » apparaît en bas de l'accueil dès qu'au moins un véhicule est archivé : il liste les véhicules archivés avec leur motif et leur date, permet de rouvrir leur fiche (consultation et modification normales) ou de les restaurer (bouton dédié, ou directement depuis leur fiche).
 
+## Onglets de la fiche
+Libellés courts pour que les 5 onglets tiennent sans défilement sur un écran de 375 px : Aperçu, Entretien, Carburant (Recharge pour un électrique), Coûts, Docs ; pour un vélo : Aperçu, Usure, Entretien, Coûts, Docs.
+
 ## Pièces jointes des documents
-Chaque document (onglet Documents) peut avoir plusieurs pièces jointes — photos ou PDF (scan de la carte grise, de l'attestation d'assurance, et son avenant…) — ajoutées en une ou plusieurs fois depuis le formulaire (10 maximum par document). S'il n'y en a qu'une, le trombone l'ouvre directement ; s'il y en a plusieurs, un badge affiche leur nombre et le trombone rouvre la fiche du document pour les lister et les ouvrir une à une. Les images sont réduites comme les photos de véhicule ; chaque fichier est limité à 4 Mo.
+Chaque document (onglet Docs) peut avoir plusieurs pièces jointes — photos ou PDF (scan de la carte grise, de l'attestation d'assurance, et son avenant…) — ajoutées en une ou plusieurs fois depuis le formulaire (10 maximum par document). S'il n'y en a qu'une, le trombone l'ouvre directement ; s'il y en a plusieurs, un badge affiche leur nombre et le trombone rouvre la fiche du document pour les lister et les ouvrir une à une. Les images sont réduites comme les photos de véhicule ; chaque fichier est limité à 4 Mo.
 - **Photo** : affichée en grand dans l'app.
 - **PDF** : visionneuse plein écran intégrée (`js/ui/attachment-viewer.js`) — pages rendues avec pdf.js (chargé à la demande depuis cdnjs, puis gardé en cache par le service worker pour l'aperçu hors ligne), zoom −/+, et bouton « Ouvrir / Partager » (feuille de partage native sur iPhone : Fichiers, Imprimer, Mail… ; sinon nouvel onglet). Si l'aperçu est impossible (tout premier affichage hors ligne, PDF protégé), ce bouton reste proposé. Avant, le PDF était « téléchargé » via un lien `data:` : en mode app sur iPhone il s'ouvrait sans bouton retour, ou pas du tout.
 - Un PDF sans type de fichier (certains sélecteurs iPhone / Drive) est ré-étiqueté `application/pdf` à l'ajout (et vérifié par son en-tête `%PDF`) : il était auparavant rejeté au stockage et la pièce jointe disparaissait.
 
+**Stockage hors du nœud synchronisé** (`js/services/files.js`, sur le modèle de Ma Maison) : le document ne garde que les métadonnées `{ id, name, mime }` de chaque fichier ; le contenu (data URL) est rangé sur l'appareil (IndexedDB, base `mon_garage_files`) et dans le cloud sous `users/<uid>/garage_files/<id>`, lu à la demande à l'ouverture (copie de l'appareil, sinon cloud, puis gardé sur l'appareil). Avant, tout était dans `v_<id>_docs` : téléchargé à chaque ouverture de l'app et renvoyé à chaque modification. Un envoi impossible (hors ligne) reste en attente (`garage_files_pending`) et est retenté au lancement suivant ; une suppression aussi (`garage_files_deleted`). Supprimer un document, l'entretien ou la dépense d'une facture, ou le véhicule, supprime ses fichiers. Changement de compte sur l'appareil : fichiers locaux et envois en attente de l'ancien compte effacés.
+
+**Migration automatique et sûre** (`js/features/files-migration.js`) : une fois les données chargées (et à chaque réception de données d'un appareil resté à l'ancienne version), chaque fichier encore contenu dans un document (`file`) est copié dans le nouveau stockage, puis la data URL est retirée du document — jamais avant que la copie locale soit faite et relue, ni, si un compte est utilisé sur l'appareil, avant que la copie cloud soit confirmée (sinon, nouvel essai plus tard). Le normaliseur (`schema.js`) accepte les deux formats pendant la transition, y compris l'ancien format à un seul fichier. Une pièce jointe n'est jamais rattachée au fichier d'une autre (même contenu) : supprimer l'une effacerait l'autre ; un identifiant porté par deux pièces jointes les laisse dans leur document. Si aucun stockage n'est disponible (IndexedDB indisponible et pas de compte), un nouveau fichier reste dans le document comme avant : rien n'est perdu.
+
 ## Factures rangées dans les documents
-Un entretien (onglet Entretiens) ou une autre dépense (onglet Coûts) peut recevoir sa facture (photos ou PDF) directement dans son formulaire : elle est rangée automatiquement dans l'onglet Documents, comme document « Facture » relié à sa saisie (étiquette « Entretien » ou « Dépense »). Retirer tous les fichiers retire ce document ; supprimer l'entretien ou la dépense supprime aussi sa facture. Un trombone sur la ligne ouvre la facture. Détail dans `js/features/linked-doc.js`.
+Un entretien (onglet Entretien) ou une autre dépense (onglet Coûts) peut recevoir sa facture (photos ou PDF) directement dans son formulaire : elle est rangée automatiquement dans l'onglet Docs, comme document « Facture » relié à sa saisie (étiquette « Entretien » ou « Dépense »), ses fichiers hors du nœud synchronisé comme toute pièce jointe. Retirer tous les fichiers retire ce document ; supprimer l'entretien ou la dépense supprime aussi sa facture et ses fichiers. Un trombone sur la ligne ouvre la facture. Détail dans `js/features/linked-doc.js`.
 
 ## Autres dépenses
 Section « Autres dépenses » de l'onglet Coûts : achats ponctuels hors entretien (roues carbone, accessoires, équipement…), avec catégorie, montant et facture. Comptés dans les coûts (série « Autres dépenses » du graphique et de la répartition). Clé `v_<id>_expenses`.
 
 ## Lien avec Mon Budget
-Les entretiens (avec un coût) et autres dépenses datés **à partir du 1er octobre 2026** sont publiés dans la base de Mon Budget (`budget/linked/garage`, montants en centimes, sans pièce jointe) et y apparaissent comme dépenses « Transport » en lecture seule — plus de double saisie. Best-effort, uniquement une fois les données du compte chargées. ⚠️ Publier une fois les règles de Mon Budget (`database.rules.json` du dépôt Mon budget). Détail dans `js/services/budget-sync.js`.
+Les entretiens (avec un coût) et autres dépenses datés **à partir du 1er octobre 2026** sont publiés dans le nœud de Mon Budget **du même compte**, `users/<uid>/budget/linked/garage` (`{ updatedAt, items: { <id>: { date, amount (centimes), label, kind } } }`, sans pièce jointe, écriture par le SDK via `linkSet` — plus aucun `fetch` vers l'ancienne base publique de Mon budget), et y apparaissent comme dépenses « Transport » en lecture seule — plus de double saisie. Best-effort, uniquement une fois les données du compte chargées, contenu inchangé = pas d'envoi ; sans compte, rien n'est publié. Détail dans `js/services/budget-sync.js`.
 
 ## Rappel « jamais réalisé »
 Dans un rappel d'entretien, la case « Jamais réalisé depuis la mise en circulation » remplace la saisie du dernier entretien : l'échéance et la barre d'avancement se comptent alors depuis la date de mise en circulation du véhicule (champ de la fiche véhicule, case B de la carte grise), à 0 km. Pour un vélo (pas de carte grise), le départ est la date d'achat (onglet Coûts), à 0 km. Sans cette date, seul le critère en km s'applique et la carte du rappel indique où la renseigner. Dès qu'un entretien coche ce rappel, il repart normalement de cet entretien.
 
 ## Rappels en retard à l'ouverture
-Au lancement de l'app (une fois par session), si un ou plusieurs rappels d'entretien sont en retard — tous véhicules confondus —, une fenêtre les signale un par un (véhicule, rappel, retard) avec un bouton « Suivant » s'il y en a plusieurs, puis « Terminé » sur le dernier ; « Voir ce rappel » ouvre directement sa fiche dans l'onglet Entretien du véhicule concerné.
+Au lancement de l'app (une fois par session, après l'écran de connexion), si des rappels d'entretien sont en retard — tous véhicules confondus —, une fenêtre les liste en une seule fois (véhicule, rappel, retard). Un appui sur une ligne ouvre directement la saisie de l'entretien, rappel déjà coché ; un seul bouton « Fermer ».
 
 ## Remise à zéro groupée des rappels et des composants d'usure
 À chaque entretien enregistré (onglet Entretien), plusieurs rappels peuvent être cochés d'un coup (ex. vidange + filtre à huile + filtre à air faits le même jour) : chacun repart de la date et du kilométrage de cet entretien. Pour un vélo, les composants suivis en usure (onglet Usure : chaîne, pneus, plaquettes…) peuvent aussi être cochés et remis à zéro en même temps, sans repasser par le bouton « Remplacé ».
@@ -77,7 +89,7 @@ Dans « Achat & financement » (onglet Coûts), un crédit soldé par anticipati
 
 ## Dossier de revente
 
-Sur la fiche d'un véhicule (onglet Aperçu) → « Exporter le dossier de revente » : ouvre dans un nouvel onglet un document regroupant identité, achat, coût réel, historique d'entretien, consommation et documents, avec un bouton « Imprimer / Enregistrer en PDF ». À remettre à l'acheteur.
+Sur la fiche d'un véhicule (onglet Aperçu) → « Exporter le dossier de revente » : ouvre dans un nouvel onglet un document regroupant identité, achat, coût réel, historique d'entretien, consommation et documents (avec le nombre de pièces jointes), avec un bouton « Imprimer / Enregistrer en PDF ». À remettre à l'acheteur. Les photos jointes aux documents (factures, carte grise…) sont ajoutées en annexe une fois lues via le service de fichiers ; les PDF y sont listés, à joindre séparément.
 
 ## Test local
 ```
@@ -86,4 +98,4 @@ python3 -m http.server 8000
 puis http://localhost:8000.
 
 ## Style
-Style minimaliste commun aux apps (anthracite, cartes pleines), couleur **Acier** (gris argent), thème sombre ou clair. Logo : volant acier avec la ligne d'horizon commune aux logos des apps.
+Style minimaliste commun aux apps (anthracite, cartes pleines), couleur **Acier** (gris argent), thème Auto, sombre ou clair. Textes au vouvoiement. Logo : volant acier avec la ligne d'horizon commune aux logos des apps.
