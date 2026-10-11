@@ -1,35 +1,50 @@
 /*
  * Liaison avec l'app Mon Budget : les dépenses saisies ici (entretiens et
- * autres dépenses) sont publiées dans la base de Mon Budget, sous
- * budget/linked/garage, pour y apparaître sans double saisie. Mon Budget les
- * lit (lecture seule) et les compte dans ses dépenses du mois.
+ * autres dépenses) sont publiées dans le nœud de Mon Budget du même compte,
+ * users/<uid>/budget/linked/garage (même projet Firebase, écriture par le
+ * SDK), pour y apparaître sans double saisie. Mon Budget les lit (lecture
+ * seule) et les compte dans ses dépenses du mois.
  *
  * - Uniquement à partir du 1er octobre 2026 (date de mise en place du lien) :
  *   ce qui précède a déjà été saisi à la main dans Mon Budget.
  * - Montants en centimes (format de Mon Budget), aucune pièce jointe envoyée.
- * - Best-effort, comme le lien avec Carnet : une erreur (hors ligne, règles
- *   pas encore publiées côté Mon Budget) est ignorée et retentée au prochain
- *   changement.
+ * - Best-effort, comme le lien avec Carnet : une erreur est ignorée et
+ *   retentée au prochain changement. Sans compte (mode local) : rien n'est publié.
  */
-const DB_URL = 'https://mon-budget-ade0b-default-rtdb.europe-west1.firebasedatabase.app';
+import { linkSet, currentUser } from './firebase.js';
+
+const PATH = 'budget/linked/garage';
 export const LINK_START = '2026-10-01';
 
 let lastSent = null;
 let timer = null;
 let pending = null;
-let enabled = false;
+let readyUid = null; // compte dont les données sont chargées
+
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(flush, 2000);
+}
 
 /**
- * À appeler une fois les données réellement chargées (cloud reçu, ou mode
- * local) : évite de publier une liste vide depuis un appareil pas encore
- * synchronisé, ce qui effacerait momentanément les dépenses côté Mon Budget.
+ * Changement de compte ou déconnexion : envoi en attente et autorisation abandonnés (rien
+ * de l'ancien compte n'est publié dans le nouveau ; republication une fois ses données chargées).
+ */
+export function resetBudgetSync() {
+  clearTimeout(timer);
+  timer = null;
+  pending = null;
+  readyUid = null;
+}
+
+/**
+ * À appeler une fois les données réellement chargées (cloud reçu) : évite de
+ * publier une liste vide depuis un appareil pas encore synchronisé, ce qui
+ * effacerait momentanément les dépenses côté Mon Budget.
  */
 export function enableBudgetSync() {
-  enabled = true;
-  if (pending) {
-    clearTimeout(timer);
-    timer = setTimeout(flush, 2000);
-  }
+  readyUid = currentUser()?.uid || null;
+  if (pending && readyUid) schedule();
 }
 
 /**
@@ -51,24 +66,20 @@ export function scheduleBudgetSync(entries) {
       });
   });
   pending = items;
-  if (!enabled) return;
-  clearTimeout(timer);
-  timer = setTimeout(flush, 2000);
+  if (readyUid) schedule();
 }
 
 async function flush() {
+  const uid = currentUser()?.uid;
+  // Pas de compte, ou compte dont les données ne sont pas encore chargées : on attend.
+  if (!pending || !uid || uid !== readyUid) return;
   const items = pending;
   pending = null;
-  if (!items) return;
-  const key = JSON.stringify(items);
+  const key = `${uid}:${JSON.stringify(items)}`;
   if (key === lastSent) return;
   try {
-    const res = await fetch(`${DB_URL}/budget/linked/garage.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updatedAt: Date.now(), items })
-    });
-    if (res.ok) lastSent = key;
+    await linkSet(PATH, { updatedAt: Date.now(), items });
+    lastSent = key;
   } catch {
     /* best-effort */
   }

@@ -8,11 +8,15 @@
  *
  * Avant, un PDF était « téléchargé » via un lien data: : sur iPhone en mode app (PWA) il s'ouvrait
  * en plein écran sans bouton retour, ou pas du tout ; Chrome bloque aussi l'ouverture des data:.
+ *
+ * Le contenu d'une pièce jointe enregistrée est lu à l'ouverture (js/services/files.js) :
+ * copie de l'appareil, sinon cloud.
  */
 import { esc } from '../core/utils.js';
 import { icon } from './icons.js';
 import { openSheet, openPhotoLightbox } from './dialog.js';
-import { toastError } from './toast.js';
+import { toast, toastError } from './toast.js';
+import { getFile } from '../services/files.js';
 
 const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 const MAX_PAGES = 40;
@@ -220,11 +224,39 @@ export function openPdfViewer(dataUrl, name = '') {
     });
 }
 
-/** Ouvre une pièce jointe de document (photo ou PDF). */
-export function openAttachment(file, name = '') {
-  if (!file) return;
-  if (file.startsWith('data:image/')) return openPhotoLightbox(file, name);
-  if (file.startsWith('data:application/pdf')) return openPdfViewer(file, name);
+/** Ouvre un contenu de pièce jointe déjà en mémoire (data URL) : photo ou PDF. */
+export function openAttachmentData(data, name = '') {
+  if (!data) return;
+  if (data.startsWith('data:image/')) return openPhotoLightbox(data, name);
+  if (data.startsWith('data:application/pdf')) return openPdfViewer(data, name);
   toastError('Format de pièce jointe non reconnu.');
+}
+
+let opening = false;
+
+/**
+ * Ouvre une pièce jointe de document ({ id, name, mime }) : contenu lu à l'ouverture, sur
+ * l'appareil ou à défaut dans le cloud. `data` (nouveau fichier pas encore enregistré) ou
+ * `file` (ancien format, contenu encore dans le document) sont ouverts directement.
+ */
+export async function openAttachment(f) {
+  if (!f || opening) return;
+  const inline = f.data || f.file;
+  if (inline) return openAttachmentData(inline, f.name);
+  opening = true;
+  let wait = null;
+  const slow = setTimeout(() => (wait = toast('Chargement de la pièce jointe…', { type: 'loading' })), 300);
+  try {
+    const data = await getFile(f.id);
+    if (data) openAttachmentData(data, f.name);
+    else toastError(navigator.onLine ? 'Pièce jointe introuvable sur cet appareil et dans votre compte.' : 'Pièce jointe indisponible hors ligne.');
+  } catch (error) {
+    console.warn('[pièce jointe]', error);
+    toastError(navigator.onLine ? 'Impossible d’ouvrir la pièce jointe. Réessayez.' : 'Pièce jointe indisponible hors ligne.');
+  } finally {
+    clearTimeout(slow);
+    wait?.close();
+    opening = false;
+  }
 }
 

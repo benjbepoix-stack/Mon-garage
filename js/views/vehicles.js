@@ -8,6 +8,7 @@ import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { toNumber, intInput, positive, compressPhoto } from './common.js';
+import { deleteFiles } from '../services/files.js';
 
 let photo = null; // data-URL en cours, '' = retirée, null = inchangée
 let onDeleted = () => {};
@@ -133,7 +134,10 @@ async function remove() {
     danger: true
   });
   if (!ok) return;
+  // Pièces jointes de ses documents, rangées hors du nœud synchronisé : supprimées aussi.
+  const files = store.field('docs', id).flatMap(d => d.files);
   store.setKeys({ ...store.removalPatch(id), vehicles: store.vehicles().filter(x => x.id !== id) });
+  deleteFiles(files);
   closeSheet('vehicleSheet');
   toast(`${v.name} supprimé`);
   onDeleted(id);

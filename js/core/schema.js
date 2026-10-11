@@ -8,10 +8,11 @@
  *   v_<id>_reminders    plan d'entretien (rappels date / kilométrage)
  *   v_<id>_fixed        frais fixes (assurance, stationnement, carburant estimé…)
  *   v_<id>_loan         financement (crédit, LOA, LLD)
- *   v_<id>_docs         documents et échéances
+ *   v_<id>_docs         documents et échéances ; pièces jointes en métadonnées
+ *                       ({ id, name, mime }), contenu hors du nœud (js/services/files.js)
  *   v_<id>_parts        composants suivis en usure (vélos)
  *   v_<id>_expenses     autres dépenses ponctuelles, hors entretien (roues, équipement…)
- *   activeId, theme, style
+ *   activeId, theme (auto, dark ou light), style
  *
  * v_<id>_fuel (pleins saisis à la main) a existé mais a été retiré : le carburant ne
  * se compte plus que par estimation (voir v_<id>_fixed, catégorie « Carburant » auto).
@@ -182,18 +183,32 @@ function repairAutoFuelOverlaps(list) {
 const byDateDesc = (a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id));
 const MAX_DOC_FILES = 10;
 const DOC_SOURCES = ['maintenance', 'expense'];
+/** Types de pièces jointes acceptés (photo ou PDF). */
+const FILE_MIME = /^(image\/[\w.+-]+|application\/pdf)$/;
+/** Identifiant de fichier utilisable comme clé Firebase (users/<uid>/garage_files/<id>). */
+const fileId = v => (typeof v === 'string' && /^[\w-]{1,60}$/.test(v) ? v : null);
 
 /**
- * Pièces jointes d'un document : plusieurs fichiers possibles (`files`). Reprend aussi l'ancien
- * format à un seul fichier (`file`/`fileName`, avant l'ajout des pièces jointes multiples).
+ * Pièces jointes d'un document : plusieurs fichiers possibles (`files`), en métadonnées
+ * { id, name, mime } — le contenu est rangé à part (js/services/files.js).
+ * Pendant la transition, accepte aussi l'ancien format où le contenu était dans le document
+ * (`file` = data URL, `fileName`), et même l'ancien format à un seul fichier (`file`/`fileName`
+ * sur le document) : `file` est alors conservé jusqu'à sa copie dans le nouveau stockage
+ * (js/features/files-migration.js).
  */
 function normalizeDocFiles(x) {
   const legacy = fileUrl(x.file);
-  const raw = Array.isArray(x.files) ? x.files : legacy ? [{ id: x.id, file: legacy, fileName: x.fileName }] : [];
+  const raw = x.files !== undefined && x.files !== null ? asArray(x.files) : legacy ? [{ id: x.id, file: legacy, fileName: x.fileName }] : [];
   return raw
     .filter(isObj)
-    .map(y => ({ id: id(y.id) || makeId(), file: fileUrl(y.file), fileName: str(y.fileName, 150) }))
-    .filter(y => y.file)
+    .map(y => {
+      const file = fileUrl(y.file);
+      const mime = file ? file.slice(5, file.search(/[;,]/)).toLowerCase() : str(y.mime, 60).toLowerCase();
+      const out = { id: fileId(y.id) || makeId(), name: str(y.name || y.fileName, 150), mime };
+      if (file) out.file = file;
+      return out;
+    })
+    .filter(y => y.file || FILE_MIME.test(y.mime))
     .slice(0, MAX_DOC_FILES);
 }
 
@@ -306,11 +321,13 @@ export const DEFAULTS = { maintenance: [], reminders: [], fixed: [], loan: norma
 
 /** Styles graphiques proposés (le premier est celui par défaut). */
 export const STYLES = [{ id: 'acier', name: 'Acier', hint: 'Gris argent' }];
+/** Thèmes : auto (défaut) suit le réglage clair / sombre de l'appareil. */
+export const THEMES = ['auto', 'dark', 'light'];
 
 export function normalizeKey(key, value) {
   if (key === 'vehicles') return normalizeVehicles(value);
   if (key === 'activeId') return typeof value === 'string' ? value : null;
-  if (key === 'theme') return value === 'light' ? 'light' : 'dark';
+  if (key === 'theme') return THEMES.includes(value) ? value : null;
   if (key === 'style') return STYLES.some(x => x.id === value) ? value : STYLES[0].id;
   if (key.startsWith('photo_')) return typeof value === 'string' && value.startsWith('data:image/') ? value : null;
   const fk = parseFieldKey(key);

@@ -6,6 +6,10 @@
  * - Session conservée sur l'appareil (même stockage que l'ancienne version :
  *   aucune reconnexion nécessaire après la mise à jour).
  * - Données : users/<uid>/garage — écritures clé par clé (`update`).
+ * - Pièces jointes des documents : users/<uid>/garage_files/<id>, hors du nœud
+ *   synchronisé (lues à la demande, voir js/services/files.js).
+ * - Liens avec Carnet et Mon budget (même projet, même compte) :
+ *   users/<uid>/carnet/garage_alerts et users/<uid>/budget/linked/garage (`linkSet`).
  * - Tant que la configuration n'est pas renseignée, l'app fonctionne en local.
  */
 import { FIREBASE_CONFIG, FIREBASE_SDK_VERSION } from '../config/firebase-config.js';
@@ -24,6 +28,8 @@ let inflight = 0;
 let buffer = {};
 let flushTimer = null;
 let unsubscribeData = null;
+/** Incrémenté à chaque changement de compte : les réponses d'une session précédente sont ignorées. */
+let session = 0;
 let handlers = { onUser: () => {}, onRemote: () => {}, onStatus: () => {}, onError: () => {}, onAck: () => {}, onReady: () => {}, getSnapshot: () => ({}) };
 
 const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error(msg)), ms))]);
@@ -67,15 +73,17 @@ function flush() {
   flushTimer = null;
   if (!ready || fatal || !rootRef || !Object.keys(buffer).length) return emitStatus();
   const payload = clean(buffer);
+  const id = session;
   buffer = {};
   inflight++;
   emitStatus();
   dbMod
     .update(rootRef, payload)
-    .then(() => handlers.onAck(Object.keys(payload)))
+    .then(() => id === session && handlers.onAck(Object.keys(payload)))
     .catch(error => {
       console.error('[firebase] écriture refusée', error);
-      handlers.onError(describeDbError(error));
+      // Écriture d'un compte précédent (déconnexion entre-temps) : sans effet sur le compte actuel.
+      if (id === session) handlers.onError(describeDbError(error));
     })
     .finally(() => {
       inflight--;
@@ -103,12 +111,16 @@ export function clearPending() {
 /* ---------- Données de l'utilisateur ---------- */
 function listen(u) {
   unsubscribeData?.();
+  const id = ++session;
   ready = false;
+  // Accès refusé pour la session précédente (ex. : mot de passe changé ailleurs) : nouvel essai pour ce compte.
+  fatal = null;
   rootRef = dbMod.ref(db, `users/${u.uid}/garage`);
   let first = true;
   unsubscribeData = dbMod.onValue(
     rootRef,
     snap => {
+      if (id !== session) return;
       const value = snap.val();
       if (first) {
         first = false;
@@ -117,17 +129,18 @@ function listen(u) {
         else Object.assign(buffer, handlers.getSnapshot(), buffer); // compte vide : on envoie l'appareil
         ready = true;
         flush();
-        handlers.onReady();
+        handlers.onReady({ loaded: true });
         return;
       }
       handlers.onRemote(value || {});
     },
     error => {
+      if (id !== session) return;
       console.error('[firebase] lecture refusée', error);
       fatal = describeDbError(error);
       emitStatus();
       handlers.onError(fatal);
-      handlers.onReady();
+      handlers.onReady({ loaded: false });
     }
   );
 }
@@ -161,6 +174,7 @@ export async function initFirebase(options) {
       handlers.onUser(u);
       if (u) listen(u);
       else {
+        session++;
         unsubscribeData?.();
         unsubscribeData = null;
         ready = false;
@@ -178,6 +192,39 @@ export async function initFirebase(options) {
 }
 
 export const currentUser = () => user;
+
+/*
+ * Pièces jointes des documents (photos, PDF) : rangées hors du nœud synchronisé
+ * (users/<uid>/garage_files/<id>) pour ne jamais être téléchargées en bloc à
+ * l'ouverture de l'app ni renvoyées à chaque modification — chacune est lue à la demande.
+ */
+const fileRef = id => dbMod.ref(db, `users/${user.uid}/garage_files/${id}`);
+export const canUseCloudFiles = () => Boolean(user && dbMod && db && !fatal);
+export async function cloudFilePut(id, dataUrl) {
+  await dbMod.set(fileRef(id), dataUrl);
+}
+export async function cloudFileGet(id) {
+  const snap = await withTimeout(dbMod.get(fileRef(id)), 20000, 'timeout');
+  return snap.exists() ? snap.val() : null;
+}
+export async function cloudFileDelete(id) {
+  await dbMod.remove(fileRef(id));
+}
+
+/*
+ * Liens avec Carnet et Mon budget (même projet, même compte) : écrit `value`
+ * sous users/<uid>/<path> (carnet/garage_alerts, budget/linked/garage).
+ * Refusé sans compte connecté (rien n'est publié hors ligne ou en local) et si
+ * la lecture du compte a échoué.
+ */
+export async function linkSet(path, value) {
+  if (!user || !dbMod || !db) throw new Error('Aucun compte connecté.');
+  if (fatal) throw new Error(fatal);
+  const rel = String(path || '').split('/').filter(Boolean).join('/');
+  if (!rel) throw new Error('Chemin vide.');
+  await dbMod.set(dbMod.ref(db, `users/${user.uid}/${rel}`), clean(value));
+}
+
 export const isConfigured = () => Boolean(FIREBASE_CONFIG?.apiKey && FIREBASE_CONFIG?.databaseURL);
 
 export async function signIn(email, password) {

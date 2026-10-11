@@ -5,7 +5,7 @@ import { isBike } from './core/schema.js';
 import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
-import { initDialogs, confirmDialog, openPhotoLightbox, openSheet } from './ui/dialog.js';
+import { initDialogs, confirmDialog, openPhotoLightbox, openSheet, closeAllSheets } from './ui/dialog.js';
 import { applyTheme, renderStylePicker, renderThemeSwitch } from './ui/theme.js';
 import { STYLES } from './core/schema.js';
 import { renderStatus } from './ui/status.js';
@@ -22,12 +22,19 @@ import { initParts, openPart } from './views/parts.js';
 import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/costs.js';
 import { initDocs, openDoc } from './views/docs.js';
 import { initExpenses, openExpense } from './views/expenses.js';
-import { scheduleBudgetSync, enableBudgetSync } from './services/budget-sync.js';
-import { enableAlertsSync } from './services/carnet-sync.js';
+import { scheduleBudgetSync, enableBudgetSync, resetBudgetSync } from './services/budget-sync.js';
+import { enableAlertsSync, resetAlertsSync } from './services/carnet-sync.js';
+import { retryPendingFiles, clearLocalFiles } from './services/files.js';
+import { migrateInlineFiles } from './features/files-migration.js';
 import { fieldsOf } from './views/common.js';
 
 const LAST_UID = 'garage_last_uid';
+const THEME_MIGRATED = 'garage_theme_auto';
+/** Premier compte utilisé sur cet appareil, dont les données n'ont pas encore été reçues (uid). */
+const ADOPT_UID = 'garage_adopt_uid';
 let view = 'home';
+let dataReady = false; // premier instantané du compte reçu
+let firstAccount = false; // premier compte sur cet appareil : ses données priment sur les saisies sans compte
 
 /* ---------- Navigation (#/v/<id>/<onglet>) ---------- */
 const hashFor = (id, tab) => `#/v/${encodeURIComponent(id)}${tab && tab !== 'overview' ? `/${tab}` : ''}`;
@@ -94,16 +101,62 @@ function render() {
   document.title = detail ? `${v.name} · Mon Garage` : 'Mon Garage';
   if (detail) renderDetail();
   else renderHome();
+  publishLinks();
+}
+
+/** Publication (débouncée) vers Mon Budget et Carnet ; n'a lieu qu'une fois les données du compte chargées. */
+function publishLinks() {
   // Dépenses publiées vers Mon Budget (tous véhicules, archivés compris : la dépense a bien eu lieu).
   scheduleBudgetSync(store.vehicles().map(vehicle => ({ vehicle, field: fieldsOf(vehicle.id) })));
   // Échéances publiées vers Carnet (véhicules actifs).
   publishAlerts();
 }
 
-/** Données du compte chargées (cloud reçu, ou appareil seul) : liaisons avec Mon Budget et Carnet autorisées. */
+/** Données du compte chargées (cloud reçu) : liaisons avec Mon Budget et Carnet autorisées (rien sans compte). */
 function enableLinks() {
   enableBudgetSync();
   enableAlertsSync();
+}
+
+/** Changement de compte ou déconnexion : rien n'est publié avant le chargement des données du compte suivant. */
+function resetLinks() {
+  resetBudgetSync();
+  resetAlertsSync();
+}
+
+/* ---------- Pièces jointes ---------- */
+/** Copie cloud exigée avant d'alléger un document : un compte est utilisé sur cet appareil. */
+const needsCloud = () => Boolean(currentUser() || readText(LAST_UID, ''));
+
+/** Range hors du nœud synchronisé les fichiers encore contenus dans les documents. */
+function migrateFiles() {
+  migrateInlineFiles({ needsCloud }).then(n => n && console.info(`[files] ${n} pièce(s) jointe(s) rangée(s) hors du nœud synchronisé`));
+}
+
+/**
+ * Données prêtes (premier instantané du compte, ou appareil seul) : liaisons, envois de fichiers
+ * en attente, migration des pièces jointes.
+ */
+function onDataReady() {
+  enableLinks();
+  publishLinks();
+  checkOverdue();
+  // En arrière-plan : hors ligne, la base Firebase ne répond qu'au retour du réseau.
+  if (currentUser()) retryPendingFiles().catch(() => {});
+  migrateFiles();
+}
+
+/* ---------- Thème ---------- */
+/**
+ * Thème « Auto » : l'ancien défaut « Sombre » enregistré devient « Auto », une seule fois
+ * (sur l'appareil au lancement, puis à la première réception des données du compte).
+ * Un choix fait dans les réglages arrête la migration.
+ */
+function migrateTheme(stage) {
+  const done = readText(THEME_MIGRATED, '');
+  if (done === 'cloud' || (stage === 'local' && done)) return;
+  if (store.theme() === 'dark') store.setKeys({ theme: 'auto' });
+  write(THEME_MIGRATED, stage);
 }
 
 /* ---------- Connexion ---------- */
@@ -124,7 +177,7 @@ function hideAuth() {
 
 function renderAuthMode() {
   const texts = {
-    login: ['Connexion', 'Retrouvez vos véhicules sur tous vos appareils.', 'Se connecter', 'Créer un compte'],
+    login: ['Connexion', 'Même compte que Ma Maison, Carnet, Allure et Mon budget.', 'Se connecter', 'Créer un compte'],
     signup: ['Créer mon compte', 'Un compte pour synchroniser votre garage entre vos appareils.', 'Créer le compte', 'J’ai déjà un compte'],
     reset: ['Mot de passe oublié', 'Indiquez votre e-mail : vous recevrez un lien pour choisir un nouveau mot de passe.', 'Envoyer le lien', 'Retour à la connexion']
   }[authMode];
@@ -175,19 +228,28 @@ async function onAuthSubmit(e) {
 }
 
 function onUser(user) {
+  dataReady = false;
+  resetLinks();
   if (user) {
     // Autre compte que le précédent sur cet appareil : on repart d'une base vide.
     const last = readText(LAST_UID, '');
+    if (!last) write(ADOPT_UID, user.uid);
     if (last && last !== user.uid) {
       clearPending();
       store.resetLocal();
+      clearLocalFiles();
+      write(ADOPT_UID, '');
     }
+    // Gardé jusqu'à la réception des données (lecture refusée, app fermée avant : toujours protégé).
+    firstAccount = readText(ADOPT_UID, '') === user.uid;
     write(LAST_UID, user.uid);
     $('#accountLine').textContent = `Connecté : ${user.email}`;
     $('#logoutBtn').hidden = false;
     hideAuth();
     route();
   } else {
+    // Déconnexion (ici ou depuis une autre app : session commune) : rien de l'ancien compte au-dessus de l'écran de connexion.
+    closeAllSheets();
     authMode = 'login';
     renderAuthMode();
     showAuth('form');
@@ -210,7 +272,7 @@ function initAuthUI() {
     $('#accountLine').textContent = 'Mode hors ligne : données de cet appareil uniquement.';
     toast('Mode hors ligne', { type: 'info' });
     // Pop-up des entretiens en retard : une fois l'écran de connexion fermé, pas par-dessus.
-    checkOverdue();
+    onDataReady();
   });
   $('#logoutBtn').addEventListener('click', async () => {
     if (!currentUser()) return;
@@ -265,6 +327,7 @@ function initGlobalErrors() {
 async function init() {
   initGlobalErrors();
   store.loadLocal();
+  migrateTheme('local');
   applyTheme(store.theme(), store.style());
   renderStylePicker(STYLES, store.style());
   renderThemeSwitch(store.theme());
@@ -304,7 +367,9 @@ async function init() {
   });
   $('#themeSwitch').addEventListener('change', e => {
     const val = e.target.closest('input[name="theme"]')?.value;
-    if (val && val !== store.theme()) store.setKeys({ theme: val });
+    if (!val) return;
+    write(THEME_MIGRATED, 'cloud'); // choix explicite : plus de migration
+    if (val !== store.theme()) store.setKeys({ theme: val });
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
@@ -330,8 +395,7 @@ async function init() {
     hideAuth();
     renderStatus('local', 'Données enregistrées sur cet appareil');
     $('#accountLine').textContent = 'Données enregistrées sur cet appareil (synchronisation à venir).';
-    checkOverdue();
-    enableLinks();
+    onDataReady();
     return;
   }
   showAuth('loading');
@@ -339,9 +403,26 @@ async function init() {
   const ok = await initFirebase({
     onUser,
     onRemote: remote => {
-      store.applyRemote(remote);
-      checkOverdue();
-      enableLinks();
+      if (!dataReady && firstAccount) {
+        // Premier compte sur cet appareil, déjà rempli : les saisies faites sans compte ne
+        // remplacent rien dans le compte (les véhicules créés sur l'appareil y sont ajoutés).
+        clearPending();
+        store.adoptRemote(remote);
+      } else store.applyRemote(remote);
+      migrateTheme('cloud');
+      if (dataReady) {
+        enableLinks();
+        // Fichier ajouté dans un document par un appareil resté à l'ancienne version : rangé à part.
+        migrateFiles();
+      }
+    },
+    // Premier instantané reçu (même vide : les données de l'appareil deviennent celles du compte).
+    // Lecture refusée (loaded: false) : rien n'est publié ni repris ; pop-up des retards sur les données de l'appareil.
+    onReady: ({ loaded } = {}) => {
+      if (!loaded) return checkOverdue();
+      dataReady = true;
+      write(ADOPT_UID, '');
+      onDataReady();
     },
     onStatus: renderStatus,
     onError: message => toastError(`Synchronisation : ${message}`),

@@ -66,8 +66,8 @@ export function renderHome() {
   const bikes = active.filter(isBike);
   $('#vehicleCount').textContent = cars.length;
   $('#bikeCount').textContent = bikes.length;
-  $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans ton garage.</div>';
-  $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans ton garage.</div>';
+  $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans votre garage.</div>';
+  $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans votre garage.</div>';
   $('#archivesLink').hidden = !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
 }

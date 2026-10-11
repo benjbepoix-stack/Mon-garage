@@ -18,10 +18,11 @@ import { openResaleDossier } from '../features/resale-dossier.js';
 
 let tab = 'overview';
 
+/** Onglets de la fiche : libellés courts, les 5 tiennent sur un écran de 375 px sans défilement. */
 export function tabsFor(v) {
   return isBike(v)
-    ? [['overview', 'Aperçu'], ['parts', 'Usure'], ['maintenance', 'Entretiens'], ['costs', 'Coûts'], ['docs', 'Documents']]
-    : [['overview', 'Aperçu'], ['maintenance', 'Entretiens'], ['fuel', isElectric(v) ? 'Recharge' : 'Carburant'], ['costs', 'Coûts'], ['docs', 'Documents']];
+    ? [['overview', 'Aperçu'], ['parts', 'Usure'], ['maintenance', 'Entretien'], ['costs', 'Coûts'], ['docs', 'Docs']]
+    : [['overview', 'Aperçu'], ['maintenance', 'Entretien'], ['fuel', isElectric(v) ? 'Recharge' : 'Carburant'], ['costs', 'Coûts'], ['docs', 'Docs']];
 }
 
 export const currentTab = () => tab;

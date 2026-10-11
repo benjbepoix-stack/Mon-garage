@@ -6,12 +6,13 @@ import { reminderStatus, currentKm, serviceStartDate } from '../core/calc.js';
 import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
-import { toast } from '../ui/toast.js';
+import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
 import { createFileField } from '../ui/file-field.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
 import { linkedDoc, withLinkedDoc, withoutLinkedDoc } from '../features/linked-doc.js';
+import { deleteFiles } from '../services/files.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'short', year: 'numeric' });
 let invoiceField = null;
@@ -134,19 +135,34 @@ const maintenanceSchema = {
   note: [rules.maxLength(1000)]
 };
 
-function onMaintenanceSubmit(e) {
+async function onMaintenanceSubmit(e) {
   e.preventDefault();
   const form = e.currentTarget;
   const val = formValues(form);
   const { valid, errors } = validate(val, maintenanceSchema);
   if (!valid) return showErrors(form, errors);
   const v = store.active();
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  let files;
+  try {
+    // Facture rangée hors du nœud synchronisé (appareil + cloud) avant d'enregistrer l'entretien.
+    files = await invoiceField.commit();
+  } catch (error) {
+    console.error('[entretien] facture', error);
+    toastError('Facture non enregistrée. Réessayez.');
+    return;
+  } finally {
+    submit.disabled = false;
+  }
+  // Compte changé pendant l'enregistrement des fichiers : rien n'est écrit dans l'autre compte.
+  if (!store.vehicle(v.id)) return;
   const f = fieldsOf(v.id);
   const existing = val.editId ? f.maintenance.find(m => m.id === val.editId) : null;
   const item = { id: existing ? existing.id : makeId(), type: val.type, label: val.label, date: val.date, km: toNumber(val.km) || 0, cost: toNumber(val.cost) || 0, garage: val.garage, note: val.note };
   const list = existing ? f.maintenance.map(m => (m === existing ? item : m)) : [...f.maintenance, item];
   // Facture jointe : rangée automatiquement dans l'onglet Documents (document « Facture » relié).
-  const patch = { maintenance: list, docs: withLinkedDoc(f.docs, { source: 'maintenance', sourceId: item.id, title: item.label ? `${item.type} · ${item.label}` : item.type, date: item.date, files: invoiceField.get() }) };
+  const patch = { maintenance: list, docs: withLinkedDoc(f.docs, { source: 'maintenance', sourceId: item.id, title: item.label ? `${item.type} · ${item.label}` : item.type, date: item.date, files }) };
   // Remise à zéro de l'usure des composants (vélo) cochés, comme le bouton « Remplacé » de l'onglet Usure.
   const checkedPartIds = new Set($$('#maPartList input[name="parts"]:checked').map(c => c.value));
   if (checkedPartIds.size) {
@@ -171,6 +187,7 @@ async function removeMaintenance() {
   const invoice = x && linkedDoc(docs, x.id);
   if (!x || !(await confirmDialog({ title: 'Supprimer cet entretien ?', message: `${x.type} — ${fmtDate(x.date)}${invoice ? ' · sa facture sera aussi retirée des documents' : ''}`, confirmLabel: 'Supprimer', danger: true }))) return;
   store.setKeys({ [fieldKey(v.id, 'maintenance')]: list.filter(m => m !== x), [fieldKey(v.id, 'docs')]: withoutLinkedDoc(docs, x.id) });
+  deleteFiles(invoice?.files);
   closeSheet('maintenanceSheet');
   toast('Entretien supprimé');
 }
@@ -260,7 +277,7 @@ async function removeReminder() {
 /** Facture d'un entretien : ouverte directement (un fichier) ou depuis la fiche de l'entretien (plusieurs). */
 function openInvoice(id) {
   const files = linkedDoc(store.field('docs', store.activeId()), id)?.files || [];
-  if (files.length === 1) openAttachment(files[0].file, files[0].fileName);
+  if (files.length === 1) openAttachment(files[0]);
   else openMaintenance(id);
 }
 

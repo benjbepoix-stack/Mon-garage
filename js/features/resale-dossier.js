@@ -6,6 +6,10 @@
  * Ouvert dans un nouvel onglet via document.write (pas de Blob URL, qui
  * serait refusée en mode PWA « écran d'accueil » sur iOS) ; l'ouverture
  * doit rester synchrone avec le clic pour ne pas être bloquée en popup.
+ *
+ * Les pièces jointes des documents (factures, carte grise…) sont rangées hors
+ * du nœud synchronisé : lues ensuite via js/services/files.js, les photos sont
+ * ajoutées en annexe une fois chargées, les PDF listés (à joindre à part).
  */
 import { esc } from '../core/utils.js';
 import { formatKey, todayKey } from '../core/dates.js';
@@ -13,6 +17,7 @@ import * as store from '../core/store.js';
 import { costSummary, activeFuelEstimate, currentKm } from '../core/calc.js';
 import { isBike, isElectric } from '../core/schema.js';
 import { euro, euroRound, km, dec } from '../views/common.js';
+import { getFile } from '../services/files.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -59,7 +64,8 @@ function buildBody(v, f) {
 
   const maintenance = f.maintenance.map(x => [fmtDate(x.date), x.km ? km(x.km) : '—', x.type + (x.label ? ` · ${x.label}` : ''), x.cost ? euro(x.cost) : '—', x.garage || '—']);
 
-  const docs = f.docs.map(d => [d.type + (d.label ? ` · ${d.label}` : ''), d.expiry ? fmtDate(d.expiry) : 'Sans échéance', d.note || '—']);
+  const docs = f.docs.map(d => [d.type + (d.label ? ` · ${d.label}` : ''), d.expiry ? fmtDate(d.expiry) : 'Sans échéance', d.note || '—', d.files.length > 1 ? `${d.files.length} pièces jointes` : d.files.length ? '1 pièce jointe' : '—']);
+  const hasFiles = f.docs.some(d => d.files.length);
 
   let fuelSection = '';
   if (!isBike(v)) {
@@ -92,7 +98,8 @@ function buildBody(v, f) {
     ${section('Historique d’entretien', table(['Date', 'Km', 'Type', 'Coût', 'Garage'], maintenance))}
     ${fuelSection}
     ${partsSection}
-    ${section('Documents', table(['Document', 'Échéance', 'Note'], docs))}
+    ${section('Documents', table(['Document', 'Échéance', 'Note', 'Pièces jointes'], docs))}
+    ${hasFiles ? `<section id="annexes"><h2>Annexes : pièces jointes</h2><p class="empty" id="annexesStatus">Chargement des pièces jointes…</p></section>` : ''}
     <p class="dossier-footer">Dossier généré le ${fmtDate(todayKey())} depuis l’application Mon Garage.</p>`;
 }
 
@@ -119,6 +126,9 @@ function buildHTML(v, f) {
   .dossier-footer { margin-top: 40px; color: #999; font-size: 12px; text-align: center; }
   .print-bar { position: sticky; top: 0; background: #fff; padding: 10px 0; margin-bottom: 8px; text-align: right; border-bottom: 1px solid #eee; }
   .print-bar button { font: inherit; padding: 8px 16px; border-radius: 8px; border: none; background: #111; color: #fff; cursor: pointer; }
+  figure { margin: 16px 0; break-inside: avoid; }
+  figure img { display: block; max-width: 100%; max-height: 900px; border: 1px solid #eee; border-radius: 8px; }
+  figcaption, .annex-pdf { font-size: 13px; color: #666; margin-top: 4px; }
   @media print { .print-bar { display: none; } body { padding: 0; } }
 </style>
 </head>
@@ -129,6 +139,45 @@ function buildHTML(v, f) {
 </html>`;
 }
 
+/** Annexes : photos jointes aux documents (lues sur l'appareil ou dans le cloud), PDF listés. */
+async function fillAnnexes(win, f) {
+  const doc = win.document;
+  const host = doc.getElementById('annexes');
+  if (!host) return;
+  let missing = 0;
+  for (const d of f.docs) {
+    const title = d.type + (d.label ? ` · ${d.label}` : '');
+    for (const file of d.files) {
+      const caption = `${title}${file.name ? ` — ${file.name}` : ''}`;
+      if (!file.mime.startsWith('image/')) {
+        const p = doc.createElement('p');
+        p.className = 'annex-pdf';
+        p.textContent = `${caption} (PDF, à joindre séparément)`;
+        host.appendChild(p);
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const data = file.file || (await getFile(file.id).catch(() => null));
+      if (win.closed) return;
+      if (!data?.startsWith('data:image/')) {
+        missing++;
+        continue;
+      }
+      const fig = doc.createElement('figure');
+      const img = doc.createElement('img');
+      img.src = data;
+      img.alt = caption;
+      const cap = doc.createElement('figcaption');
+      cap.textContent = caption;
+      fig.append(img, cap);
+      host.appendChild(fig);
+    }
+  }
+  const status = doc.getElementById('annexesStatus');
+  if (missing) status.textContent = `${missing} photo(s) indisponible(s) hors ligne.`;
+  else status.remove();
+}
+
 /** Ouvre le dossier de revente dans un nouvel onglet, prêt à imprimer en PDF. */
 export function openResaleDossier(v, f) {
   const win = window.open('', '_blank');
@@ -136,5 +185,6 @@ export function openResaleDossier(v, f) {
   win.document.open();
   win.document.write(buildHTML(v, f));
   win.document.close();
+  fillAnnexes(win, f).catch(error => console.warn('[dossier] annexes', error));
   return true;
 }
