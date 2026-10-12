@@ -58,6 +58,31 @@ function card(v) {
   </article>`;
 }
 
+const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+
+/** Résumé en tête de l'accueil (sur le paysage) : échéances en retard ou proches, tous véhicules actifs. */
+function renderHero(active) {
+  let late = 0;
+  let soon = 0;
+  active.forEach(v => alerts(v, fieldsOf(v.id)).forEach(a => {
+    if (a.level === 'late') late++;
+    else if (a.level === 'soon') soon++;
+  }));
+  const level = !active.length ? 'empty' : late ? 'late' : soon ? 'soon' : 'ok';
+  const title = {
+    empty: 'Garage vide',
+    late: plural(late, 'échéance en retard', 'échéances en retard'),
+    soon: plural(soon, 'échéance proche', 'échéances proches'),
+    ok: 'Tout est à jour'
+  }[level];
+  const cars = active.filter(v => !isBike(v)).length;
+  const bikes = active.length - cars;
+  const facts = [cars && plural(cars, 'véhicule', 'véhicules'), bikes && plural(bikes, 'vélo', 'vélos'), late && soon ? plural(soon, 'autre à prévoir', 'autres à prévoir') : ''].filter(Boolean);
+  $('#garageHero').dataset.level = level;
+  $('#garageHeroTitle').innerHTML = `<span class="garage-hero__dot" aria-hidden="true"></span>${esc(title)}`;
+  $('#garageHeroFacts').textContent = facts.length ? facts.join(' · ') : 'Ajoutez un véhicule ou un vélo pour suivre son entretien.';
+}
+
 export function renderHome() {
   const all = store.vehicles();
   const active = all.filter(v => !v.archived);
@@ -68,6 +93,7 @@ export function renderHome() {
   $('#bikeCount').textContent = bikes.length;
   $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans votre garage.</div>';
   $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans votre garage.</div>';
+  renderHero(active);
   $('#archivesLink').hidden = !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
 }

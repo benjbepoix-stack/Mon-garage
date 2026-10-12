@@ -378,6 +378,11 @@ async function init() {
   window.addEventListener('pagehide', flushNow);
   window.addEventListener('resize', debounce(render, 200));
 
+  // En-tête transparent sur le paysage de l'accueil, opaque dès qu'on fait défiler.
+  const onScroll = () => document.body.classList.toggle('is-scrolled', window.scrollY > 24);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
   route();
 
   // Mises à jour : voir sw.js. Un nouveau service worker recharge la page une fois.
