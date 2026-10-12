@@ -1,7 +1,7 @@
 /* Accueil : cartes des véhicules et vélos, avec la prochaine échéance. */
 import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { alerts } from '../core/calc.js';
+import { alerts, currentKm } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { icon } from '../ui/icons.js';
 import { fieldsOf, photoHtml } from './common.js';
@@ -34,53 +34,78 @@ export function publishAlerts() {
   scheduleAlertsSync(Object.fromEntries(active.map(v => [v.id, alertsDigest(v, fieldsOf(v.id))])));
 }
 
-function card(v) {
+const TAB_OF = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
+const count = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+const kmLabel = n => `${Math.round(n).toLocaleString('fr-FR')} km`;
+
+/** Une ligne par véhicule : vignette, nom, marque / modèle, kilométrage et état en bout de ligne. */
+function row(v) {
   const f = fieldsOf(v.id);
-  const list = alerts(v, f);
-  const next = list[0];
-  // Autres échéances à surveiller (en retard ou bientôt) : un simple compteur.
-  const more = list.slice(1).filter(a => a.level === 'late' || a.level === 'soon').length;
+  const urgent = alerts(v, f).filter(a => a.level === 'late' || a.level === 'soon');
+  const late = urgent.filter(a => a.level === 'late').length;
   const hasImg = v.hasPhoto && store.photo(v.id);
-  // Juste la marque, le modèle et (pour un véhicule) la plaque : pas d'année, de km ni de carburant ici.
-  const sub = [v.brand, v.model, ...(isBike(v) ? [] : [v.plate])].filter(Boolean).join(' · ');
-  return `<article class="gcard">
+  // Juste la marque, le modèle et (pour un véhicule) la plaque : pas d'année ni de carburant ici.
+  const sub = [v.brand, v.model, ...(isBike(v) ? [] : [v.plate])].filter(Boolean).join(' ');
+  const km = currentKm(v, f);
+  const state = late ? `<span class="vrow__state is-late">${count(late, 'en retard', 'en retard')}</span>`
+    : urgent.length ? `<span class="vrow__state is-soon">${count(urgent.length, 'à prévoir', 'à prévoir')}</span>`
+    : '<span class="vrow__state">À jour</span>';
+  return `<li class="vrow">
     ${hasImg
-      ? `<button type="button" class="gcard__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 34)}</button>`
-      : `<div class="gcard__photo">${photoHtml(v, 34)}</div>`}
-    <button type="button" class="gcard__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
-      <div class="gcard__text">
-        <div class="gcard__name">${esc(v.name)}</div>
-        ${sub ? `<div class="gcard__sub">${esc(sub)}</div>` : ''}
-        ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span>${more ? `<b>+${more}</b>` : ''}</span>` : ''}
-      </div>
-      <span class="gcard__chevron">${icon('chevronRight', 20)}</span>
+      ? `<button type="button" class="vrow__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 22)}</button>`
+      : `<span class="vrow__photo" aria-hidden="true">${photoHtml(v, 22)}</span>`}
+    <button type="button" class="vrow__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
+      <span class="vrow__text">
+        <span class="vrow__name">${esc(v.name)}</span>
+        ${sub ? `<span class="vrow__sub">${esc(sub)}</span>` : ''}
+      </span>
+      <span class="vrow__end">
+        ${km ? `<span class="vrow__km">${kmLabel(km)}</span>` : ''}
+        ${state}
+      </span>
     </button>
-  </article>`;
+  </li>`;
 }
 
-const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+/** Échéances en retard ou proches, tous véhicules actifs confondus, les plus urgentes d'abord. */
+function dueList(active) {
+  const order = { late: 0, soon: 1 };
+  return active
+    .flatMap(v => alerts(v, fieldsOf(v.id)).filter(a => a.level in order).map(a => ({ ...a, vehicle: v })))
+    .sort((a, b) => order[a.level] - order[b.level] || a.score - b.score);
+}
 
-/** Résumé en tête de l'accueil (sur le paysage) : échéances en retard ou proches, tous véhicules actifs. */
-function renderHero(active) {
-  let late = 0;
-  let soon = 0;
-  active.forEach(v => alerts(v, fieldsOf(v.id)).forEach(a => {
-    if (a.level === 'late') late++;
-    else if (a.level === 'soon') soon++;
-  }));
-  const level = !active.length ? 'empty' : late ? 'late' : soon ? 'soon' : 'ok';
+function renderSummary(active, watch) {
+  const late = watch.filter(a => a.level === 'late');
+  const soon = watch.length - late.length;
+  const level = !active.length ? 'empty' : late.length ? 'late' : soon ? 'soon' : 'ok';
   const title = {
-    empty: 'Garage vide',
-    late: plural(late, 'échéance en retard', 'échéances en retard'),
-    soon: plural(soon, 'échéance proche', 'échéances proches'),
-    ok: 'Tout est à jour'
+    empty: 'Votre garage est vide.',
+    late: `${count(late.length, 'échéance', 'échéances')} en retard.`,
+    soon: `${count(soon, 'échéance', 'échéances')} à prévoir.`,
+    ok: 'Tout est à jour.'
   }[level];
-  const cars = active.filter(v => !isBike(v)).length;
-  const bikes = active.length - cars;
-  const facts = [cars && plural(cars, 'véhicule', 'véhicules'), bikes && plural(bikes, 'vélo', 'vélos'), late && soon ? plural(soon, 'autre à prévoir', 'autres à prévoir') : ''].filter(Boolean);
-  $('#garageHero').dataset.level = level;
-  $('#garageHeroTitle').innerHTML = `<span class="garage-hero__dot" aria-hidden="true"></span>${esc(title)}`;
-  $('#garageHeroFacts').textContent = facts.length ? facts.join(' · ') : 'Ajoutez un véhicule ou un vélo pour suivre son entretien.';
+  const names = [...new Set(watch.map(a => a.vehicle.name))];
+  const sub = {
+    empty: 'Ajoutez un véhicule ou un vélo pour suivre son entretien.',
+    late: `Concerne ${names.join(', ')}.${soon ? ` ${count(soon, 'autre échéance arrive', 'autres échéances arrivent')} sous 30 jours.` : ''}`,
+    soon: `Concerne ${names.join(', ')}, sous 30 jours.`,
+    ok: 'Rien à prévoir dans les 30 prochains jours.'
+  }[level];
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('#summary').dataset.level = level;
+  $('#summaryDate').textContent = today.charAt(0).toUpperCase() + today.slice(1);
+  $('#summaryTitle').textContent = title;
+  $('#summarySub').textContent = sub;
+
+  const shown = watch.slice(0, 5);
+  $('#dueSection').hidden = !shown.length;
+  $('#dueList').innerHTML = shown.map(a => `<li><a class="watch" href="#/v/${encodeURIComponent(a.vehicle.id)}/${TAB_OF[a.kind] || ''}">
+      <span class="watch__text"><span class="watch__title">${esc(a.title)}</span><span class="watch__vehicle">${esc(a.vehicle.name)}</span></span>
+      <span class="watch__when is-${a.level}">${esc(a.text)}</span>
+    </a></li>`).join('');
+  $('#dueMore').hidden = watch.length <= shown.length;
+  $('#dueMore').textContent = `Et ${count(watch.length - shown.length, 'autre', 'autres')}, dans les fiches.`;
 }
 
 export function renderHome() {
@@ -89,11 +114,11 @@ export function renderHome() {
   const archived = all.filter(v => v.archived);
   const cars = active.filter(v => !isBike(v));
   const bikes = active.filter(isBike);
+  renderSummary(active, dueList(active));
   $('#vehicleCount').textContent = cars.length;
   $('#bikeCount').textContent = bikes.length;
-  $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans votre garage.</div>';
-  $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans votre garage.</div>';
-  renderHero(active);
+  $('#vehicleCards').innerHTML = cars.length ? cars.map(row).join('') : '<li class="vlist__empty">Aucun véhicule pour l’instant.</li>';
+  $('#bikeCards').innerHTML = bikes.length ? bikes.map(row).join('') : '<li class="vlist__empty">Aucun vélo pour l’instant.</li>';
   $('#archivesLink').hidden = !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
 }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Suivi de vos véhicules et vélos : entretiens, carburant, coûts, documents.">
-  <meta name="theme-color" content="#0e1114">
+  <meta name="theme-color" content="#0f1011">
   <meta name="color-scheme" content="dark light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
       if (th === 'dark' && !localStorage.getItem('garage_theme_auto')) th = 'auto';
       if (th !== 'dark' && th !== 'light') th = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.dataset.theme = th;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f3f4f2' : '#0e1114');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f5f5f3' : '#0f1011');
     } catch (e) {}
     try { var st = JSON.parse(localStorage.getItem('mon_garage_v2_style')); if (typeof st === 'string') document.documentElement.dataset.style = st; } catch (e) {}
   </script>
@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/views/garage.css">
   <link rel="stylesheet" href="css/minimal.css">
-  <link rel="stylesheet" href="css/horizon.css">
+  <link rel="stylesheet" href="css/epure.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
@@ -89,20 +89,23 @@
 
     <!-- ================= ACCUEIL ================= -->
     <section id="homeView" class="view">
-      <section class="garage-hero" id="garageHero" aria-live="polite">
-        <div class="garage-hero__kicker">Votre garage</div>
-        <p class="garage-hero__title" id="garageHeroTitle">Mon Garage</p>
-        <p class="garage-hero__facts" id="garageHeroFacts"></p>
+      <section class="summary" id="summary" aria-live="polite">
+        <p class="summary__date" id="summaryDate"></p>
+        <h2 class="summary__title" id="summaryTitle">Mon Garage</h2>
+        <p class="summary__sub" id="summarySub"></p>
       </section>
-      <section class="section">
-        <header class="section__head"><h2 class="section__title">Véhicules</h2><span class="section__count" id="vehicleCount">0</span></header>
-        <div class="garage-cards" id="vehicleCards"></div>
-        <button type="button" class="add-tile" data-new="vehicle"><span data-icon="plus" data-size="20"></span><span>Ajouter un véhicule</span></button>
+      <section class="home-block" id="dueSection" hidden>
+        <header class="home-block__head"><h2 class="home-block__title">À surveiller</h2></header>
+        <ul class="watch-list" id="dueList"></ul>
+        <p class="watch-more" id="dueMore" hidden></p>
       </section>
-      <section class="section">
-        <header class="section__head"><h2 class="section__title">Vélos</h2><span class="section__count" id="bikeCount">0</span></header>
-        <div class="garage-cards" id="bikeCards"></div>
-        <button type="button" class="add-tile" data-new="bike"><span data-icon="plus" data-size="20"></span><span>Ajouter un vélo</span></button>
+      <section class="home-block">
+        <header class="home-block__head"><h2 class="home-block__title">Véhicules <span class="home-block__count" id="vehicleCount">0</span></h2><button type="button" class="home-block__add" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Ajouter</span></button></header>
+        <ul class="vlist" id="vehicleCards"></ul>
+      </section>
+      <section class="home-block">
+        <header class="home-block__head"><h2 class="home-block__title">Vélos <span class="home-block__count" id="bikeCount">0</span></h2><button type="button" class="home-block__add" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Ajouter</span></button></header>
+        <ul class="vlist" id="bikeCards"></ul>
       </section>
       <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
       <p class="account" id="accountLine"></p>
