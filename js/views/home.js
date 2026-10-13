@@ -3,8 +3,7 @@ import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { alerts, currentKm } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
-import { icon } from '../ui/icons.js';
-import { fieldsOf, photoFrame, lineWidth } from './common.js';
+import { fieldsOf, photoFrame, lineWidth, identity, kmLine } from './common.js';
 import { scheduleAlertsSync } from '../services/carnet-sync.js';
 
 /**
@@ -35,33 +34,25 @@ export function publishAlerts() {
 }
 
 const TAB_OF = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
-const KIND_LABEL = { reminder: 'Entretien', doc: 'Document', part: 'Usure' };
-const nf = n => Math.round(n).toLocaleString('fr-FR');
 
-/** Une carte par véhicule dans le carrousel : nom, photo, compteur et les trois échéances les plus proches. */
+/** Une carte par véhicule dans le carrousel : nom, photo, compteur et les trois échéances les plus proches. La carte entière ouvre la fiche. */
 function card(v) {
   const f = fieldsOf(v.id);
-  const list = alerts(v, f);
-  const bike = isBike(v);
-  const sub = [v.brand, v.model, ...(bike ? [] : [v.plate])].filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' · ');
-  const km = currentKm(v, f);
-  const shown = list.slice(0, 3);
-  return `<article class="vcard" id="vcard-${esc(v.id)}" data-id="${esc(v.id)}" aria-label="${esc(v.name)}">
+  const shown = alerts(v, f).slice(0, 3);
+  const sub = identity(v);
+  return `<article class="vcard" id="vcard-${esc(v.id)}" data-id="${esc(v.id)}" data-vehicle="${esc(v.id)}">
     <header class="vcard__head">
       <div class="vcard__titles">
-        <p class="vcard__kind">${bike ? 'Vélo' : 'Véhicule'}</p>
-        <h2 class="vcard__name">${esc(v.name)}</h2>
+        <h2 class="vcard__name"><button type="button" class="vcard__open" data-vehicle="${esc(v.id)}" aria-label="Ouvrir la fiche ${esc(v.name)}">${esc(v.name)}</button></h2>
         ${sub ? `<p class="vcard__sub">${sub}</p>` : ''}
       </div>
       ${photoFrame(v, 'vcard__photo')}
     </header>
-    <p class="vcard__km num">${km ? nf(km) : '—'}<small>km</small></p>
-    <button type="button" class="pill" data-km="${esc(v.id)}">Mettre à jour le compteur</button>
+    ${kmLine(currentKm(v, f), 'vcard__km', `data-km="${esc(v.id)}"`)}
     ${shown.length
       ? `<ul class="vcard__due">${shown.map(a => `<li><a class="is-${a.level}" href="#/v/${encodeURIComponent(v.id)}/${TAB_OF[a.kind] || ''}">
           <span class="vcard__due-title">${esc(a.title)}</span><em>${esc(a.text)}</em><span class="tick" style="--v:${lineWidth(a)}%"></span></a></li>`).join('')}</ul>`
       : '<p class="vcard__ok">Aucune échéance suivie pour l’instant.</p>'}
-    <button type="button" class="vcard__open" data-vehicle="${esc(v.id)}">Ouvrir la fiche ${icon('chevronRight', 16)}</button>
   </article>`;
 }
 
@@ -80,7 +71,6 @@ function show(i, smooth = true) {
 function mark(i) {
   current = i;
   [...$('#vehicleNames').children].forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
-  [...$('#railDots').children].forEach((d, j) => d.classList.toggle('is-on', j === i));
 }
 
 export function renderHome() {
@@ -93,7 +83,6 @@ export function renderHome() {
   $('#homeEmpty').hidden = !!list.length;
   $('#vehicleNames').innerHTML = list.map((v, i) => `<button type="button" data-goto-card="${i}" aria-current="false">${esc(v.name)}${lateOf(v) ? '<span class="dot" aria-label="en retard"></span>' : ''}</button>`).join('');
   rail.innerHTML = list.map(card).join('');
-  $('#railDots').innerHTML = list.length > 1 ? list.map(() => '<i></i>').join('') : '';
   current = Math.min(current, Math.max(0, list.length - 1));
   mark(current);
   requestAnimationFrame(() => show(current, false));

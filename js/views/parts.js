@@ -27,7 +27,6 @@ function card(p, current) {
 
 export function renderParts(v, f) {
   const current = currentKm(v, f);
-  $('#partsSub').textContent = `Compteur : ${km(current)} — mettez-le à jour après vos sorties`;
   $('#partList').innerHTML = f.parts.length ? f.parts.map(p => card(p, current)).join('') : '<div class="empty-card">Aucun composant suivi.</div>';
 }
 

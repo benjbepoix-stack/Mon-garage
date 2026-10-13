@@ -224,10 +224,22 @@ export function partStatus(p, km) {
 
 const LEVEL_ORDER = { late: 0, soon: 1, ok: 2 };
 const fmtKm = n => `${Math.round(Math.abs(n)).toLocaleString('fr-FR')} km`;
-const fmtDays = n => `${Math.abs(n)} j`;
+/** Au-delà de 2 mois, l'échéance se lit en mois (« dans 5 mois » plutôt que « dans 140 j »). */
+const fmtDays = n => (Math.abs(n) >= 60 ? `${Math.round(Math.abs(n) / 30.44)} mois` : `${Math.abs(n)} j`);
 /** Échéance en clair : « aujourd’hui », « demain », « dans 12 j », « en retard de 3 j » (jamais « dans demain »). */
-const dueIn = (n, { late = 'en retard de', soon = 'dans' } = {}) =>
+export const dueIn = (n, { late = 'en retard de', soon = 'dans' } = {}) =>
   n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n < 0 ? `${late} ${fmtDays(n)}` : `${soon} ${fmtDays(n)}`;
+
+/**
+ * Nom affiché d'un document (ou d'un frais fixe) : le type (« Contrôle technique »), complété du libellé s'il apporte
+ * quelque chose. Un libellé qui reprend déjà le type le remplace (« Assurance MAIF » plutôt que
+ * « Assurance · Assurance MAIF », jamais « Contrôle technique · Contrôle technique »).
+ */
+export function withType(type, label) {
+  if (!label) return type;
+  return label.toLowerCase().includes(type.toLowerCase()) ? label : `${type} · ${label}`;
+}
+export const docTitle = d => withType(d.type, d.label);
 
 /** Toutes les échéances d'un véhicule, les plus urgentes d'abord. */
 export function alerts(v, f, today = todayKey()) {
@@ -247,10 +259,8 @@ export function alerts(v, f, today = todayKey()) {
   f.docs.forEach(d => {
     const s = docStatus(d, today);
     if (s.level === 'none') return;
-    const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : s.daysLeft <= 1 ? `expire ${dueIn(s.daysLeft)}` : `expire dans ${fmtDays(s.daysLeft)}`;
-    // Le type reste toujours visible (ex. « Contrôle technique ») : un libellé personnalisé
-    // s'ajoute en complément, il ne le remplace pas (cohérent avec la liste de l'onglet Documents).
-    out.push({ kind: 'doc', id: d.id, level: s.level, title: d.label ? `${d.type} · ${d.label}` : d.type, text, due: d.expiry, score: s.daysLeft / 365 });
+    const text = s.daysLeft < 0 ? `expiré depuis ${fmtDays(s.daysLeft)}` : dueIn(s.daysLeft);
+    out.push({ kind: 'doc', id: d.id, level: s.level, title: docTitle(d), text, due: d.expiry, score: s.daysLeft / 365 });
   });
   f.parts.forEach(p => {
     const s = partStatus(p, km);

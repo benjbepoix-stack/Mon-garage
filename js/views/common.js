@@ -56,6 +56,19 @@ export function photoFrame(v, cls) {
     : `<span class="${cls}" aria-hidden="true">${photoHtml(v, 26)}</span>`;
 }
 
+/** Sous-titre « Marque Modèle » et plaque en badge (partagé avec l'en-tête de la fiche). */
+export function identity(v, extra = []) {
+  const name = [v.brand, v.model, ...extra].filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' ');
+  const plate = !isBike(v) && v.plate ? `<span class="plate">${esc(v.plate)}</span>` : '';
+  return [name, plate].filter(Boolean).join(' ');
+}
+
+/** Compteur en grand, modifiable par le crayon à côté (sans ouvrir la fiche depuis l'accueil). */
+export function kmLine(n, cls, attr) {
+  return `<div class="kmline"><p class="${cls} num">${n ? intFmt(n) : '—'}<small>km</small></p>
+    <button type="button" class="kmline__edit" ${attr} aria-label="Mettre à jour le compteur">${icon('edit', 15)}</button></div>`;
+}
+
 export const LEVEL_LABEL = { late: 'En retard', soon: 'Bientôt', ok: 'À jour', unknown: 'À renseigner', none: 'Sans échéance' };
 
 /** Validation « nombre positif » pour les champs numériques facultatifs. */

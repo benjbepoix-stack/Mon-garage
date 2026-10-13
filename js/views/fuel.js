@@ -33,7 +33,6 @@ export function renderFuel(v, f) {
   const s = costSummary(v, f);
   lastFuelSummary = s;
   const ev = isElectric(v);
-  $('#ffTitle').textContent = ev ? 'Recharge' : 'Carburant';
   $('#ffConsumptionLabel').textContent = ev ? 'Conso. · kWh/100 km' : 'Conso. · L/100 km';
   $('#ffPriceLabel').textContent = ev ? 'Prix · €/kWh' : 'Prix · €/L';
   const active = activeFuelEstimate(f);

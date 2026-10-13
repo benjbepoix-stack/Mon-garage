@@ -35,12 +35,10 @@ export function renderExpenses(v, f) {
   const total = f.expenses.reduce((s, x) => s + x.cost, 0);
   $('#expensesSub').textContent = f.expenses.length
     ? `${f.expenses.length} dépense${f.expenses.length > 1 ? 's' : ''} · ${euro(total)}`
-    : isBike(v)
-      ? 'Achats hors entretien : roues, accessoires, équipement…'
-      : 'Achats hors entretien : équipement, accessoires, jantes…';
+    : '';
   $('#expenseList').innerHTML = f.expenses.length
     ? f.expenses.map(x => row(x, f.docs)).join('')
-    : `<div class="empty-state"><p>Aucune autre dépense. Ajoutez par exemple ${isBike(v) ? 'de nouvelles roues carbone' : 'un coffre de toit ou des jantes hiver'}.</p></div>`;
+    : `<div class="empty-state"><p>Aucune dépense hors entretien.</p></div>`;
 }
 
 export function openExpense(id = null) {
