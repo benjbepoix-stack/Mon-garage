@@ -1,14 +1,13 @@
 /* Fiche d'un véhicule : en-tête, onglets, mise à jour du compteur, aperçu. */
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { alerts, costSummary, monthCosts, monthOf, COST_KEYS } from '../core/calc.js';
-import { todayKey, formatKey } from '../core/dates.js';
+import { alerts, costSummary } from '../core/calc.js';
 import { isBike, isElectric } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, kmOf, km, euro, euroRound, photoFrame, lineWidth, intInput, toNumber, positive, capitalize } from './common.js';
+import { fieldsOf, kmOf, km, euroRound, photoFrame, intInput, toNumber, positive, identity, kmLine } from './common.js';
 import { renderMaintenance } from './maintenance.js';
 import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
@@ -31,16 +30,13 @@ export function setTab(name, v = store.active()) {
 }
 
 const ALERT_TAB = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
-const KIND_LABEL = { reminder: 'Entretien', doc: 'Document', part: 'Usure' };
 
 function renderHero(v, f) {
-  const sub = isBike(v) ? [v.brand, v.model, v.bikeType] : [v.brand, v.model, v.year, v.plate];
-  const n = kmOf(v, f);
+  const sub = identity(v, isBike(v) ? [v.bikeType] : []);
   $('#vehicleHero').innerHTML = `
     <div class="vhero__body">
-      <p class="vhero__sub">${sub.filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' · ') || (isBike(v) ? 'Vélo' : 'Véhicule')}${v.archived ? ` <span class="level is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>
-      <p class="vhero__km num">${n ? Math.round(n).toLocaleString('fr-FR') : '—'}<small>km</small></p>
-      <button type="button" class="pill" data-open="km">Mettre à jour</button>
+      ${sub || v.archived ? `<p class="vhero__sub">${sub}${v.archived ? ` <span class="level is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>` : ''}
+      ${kmLine(kmOf(v, f), 'vhero__km', 'data-open="km"')}
     </div>
     ${photoFrame(v, 'vhero__photo')}`;
 }
@@ -59,36 +55,28 @@ function renderTabs(v, list) {
 }
 
 function renderOverview(v, f, list) {
-  const month = monthOf(todayKey());
-  const costs = monthCosts(v, f, month);
-  const thisMonth = COST_KEYS.reduce((s, k) => s + costs[k], 0);
   const summary = costSummary(v, f);
-  const last = f.maintenance[0];
   const kpis = [
-    ['Ce mois-ci', euro(thisMonth), capitalize(formatKey(`${month}-01`, { month: 'long' }))],
-    ['Coût réel / mois', summary.monthsOwned ? euroRound(summary.perMonth) : '—', summary.monthsOwned ? `sur ${summary.monthsOwned} mois` : 'Renseignez l’achat'],
-    ['Coût au km', summary.perKm ? `${summary.perKm.toFixed(2).replace('.', ',')} €` : '—', summary.km ? `${km(summary.km)} parcourus` : ''],
-    ['Dernier entretien', last ? capitalize(formatKey(last.date, { day: 'numeric', month: 'short', year: 'numeric' })) : '—', last ? last.type : 'Aucun']
+    ['Coût / mois', summary.monthsOwned ? euroRound(summary.perMonth) : '—'],
+    ['Coût au km', summary.perKm ? `${summary.perKm.toFixed(2).replace('.', ',')} €` : '—']
   ];
   const urgent = list.filter(a => a.level === 'late' || a.level === 'soon');
   const next = list.filter(a => !urgent.includes(a)).slice(0, 4);
+  const item = a => `<li class="is-${a.level}" data-goto="${ALERT_TAB[a.kind]}"><span class="clist__t">${esc(a.title)}</span><small>${esc(a.text)}</small></li>`;
   $('#panel-overview').innerHTML = `
     <section class="section">
       <header class="section__head"><h2 class="section__title">À régler</h2>${urgent.length ? `<span class="section__count">${urgent.length}</span>` : ''}</header>
       ${urgent.length
-        ? `<div class="crail">${urgent.map(a => `<article class="cc is-${a.level}" data-goto="${ALERT_TAB[a.kind]}">
-            <p class="cc__k">${KIND_LABEL[a.kind]}</p><h3 class="cc__t">${esc(a.title)}</h3>
-            <p class="cc__big">${esc(a.text)}</p><span class="tick" style="--v:${lineWidth(a)}%"></span>
-            <span class="cc__go">Voir ${icon('chevronRight', 15)}</span></article>`).join('')}</div>`
+        ? `<ul class="clist clist--urgent">${urgent.map(item).join('')}</ul>`
         : `<p class="calm">${list.length ? 'Rien à régler dans les 30 prochains jours.' : `Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.`}</p>`}
     </section>
     <section class="section">
-      <header class="section__head"><h2 class="section__title">Ce véhicule</h2></header>
-      <div class="kpis">${kpis.map(([l, val, s]) => `<div class="kpi"><span>${l}</span><strong>${esc(val)}</strong>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>
+      <header class="section__head"><h2 class="section__title">${isBike(v) ? 'Ce vélo' : 'Ce véhicule'}</h2></header>
+      <div class="kpis kpis--2">${kpis.map(([l, val]) => `<div class="kpi"><span>${l}</span><strong>${esc(val)}</strong></div>`).join('')}</div>
     </section>
     ${next.length ? `<section class="section">
       <header class="section__head"><h2 class="section__title">Ensuite</h2></header>
-      <ul class="clist">${next.map(a => `<li data-goto="${ALERT_TAB[a.kind]}"><span class="clist__t">${esc(a.title)}</span><small>${esc(a.text)}</small></li>`).join('')}</ul>
+      <ul class="clist">${next.map(item).join('')}</ul>
     </section>` : ''}
     ${v.notes ? `<section class="section card"><h2 class="card__title">Notes</h2><p class="notes-text">${esc(v.notes)}</p></section>` : ''}
     <section class="section">

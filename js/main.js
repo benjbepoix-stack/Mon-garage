@@ -1,7 +1,6 @@
 /* Point d'entrée : connexion, navigation (accueil / fiche), synchronisation. */
 import { $, $$, debounce } from './core/utils.js';
 import * as store from './core/store.js';
-import { isBike } from './core/schema.js';
 import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
@@ -9,7 +8,7 @@ import { initDialogs, confirmDialog, openPhotoLightbox, openSheet, closeAllSheet
 import { applyTheme, renderStylePicker, renderThemeSwitch } from './ui/theme.js';
 import { STYLES } from './core/schema.js';
 import { renderStatus } from './ui/status.js';
-import { toast, toastError } from './ui/toast.js';
+import { toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
@@ -96,7 +95,6 @@ function render() {
   $('#editVehicleBtn').hidden = !detail;
   $('#settingsBtn').hidden = detail;
   document.body.classList.toggle('is-detail', detail);
-  $('#topKicker').textContent = detail ? (isBike(v) ? 'Vélo' : 'Véhicule') : 'Garage personnel';
   $('#topTitle').textContent = detail ? v.name : 'Mon Garage';
   document.title = detail ? `${v.name} · Mon Garage` : 'Mon Garage';
   if (detail) renderDetail();
@@ -269,8 +267,8 @@ function initAuthUI() {
   $('#authRetry').addEventListener('click', () => location.reload());
   $('#authLocal').addEventListener('click', () => {
     hideAuth();
-    $('#accountLine').textContent = 'Mode hors ligne : données de cet appareil uniquement.';
-    toast('Mode hors ligne', { type: 'info' });
+    // La pastille « Local » de l'en-tête suffit à signaler le mode hors ligne.
+    $('#accountLine').textContent = '';
     // Pop-up des entretiens en retard : une fois l'écran de connexion fermé, pas par-dessus.
     onDataReady();
   });
@@ -310,8 +308,9 @@ function onClick(e) {
     if (store.activeId() !== kmBtn.dataset.km) store.setKeys({ activeId: kmBtn.dataset.km });
     return openKm();
   }
+  // Carte de l'accueil : elle ouvre la fiche, sauf ses échéances (liens vers l'onglet concerné).
   const card = e.target.closest('[data-vehicle]');
-  if (card) return openVehicleView(card.dataset.vehicle);
+  if (card && !e.target.closest('a[href]')) return openVehicleView(card.dataset.vehicle);
   const add = e.target.closest('[data-new]');
   if (add) return openVehicle(add.dataset.new);
   const open = e.target.closest('[data-open]');

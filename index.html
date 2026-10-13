@@ -74,7 +74,6 @@
     <div class="topbar__inner">
       <button type="button" class="icon-btn icon-btn--glass" id="backBtn" aria-label="Retour au garage" hidden><span data-icon="chevronLeft" data-size="22"></span></button>
       <div class="topbar__titles">
-        <span class="topbar__kicker" id="topKicker">Garage personnel</span>
         <h1 class="topbar__title" id="topTitle">Mon Garage</h1>
       </div>
       <div class="topbar__actions">
@@ -91,7 +90,6 @@
     <section id="homeView" class="view">
       <nav class="vnames" id="vehicleNames" aria-label="Vos véhicules"></nav>
       <div class="rail" id="vehicleRail"></div>
-      <div class="rail-dots" id="railDots" aria-hidden="true"></div>
       <section class="home-empty" id="homeEmpty" hidden>
         <h2 class="home-empty__title">Votre garage est vide.</h2>
         <p class="home-empty__sub">Ajoutez un véhicule ou un vélo pour suivre son entretien, ses documents et ses coûts.</p>
@@ -114,9 +112,8 @@
 
       <div class="vpanel" id="panel-maintenance" data-panel="maintenance" hidden>
         <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Plan d’entretien</h2><p class="card__sub">Rappels par date et kilométrage</p></div><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
-          <p class="card__sub reminder-hint">Pré-rempli selon la motorisation à la création de la fiche (préconisations généralisées) : à ajuster selon le carnet d’entretien réel.</p>
-          <div class="stack crail" id="reminderList"></div>
+          <header class="section__head"><h2 class="section__title">Plan d’entretien</h2><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
+          <ul class="rlist" id="reminderList"></ul>
         </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
@@ -126,20 +123,16 @@
 
       <div class="vpanel" id="panel-fuel" data-panel="fuel" hidden>
         <section class="section" id="fuelFixedSection">
-          <header class="section__head"><div><h2 class="section__title" id="ffTitle">Carburant</h2><p class="card__sub">Estimation mensuelle — aucun plein à saisir</p></div></header>
           <div class="card" id="fuelFixedCard">
             <div class="form-grid">
               <div class="field"><label class="field__label" for="ffConsumption" id="ffConsumptionLabel">Conso. · L/100 km</label><input class="input" id="ffConsumption" inputmode="decimal" placeholder="Ex. 6,5" autocomplete="off"></div>
               <div class="field"><label class="field__label" for="ffPrice" id="ffPriceLabel">Prix · €/L</label><input class="input" id="ffPrice" inputmode="decimal" placeholder="Ex. 1,85" autocomplete="off"></div>
             </div>
-            <div class="field">
-              <span class="field__label">Km moyen / mois</span>
-              <p class="field__value" id="ffKmMonth">—</p>
-            </div>
+            <p class="field__value" id="ffKmMonth">—</p>
             <p class="fuel-fixed__estimate" id="ffEstimate"></p>
             <div class="form-actions form-actions--end"><button type="button" class="btn btn--ghost btn--sm" id="ffReset">Réinitialiser</button><button type="button" class="btn btn--primary btn--sm" id="ffSave">Mettre à jour</button></div>
           </div>
-          <p class="field__help">Calculé depuis l’achat (ou la 1ʳᵉ saisie) et le dernier kilométrage connu. Première activation : appliqué rétroactivement depuis l’achat. Ensuite, changer la consommation ou le prix ne modifie jamais les mois déjà passés — seule l’estimation à venir change. « Réinitialiser » efface l’historique pour rattraper à nouveau depuis l’achat.</p>
+          <p class="field__help">Estimé avec votre kilométrage moyen depuis l’achat. Les mois passés ne changent pas ; « Réinitialiser » recalcule tout depuis l’achat.</p>
         </section>
       </div>
 
@@ -174,11 +167,11 @@
           <div class="card" id="financeCard"></div>
         </section>
         <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Frais fixes</h2><p class="card__sub">Assurance, stationnement, abonnements…</p></div><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
+          <header class="section__head"><h2 class="section__title">Frais fixes</h2><button type="button" class="add-btn" data-open="fixed" aria-label="Ajouter un frais fixe"><span data-icon="plus" data-size="18"></span></button></header>
           <div class="card card--list" id="fixedList"></div>
         </section>
         <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Autres dépenses</h2><p class="card__sub" id="expensesSub">Achats hors entretien : roues, équipement, accessoires…</p></div><button type="button" class="add-btn" data-open="expense" aria-label="Ajouter une dépense"><span data-icon="plus" data-size="18"></span></button></header>
+          <header class="section__head"><div><h2 class="section__title">Autres dépenses</h2><p class="card__sub" id="expensesSub"></p></div><button type="button" class="add-btn" data-open="expense" aria-label="Ajouter une dépense"><span data-icon="plus" data-size="18"></span></button></header>
           <div class="card card--list" id="expenseList"></div>
         </section>
       </div>
@@ -335,7 +328,7 @@
           <div class="field"><label class="field__label" for="reKm">Tous les … km</label><input class="input" id="reKm" name="everyKm" inputmode="numeric" placeholder="Ex. 15 000"></div>
           <div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12"></div>
         </div>
-        <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas.</p>
+        <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas. Les rappels proposés à la création sont indicatifs : ajustez-les selon votre carnet d’entretien.</p>
         <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span id="reNeverLabel">Jamais réalisé depuis la mise en circulation</span></label>
         <p class="field__help" id="reNeverHelp" hidden></p>
         <div class="form-grid" id="reLastFields">

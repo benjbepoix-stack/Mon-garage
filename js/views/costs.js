@@ -2,7 +2,7 @@
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { costSummary, monthCosts, addMonths, monthOf, monthDiff } from '../core/calc.js';
+import { costSummary, monthCosts, addMonths, monthOf, monthDiff, withType } from '../core/calc.js';
 import { LOAN_TYPES, FIXED_CATEGORIES, isBike, makeId, fieldKey } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
@@ -31,11 +31,11 @@ function renderHero(v, s) {
   $('#costHero').innerHTML = `
     <p class="cost-hero__label">Coût réel depuis l’achat</p>
     <p class="cost-hero__value">${esc(euroRound(s.realCost))}</p>
-    <p class="cost-hero__note">${esc(euroRound(s.paid))} payés${s.remainingDebt ? ` + ${euroRound(s.remainingDebt)} restant dû` : ''}${s.resale ? ` − ${euroRound(s.resale)} de revente estimée` : ''}</p>
+    ${s.remainingDebt || s.resale ? `<p class="cost-hero__note">${esc(euroRound(s.paid))} payés${s.remainingDebt ? ` + ${euroRound(s.remainingDebt)} restant dû` : ''}${s.resale ? ` − ${euroRound(s.resale)} de revente estimée` : ''}</p>` : ''}
     <div class="kpis">
       <div class="kpi"><span>Par mois</span><strong>${s.monthsOwned ? esc(euroRound(s.perMonth)) : '—'}</strong></div>
       <div class="kpi"><span>Au km</span><strong>${s.perKm ? esc(`${s.perKm.toFixed(2).replace('.', ',')} €`) : '—'}</strong></div>
-      <div class="kpi"><span>Usage / mois</span><strong>${s.monthsOwned ? esc(euroRound(s.usagePerMonth)) : '—'}</strong></div>
+      <div class="kpi"><span>Hors achat / mois</span><strong>${s.monthsOwned ? esc(euroRound(s.usagePerMonth)) : '—'}</strong></div>
     </div>`;
 }
 
@@ -84,7 +84,17 @@ function renderFinance(v, f, s) {
     const now = monthOf(todayKey());
     const first = sch.type === 'credit' ? sch.startMonth : addMonths(sch.startMonth, 1);
     const done = Math.max(0, Math.min(sch.months, monthDiff(first, now) + 1));
-    if (sch.type === 'credit') facts.push(['Montant emprunté', euro(sch.principal)], ['Taux', `${String(f.loan.rate || 0).replace('.', ',')} %`]);
+    const rate = `${String(f.loan.rate || 0).replace('.', ',')} %`;
+    if (sch.type === 'credit' && !s.remainingDebt && (done >= sch.months || f.loan.earlyPayoffDate)) {
+      // Crédit soldé : une ligne suffit (le détail des mensualités n'apprend plus rien).
+      const end = f.loan.earlyPayoffDate ? formatKey(f.loan.earlyPayoffDate, { month: 'short', year: 'numeric' }) : monthLabel(sch.endMonth, { month: 'short', year: 'numeric' });
+      facts[facts.length - 1] = ['Financement', `Crédit de ${euro(sch.principal)} à ${rate} · soldé en ${end}`];
+      facts.push(['Intérêts payés', euro(sch.interest)]);
+      if (v.resaleValue) facts.push(['Valeur de revente estimée', euro(v.resaleValue)]);
+      $('#financeCard').innerHTML = `<dl class="facts">${facts.map(([k, val]) => `<div class="fact"><dt>${esc(k)}</dt><dd>${esc(val)}</dd></div>`).join('')}</dl>`;
+      return;
+    }
+    if (sch.type === 'credit') facts.push(['Montant emprunté', euro(sch.principal)], ['Taux', rate]);
     else if (f.loan.firstPayment) facts.push(['Premier loyer', euro(f.loan.firstPayment)]);
     facts.push([sch.type === 'credit' ? 'Mensualité' : 'Loyer', euro(sch.monthly)], ['Échéances', `${done} / ${sch.months} · fin ${monthLabel(sch.endMonth, { month: 'short', year: 'numeric' })}`]);
     if (sch.type === 'credit' && f.loan.earlyPayoffAmount && f.loan.earlyPayoffDate) {
@@ -108,7 +118,7 @@ function renderFixed(f) {
         .map(x => {
           const sub = [x.period === 'year' ? `${euro(x.amount)} / an` : 'Mensuel', `depuis ${formatKey(x.start, { month: 'short', year: 'numeric' })}`, x.end ? `jusqu’à ${formatKey(x.end, { month: 'short', year: 'numeric' })}` : ''].filter(Boolean).join(' · ');
           return `<div class="row" data-edit data-fixed="${esc(x.id)}"><span class="row__icon">${icon('repeat', 18)}</span>
-            <div class="row__body"><span class="row__title">${esc(x.category)}${x.label ? ` <span class="row__soft">· ${esc(x.label)}</span>` : ''}</span><span class="row__sub">${esc(sub)}</span></div>
+            <div class="row__body"><span class="row__title">${esc(withType(x.category, x.label))}</span><span class="row__sub">${esc(sub)}</span></div>
             <div class="row__amount">${esc(euro(x.period === 'year' ? x.amount / 12 : x.amount))}<small>/ mois</small></div></div>`;
         })
         .join('')

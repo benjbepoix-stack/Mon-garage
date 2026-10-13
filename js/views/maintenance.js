@@ -2,7 +2,7 @@
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { reminderStatus, currentKm, serviceStartDate } from '../core/calc.js';
+import { reminderStatus, currentKm, serviceStartDate, alerts } from '../core/calc.js';
 import { MAINTENANCE_TYPES, presetReminders, makeId, fieldKey, isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
@@ -32,27 +32,20 @@ function lastText(r, s, v) {
   return 'Dernière fois inconnue : touchez pour la renseigner (ou « jamais réalisé »)';
 }
 
-function reminderCard(r, v, current) {
+/** Un rappel du plan d'entretien : nom et fréquence, échéance à droite, bouton « Fait », trait d'avancement. */
+function reminderItem(r, v, current, alert) {
   const s = reminderStatus(r, v, current);
   // Un seul « tous les » devant les deux critères (pas de répétition) pour rester court sur une ligne.
   const everyParts = [r.everyKm ? km(r.everyKm) : '', r.everyMonths ? `${r.everyMonths} mois` : ''].filter(Boolean);
   const every = everyParts.length ? `Tous les ${everyParts.join(' ou ')}` : '';
-  const next = [s.nextKm ? km(s.nextKm) : '', s.nextDate ? fmtDate(s.nextDate) : ''].filter(Boolean).join(' ou ');
-  const last = lastText(r, s, v);
-  return `<article class="due card is-${s.level}" data-reminder="${esc(r.id)}">
-    <div class="due__head">
-      <span class="row__icon">${icon('wrench', 18)}</span>
-      <button type="button" class="due__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="due__title">${esc(r.label)}</span><span class="due__sub">${esc(every)}</span></button>
-      <span class="level is-${s.level}">${LEVEL_LABEL[s.level]}</span>
-    </div>
-    ${s.level !== 'unknown' ? `<div class="due__bar"><span style="--value:${Math.round(s.ratio * 100)}%"></span></div>` : ''}
-    <div class="due__foot"><span>${next ? `Prochain : ${esc(next)}` : esc(last)}</span>
-      <div class="due__actions">
-        <button type="button" class="icon-btn icon-btn--sm" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 16)}</button>
-      </div>
-    </div>
-    ${next ? `<p class="due__sub">${esc(last)}</p>` : ''}
-  </article>`;
+  // Dernière fois inconnue ou jamais faite : c'est ce qu'il faut savoir (et renseigner), pas la fréquence.
+  const hint = s.level === 'unknown' || s.base.neverDone ? lastText(r, s, v) : '';
+  return `<li class="rem is-${s.level}" data-reminder="${esc(r.id)}">
+    <button type="button" class="rem__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="rem__t">${esc(r.label)}</span><span class="rem__s">${esc(hint || every)}</span></button>
+    <span class="rem__when">${esc(alert?.text || LEVEL_LABEL[s.level])}</span>
+    <button type="button" class="rem__done" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 15)}</button>
+    ${s.level !== 'unknown' ? `<span class="rem__bar"><i style="width:${Math.round(s.ratio * 100)}%"></i></span>` : ''}
+  </li>`;
 }
 
 function maintenanceRow(x, docs) {
@@ -60,7 +53,7 @@ function maintenanceRow(x, docs) {
   const n = linkedDoc(docs, x.id)?.files.length || 0;
   return `<div class="row" data-edit data-maintenance="${esc(x.id)}">
     <span class="row__icon">${icon('wrench', 18)}</span>
-    <div class="row__body"><span class="row__title">${esc(x.type)}${x.label ? ` <span class="row__soft">· ${esc(x.label)}</span>` : ''}</span><span class="row__sub">${esc(sub)}</span></div>
+    <div class="row__body"><span class="row__title">${esc(x.label || x.type)}</span><span class="row__sub">${esc(sub)}</span></div>
     ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-invoice aria-label="Voir la facture" title="Facture">${icon('paperclip', 16)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
     <div class="row__amount">${x.cost ? esc(euro(x.cost)) : '—'}</div>
   </div>`;
@@ -68,9 +61,10 @@ function maintenanceRow(x, docs) {
 
 export function renderMaintenance(v, f) {
   const current = currentKm(v, f);
+  const byId = new Map(alerts(v, f).filter(a => a.kind === 'reminder').map(a => [a.id, a]));
   $('#reminderList').innerHTML = f.reminders.length
-    ? f.reminders.map(r => reminderCard(r, v, current)).join('')
-    : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
+    ? f.reminders.map(r => reminderItem(r, v, current, byId.get(r.id))).join('')
+    : `<li class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</li>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
   $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(x => maintenanceRow(x, f.docs)).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
