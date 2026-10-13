@@ -292,7 +292,7 @@
       <header class="sheet__head"><h2 class="sheet__title" id="maintenanceTitle">Nouvel entretien</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <form class="form sheet__scroll" id="maintenanceForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <section class="wz-step" data-group="Ce qui a été fait" data-q="Quel entretien ?" data-r="Entretien" data-chips>
+        <section class="wz-step" data-group="Ce qui a été fait" data-q="Quel entretien ?" data-r="Entretien" data-chips data-cols="4">
           <div class="field"><label class="field__label" for="maType">Type</label><select class="input select" id="maType" name="type"></select></div>
         </section>
         <section class="wz-step" data-group="Ce qui a été fait" data-q="Quand ?" data-r="Date" data-quick="today,yesterday">
@@ -341,7 +341,7 @@
       <header class="sheet__head"><h2 class="sheet__title" id="reminderTitle">Nouveau rappel</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
       <form class="form sheet__scroll" id="reminderForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <section class="wz-step" data-group="L’entretien" data-q="Lequel ?" data-r="Entretien" data-chips>
+        <section class="wz-step" data-group="L’entretien" data-q="Lequel ?" data-r="Entretien" data-chips data-cols="4">
           <div class="field"><label class="field__label" for="reLabel">Entretien</label><input class="input" id="reLabel" name="label" maxlength="60" list="reChoices" placeholder="Ex. Vidange" autocomplete="off"><datalist id="reChoices"></datalist></div>
         </section>
         <section class="wz-step" data-group="L’entretien" data-q="Tous les combien ?" data-r="Fréquence">

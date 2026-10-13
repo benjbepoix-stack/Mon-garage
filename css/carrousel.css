@@ -293,7 +293,11 @@ form[data-wizard]:not(.wz-grouped) .wz-solo .input:not(.textarea):not(select) { 
 .wz-chip { all: unset; box-sizing: border-box; cursor: pointer; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 15px; font-weight: 500; color: var(--text); -webkit-tap-highlight-color: transparent; }
 .wz-chip:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .wz-chip[aria-pressed="true"] { background: var(--fill); color: var(--fill-ink); border-color: var(--fill); }
-form[data-wizard]:not(.wz-grouped) .wz-step[data-auto] .wz-chip { flex: 1 1 40%; text-align: center; padding: 16px; border-radius: 18px; font-size: 16px; }
+/* Choix en cases carrées arrondies, toutes de la même taille : 3 par ligne, 4 pour les longues listes (data-cols="4"). Les raccourcis de date restent en pilules. */
+.wz-chips:not(.wz-chips--quick) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.wz-step[data-cols="4"] .wz-chips:not(.wz-chips--quick) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.wz-chips:not(.wz-chips--quick) .wz-chip { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; border-radius: 18px; font-size: 14px; line-height: 1.2; }
+.wz-step[data-cols="4"] .wz-chips:not(.wz-chips--quick) .wz-chip { padding: 4px; border-radius: 14px; font-size: 11.5px; letter-spacing: -.01em; }
 .wz-step[data-chips] .field:has(input[list]) .wz-chips { margin-top: 10px; }
 .wz-chips--quick { margin-bottom: 2px; }
 
