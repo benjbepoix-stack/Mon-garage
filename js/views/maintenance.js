@@ -91,7 +91,8 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
   form.elements.km.value = intInput(x ? x.km : currentKm(v, f));
   form.elements.cost.value = x ? numInput(x.cost) : '';
   form.elements.garage.value = x?.garage || '';
-  $('#maGarageLabel').innerHTML = `${bike ? 'Atelier' : 'Garage'} <span class="field__opt">(facultatif)</span>`;
+  $('#maGarageLabel').textContent = bike ? 'Atelier' : 'Garage';
+  $('#maGarage').placeholder = bike ? 'Atelier' : 'Garage';
   form.elements.note.value = x?.note || '';
   invoiceField.set(x ? linkedDoc(f.docs, x.id)?.files : []);
   // Pré-coche le rappel correspondant au type choisi (ou celui d'où vient « Fait ») ; les autres restent décochables/cochables à la main.

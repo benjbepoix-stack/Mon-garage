@@ -5,6 +5,7 @@ import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
 import { initDialogs, confirmDialog, openPhotoLightbox, openSheet, closeAllSheets } from './ui/dialog.js';
+import { initWizards } from './ui/wizard.js';
 import { applyTheme, renderStylePicker, renderThemeSwitch } from './ui/theme.js';
 import { STYLES } from './core/schema.js';
 import { renderStatus } from './ui/status.js';
@@ -339,6 +340,7 @@ async function init() {
   $$('[data-icon]').forEach(el => (el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 22)));
 
   initDialogs();
+  initWizards();
   initCalendarPrompt();
   initVehicles({ deleted: () => goHome() });
   initHome();

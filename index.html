@@ -191,47 +191,50 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="vehicleTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="vehicleTitle">Ajouter un véhicule</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="vehicleForm" novalidate>
+      <form class="form sheet__scroll" id="vehicleForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="segmented segmented--types" id="kindSwitch">
+        <div class="segmented segmented--types" id="kindSwitch" hidden>
           <label><input type="radio" name="kind" value="vehicle" checked><span>Véhicule</span></label>
           <label><input type="radio" name="kind" value="bike"><span>Vélo</span></label>
         </div>
-        <div class="field"><label class="field__label" for="veName">Nom</label><input class="input" id="veName" name="name" maxlength="80" placeholder="Ex. Audi A5 Coupé" autocomplete="off"></div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="veBrand">Marque</label><input class="input" id="veBrand" name="brand" maxlength="60" placeholder="Ex. Audi" autocomplete="off"></div>
-          <div class="field"><label class="field__label" for="veModel">Modèle</label><input class="input" id="veModel" name="model" maxlength="60" placeholder="Ex. A5 Coupé" autocomplete="off"></div>
-        </div>
-        <div class="form-grid" data-kind="vehicle">
-          <div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div>
-          <div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div>
-        </div>
-        <div class="form-grid" data-kind="vehicle">
-          <div class="field field--span"><label class="field__label" for="veRegDate">Mise en circulation <span class="field__opt">(carte grise, case B)</span></label><input class="input" id="veRegDate" type="date" name="registrationDate"></div>
-        </div>
-        <div class="form-grid">
-          <div class="field" data-kind="vehicle"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div>
-          <div class="field" data-kind="bike"><label class="field__label" for="veBikeType">Type de vélo</label><select class="input select" id="veBikeType" name="bikeType"></select></div>
-          <div class="field"><label class="field__label" for="veMileage">Kilométrage actuel</label><input class="input" id="veMileage" name="mileage" inputmode="numeric" placeholder="Ex. 75 000"></div>
-        </div>
-        <div class="form-grid" data-kind="bike">
-          <div class="field"><label class="field__label" for="veSize">Taille / cadre</label><input class="input" id="veSize" name="bikeSize" maxlength="30" placeholder="Ex. 56 / L"></div>
-          <div class="field"><label class="field__label" for="veGroupset">Groupe</label><input class="input" id="veGroupset" name="bikeGroupset" maxlength="60" placeholder="Ex. Ultegra Di2"></div>
-        </div>
-        <div class="field" data-kind="bike"><label class="field__label" for="veWheels">Roues</label><input class="input" id="veWheels" name="bikeWheels" maxlength="60" placeholder="Ex. carbone 50 mm"></div>
-        <div class="field">
-          <span class="field__label">Photo</span>
-          <label class="photo-picker" id="photoPicker">
-            <img id="photoPreview" alt="" hidden>
-            <span class="photo-picker__empty" id="photoEmpty"><span data-icon="upload" data-size="22"></span><strong>Ajouter une photo</strong><span>Elle est réduite automatiquement</span></span>
-            <input type="file" id="photoInput" accept="image/*" class="photo-picker__input">
-          </label>
-          <button type="button" class="link-btn" id="photoRemove" hidden>Retirer la photo</button>
-        </div>
-        
+        <section class="wz-step" data-q="Comment l’appelez-vous ?" data-r="Nom">
+          <div class="field"><label class="field__label" for="veName">Nom</label><input class="input" id="veName" name="name" maxlength="80" placeholder="Ex. Audi A5 Coupé" autocomplete="off"></div>
+        </section>
+        <section class="wz-step" data-q="Quelle marque et quel modèle ?" data-r="Modèle" data-optional>
+          <div class="form-grid"><div class="field"><label class="field__label" for="veBrand">Marque</label><input class="input" id="veBrand" name="brand" maxlength="60" placeholder="Ex. Audi" autocomplete="off"></div><div class="field"><label class="field__label" for="veModel">Modèle</label><input class="input" id="veModel" name="model" maxlength="60" placeholder="Ex. A5 Coupé" autocomplete="off"></div></div>
+        </section>
+        <section class="wz-step" data-kind="vehicle" data-q="Quelle motorisation ?" data-r="Motorisation" data-chips data-auto>
+          <div class="field"><label class="field__label" for="veFuel">Motorisation</label><select class="input select" id="veFuel" name="fuel"></select></div>
+        </section>
+        <section class="wz-step" data-kind="bike" data-q="Quel type de vélo ?" data-r="Type" data-chips data-auto>
+          <div class="field"><label class="field__label" for="veBikeType">Type de vélo</label><select class="input select" id="veBikeType" name="bikeType"></select></div>
+        </section>
+        <section class="wz-step" data-q="Combien de kilomètres au compteur ?" data-r="Compteur">
+          <div class="field"><label class="field__label" for="veMileage">Kilométrage actuel</label><input class="input" id="veMileage" name="mileage" inputmode="numeric" placeholder="Ex. 75 000" data-unit="km"></div>
+        </section>
+        <section class="wz-step" data-kind="vehicle" data-q="Son immatriculation et son année ?" data-r="Immatriculation" data-optional>
+          <div class="form-grid"><div class="field"><label class="field__label" for="vePlate">Immatriculation</label><input class="input" id="vePlate" name="plate" maxlength="20" placeholder="AB-123-CD" autocomplete="off"></div><div class="field"><label class="field__label" for="veYear">Année</label><input class="input" id="veYear" name="year" inputmode="numeric" maxlength="4" placeholder="Ex. 2021"></div></div>
+        </section>
+        <section class="wz-step" data-kind="vehicle" data-q="Mise en circulation le ?" data-r="Mise en circulation" data-optional>
+          <div class="field"><label class="field__label" for="veRegDate">Mise en circulation</label><input class="input" id="veRegDate" type="date" name="registrationDate"><p class="field__help">Case B de la carte grise.</p></div>
+        </section>
+        <section class="wz-step" data-kind="bike" data-q="Quelques détails sur le vélo ?" data-r="Détails" data-optional>
+          <div class="form-grid"><div class="field"><label class="field__label" for="veSize">Taille / cadre</label><input class="input" id="veSize" name="bikeSize" maxlength="30" placeholder="Ex. 56 / L"></div><div class="field"><label class="field__label" for="veGroupset">Groupe</label><input class="input" id="veGroupset" name="bikeGroupset" maxlength="60" placeholder="Ex. Ultegra Di2"></div></div><div class="field"><label class="field__label" for="veWheels">Roues</label><input class="input" id="veWheels" name="bikeWheels" maxlength="60" placeholder="Ex. carbone 50 mm"></div>
+        </section>
+        <section class="wz-step" data-q="Une photo ?" data-r="Photo" data-optional>
+          <div class="field">
+            <label class="photo-picker" id="photoPicker">
+              <img id="photoPreview" alt="" hidden>
+              <span class="photo-picker__empty" id="photoEmpty"><span data-icon="upload" data-size="22"></span><strong>Ajouter une photo</strong></span>
+              <input type="file" id="photoInput" accept="image/*" class="photo-picker__input">
+            </label>
+            <button type="button" class="link-btn" id="photoRemove" hidden>Retirer la photo</button>
+          </div>
+        </section>
+        <section class="wz-step" data-q="Une note à garder ?" data-r="Notes" data-optional>
+          <div class="field"><label class="field__label" for="veNotes">Notes</label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="3" placeholder="Informations complémentaires…"></textarea></div>
+        </section>
         <p class="archive-banner" id="veArchiveBanner" hidden></p>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="veNotes">Notes <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="veNotes" name="notes" maxlength="2000" rows="2" placeholder="Informations complémentaires…"></textarea></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
         <button type="button" class="btn btn--ghost" id="vehicleArchive" hidden></button>
         <button type="button" class="btn btn--ghost btn--danger-text" id="vehicleDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer du garage</span></button>
       </form>
@@ -287,30 +290,45 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="maintenanceTitle">Nouvel entretien</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="maintenanceForm" novalidate>
+      <form class="form sheet__scroll" id="maintenanceForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="field"><label class="field__label" for="maType">Type</label><select class="input select" id="maType" name="type"></select></div>
-        
-        <div class="form-grid">
+        <section class="wz-step" data-group="Ce qui a été fait" data-q="Quel entretien ?" data-r="Entretien" data-chips>
+          <div class="field"><label class="field__label" for="maType">Type</label><select class="input select" id="maType" name="type"></select></div>
+        </section>
+        <section class="wz-step" data-group="Ce qui a été fait" data-q="Quand ?" data-r="Date" data-quick="today,yesterday">
           <div class="field"><label class="field__label" for="maDate">Date</label><input class="input" id="maDate" type="date" name="date"></div>
-          <div class="field"><label class="field__label" for="maKm">Kilométrage</label><input class="input" id="maKm" name="km" inputmode="numeric" autocomplete="off"></div>
-        </div>
-        <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
-        <div class="field">
-          <span class="field__label">Facture <span class="field__opt">(photo ou PDF, facultatif)</span></span>
-          <div class="file-attach">
-            <div id="maFilesList"></div>
-            <label class="btn btn--ghost btn--sm file-attach__btn" id="maFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
-              <input type="file" id="maFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
-            </label>
+        </section>
+        <section class="wz-step" data-group="Ce qui a été fait" data-q="À combien de km ?" data-r="Compteur">
+          <div class="field"><label class="field__label" for="maKm">Kilométrage</label><input class="input" id="maKm" name="km" inputmode="numeric" autocomplete="off" data-unit="km"></div>
+        </section>
+        <section class="wz-step" data-group="Le prix" data-q="Combien ça a coûté ?" data-r="Coût">
+          <div class="field"><label class="field__label" for="maCost">Coût · €</label><input class="input" id="maCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Le prix" data-q="Où ?" data-r="Garage" data-optional>
+          <div class="field"><label class="field__label" for="maGarage" id="maGarageLabel">Garage</label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off" placeholder="Garage"></div>
+        </section>
+        <section class="wz-step" data-group="Le prix" data-q="Un détail ?" data-r="Détail" data-optional>
+          <div class="field"><label class="field__label" for="maLabel">Détail</label><input class="input" id="maLabel" name="label" maxlength="120" placeholder="Ex. Vidange + filtres" autocomplete="off"></div>
+        </section>
+        <section class="wz-step" data-group="Rappels et facture" data-q="Rappels à remettre à zéro" data-r="Rappels" data-optional>
+          <div class="field" id="maReminderField"><div class="check-list" id="maReminderList"></div></div>
+        </section>
+        <section class="wz-step" data-group="Rappels et facture" data-q="Composants à remettre à zéro" data-r="Composants" data-optional>
+          <div class="field" id="maPartField" hidden><div class="check-list" id="maPartList"></div></div>
+        </section>
+        <section class="wz-step" data-group="Rappels et facture" data-q="La facture" data-r="Facture" data-optional>
+          <div class="field">
+            <div class="file-attach">
+              <div id="maFilesList"></div>
+              <label class="btn btn--ghost btn--sm file-attach__btn" id="maFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
+                <input type="file" id="maFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
+              </label>
+            </div>
           </div>
-          <p class="field__help">Rangée automatiquement dans l’onglet Docs.</p>
-        </div>
-        <div class="field" id="maReminderField"><span class="field__label">Rappels à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maReminderList"></div><p class="field__help">Chaque rappel coché repart de cette date et de ce kilométrage.</p></div>
-        <div class="field" id="maPartField" hidden><span class="field__label">Composants à remettre à zéro <span class="field__opt">(plusieurs possibles)</span></span><div class="check-list" id="maPartList"></div><p class="field__help">Chaque composant coché repart de cette date et de ce kilométrage, comme avec « Remplacé » dans l’onglet Usure.</p></div>
-        
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="maLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="maLabel" name="label" maxlength="120" placeholder="Ex. Vidange + filtres" autocomplete="off"></div><div class="field"><label class="field__label" for="maGarage" id="maGarageLabel">Garage <span class="field__opt">(facultatif)</span></label><input class="input" id="maGarage" name="garage" maxlength="80" autocomplete="off"></div><div class="field"><label class="field__label" for="maNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        </section>
+        <section class="wz-step" data-group="Rappels et facture" data-q="Une note ?" data-r="Note" data-optional>
+          <div class="field"><label class="field__label" for="maNote">Note</label><textarea class="input textarea" id="maNote" name="note" maxlength="1000" rows="2"></textarea></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="maintenanceDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer l’entretien</span></button>
       </form>
     </div>
@@ -321,21 +339,21 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reminderTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="reminderTitle">Nouveau rappel</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="reminderForm" novalidate>
+      <form class="form sheet__scroll" id="reminderForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="field"><label class="field__label" for="reLabel">Entretien</label><input class="input" id="reLabel" name="label" maxlength="60" list="reChoices" placeholder="Ex. Vidange" autocomplete="off"><datalist id="reChoices"></datalist></div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="reKm">Tous les … km</label><input class="input" id="reKm" name="everyKm" inputmode="numeric" placeholder="Ex. 15 000"></div>
-          <div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12"></div>
-        </div>
-        <p class="field__help">Au premier des deux atteint. Laissez vide ce qui ne s’applique pas. Les rappels proposés à la création sont indicatifs : ajustez-les selon votre carnet d’entretien.</p>
-        <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span id="reNeverLabel">Jamais réalisé depuis la mise en circulation</span></label>
-        <p class="field__help" id="reNeverHelp" hidden></p>
-        <div class="form-grid" id="reLastFields">
-          <div class="field"><label class="field__label" for="reLastDate">Dernier fait le</label><input class="input" id="reLastDate" type="date" name="lastDate"></div>
-          <div class="field"><label class="field__label" for="reLastKm">à … km</label><input class="input" id="reLastKm" name="lastKm" inputmode="numeric"></div>
-        </div>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <section class="wz-step" data-group="L’entretien" data-q="Lequel ?" data-r="Entretien" data-chips>
+          <div class="field"><label class="field__label" for="reLabel">Entretien</label><input class="input" id="reLabel" name="label" maxlength="60" list="reChoices" placeholder="Ex. Vidange" autocomplete="off"><datalist id="reChoices"></datalist></div>
+        </section>
+        <section class="wz-step" data-group="L’entretien" data-q="Tous les combien ?" data-r="Fréquence">
+          <div class="form-grid"><div class="field"><label class="field__label" for="reKm">Tous les … km</label><input class="input" id="reKm" name="everyKm" inputmode="numeric" placeholder="Ex. 15 000" data-unit="km"></div><div class="field"><label class="field__label" for="reMonths">Tous les … mois</label><input class="input" id="reMonths" name="everyMonths" inputmode="numeric" placeholder="Ex. 12" data-unit="mois"></div></div><p class="field__help">Au premier des deux atteint.</p>
+        </section>
+        <section class="wz-step" data-group="La dernière fois" data-q="Déjà fait ?" data-r="Jamais fait" data-optional>
+          <label class="check-row"><input type="checkbox" id="reNeverDone" name="neverDone"><span id="reNeverLabel">Jamais réalisé depuis la mise en circulation</span></label>
+          <p class="field__help" id="reNeverHelp" hidden></p>
+        </section>
+        <section class="wz-step" data-group="La dernière fois" data-q="Quand et à combien de km ?" data-r="Dernière fois">
+          <div class="form-grid" id="reLastFields"><div class="field"><label class="field__label" for="reLastDate">Dernier fait le</label><input class="input" id="reLastDate" type="date" name="lastDate"></div><div class="field"><label class="field__label" for="reLastKm">à … km</label><input class="input" id="reLastKm" name="lastKm" inputmode="numeric" data-unit="km"></div></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="reminderDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le rappel</span></button>
       </form>
     </div>
@@ -346,19 +364,20 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="partTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="partTitle">Nouveau composant</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="partForm" novalidate>
+      <form class="form sheet__scroll" id="partForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="field"><label class="field__label" for="paName">Composant</label><input class="input" id="paName" name="name" maxlength="60" list="paChoices" placeholder="Ex. Chaîne" autocomplete="off"><datalist id="paChoices"></datalist></div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="paLimit">Durée de vie (km)</label><input class="input" id="paLimit" name="limitKm" inputmode="numeric" placeholder="Ex. 3 000"></div>
-          
-        </div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="paDate">Monté le</label><input class="input" id="paDate" type="date" name="installedDate"></div>
-          <div class="field"><label class="field__label" for="paKm">au compteur (km)</label><input class="input" id="paKm" name="installedKm" inputmode="numeric"></div>
-        </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="paCost">Prix · € <span class="field__opt">(facultatif)</span></label><input class="input" id="paCost" name="cost" inputmode="decimal" placeholder="0,00"></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        <section class="wz-step" data-group="Le composant" data-q="Lequel ?" data-r="Composant" data-chips>
+          <div class="field"><label class="field__label" for="paName">Composant</label><input class="input" id="paName" name="name" maxlength="60" list="paChoices" placeholder="Ex. Chaîne" autocomplete="off"><datalist id="paChoices"></datalist></div>
+        </section>
+        <section class="wz-step" data-group="Le composant" data-q="Durée de vie ?" data-r="Durée de vie">
+          <div class="field"><label class="field__label" for="paLimit">Durée de vie (km)</label><input class="input" id="paLimit" name="limitKm" inputmode="numeric" placeholder="Ex. 3 000" data-unit="km"></div>
+        </section>
+        <section class="wz-step" data-group="Le montage" data-q="Monté quand ?" data-r="Monté">
+          <div class="form-grid"><div class="field"><label class="field__label" for="paDate">Monté le</label><input class="input" id="paDate" type="date" name="installedDate"></div><div class="field"><label class="field__label" for="paKm">au compteur (km)</label><input class="input" id="paKm" name="installedKm" inputmode="numeric" data-unit="km"></div></div>
+        </section>
+        <section class="wz-step" data-group="Le montage" data-q="À quel prix ?" data-r="Prix" data-optional>
+          <div class="field"><label class="field__label" for="paCost">Prix · €</label><input class="input" id="paCost" name="cost" inputmode="decimal" placeholder="0,00" data-unit="€"></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="partDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le composant</span></button>
       </form>
     </div>
@@ -369,42 +388,37 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="purchaseTitle">Achat &amp; financement</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="purchaseForm" novalidate>
-        <div class="form-grid">
+      <form class="form sheet__scroll" id="purchaseForm" novalidate data-wizard>
+        <section class="wz-step" data-group="L’achat" data-q="Acheté quand ?" data-r="Date d’achat">
           <div class="field"><label class="field__label" for="puDate">Date d’achat</label><input class="input" id="puDate" type="date" name="purchaseDate"></div>
-          <div class="field"><label class="field__label" for="puKm">Km à l’achat</label><input class="input" id="puKm" name="purchaseKm" inputmode="numeric"></div>
-        </div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="puPrice">Prix d’achat · €</label><input class="input" id="puPrice" name="purchasePrice" inputmode="decimal" placeholder="0"></div>
-          <div class="field"><label class="field__label" for="puResale">Revente estimée · €</label><input class="input" id="puResale" name="resaleValue" inputmode="decimal" placeholder="0"></div>
-        </div>
-        <div class="field"><label class="field__label" for="loType">Financement</label><select class="input select" id="loType" name="type"></select></div>
-        <div data-loan="credit">
-          <div class="form-grid">
-            <div class="field"><label class="field__label" for="loPrincipal">Montant emprunté · €</label><input class="input" id="loPrincipal" name="principal" inputmode="decimal"></div>
-            <div class="field"><label class="field__label" for="loRate">Taux annuel · %</label><input class="input" id="loRate" name="rate" inputmode="decimal" placeholder="Ex. 4,5"></div>
-          </div>
-          <p class="field__help">L’apport (prix − montant emprunté) est compté au mois d’achat.</p>
-          <div class="form-grid">
-            <div class="field"><label class="field__label" for="loPayoffAmount">Solde anticipé · €</label><input class="input" id="loPayoffAmount" name="earlyPayoffAmount" inputmode="decimal" placeholder="0"></div>
-            <div class="field"><label class="field__label" for="loPayoffDate">Réglé le</label><input class="input" id="loPayoffDate" type="date" name="earlyPayoffDate"></div>
-          </div>
-          <p class="field__help">Si le crédit a été soldé par anticipation : les mensualités s’arrêtent à cette date, remplacées par ce montant.</p>
-        </div>
-        <div data-loan="lease">
-          <div class="field"><label class="field__label" for="loFirst">Premier loyer / apport · €</label><input class="input" id="loFirst" name="firstPayment" inputmode="decimal"></div>
-        </div>
-        <div data-loan="any">
-          <div class="form-grid">
-            <div class="field"><label class="field__label" for="loMonths" id="loMonthsLabel">Durée (mois)</label><input class="input" id="loMonths" name="months" inputmode="numeric" placeholder="Ex. 48"></div>
-            <div class="field"><label class="field__label" for="loMonthly" id="loMonthlyLabel">Mensualité · €</label><input class="input" id="loMonthly" name="monthly" inputmode="decimal" placeholder="Calculée si vide"></div>
-          </div>
-          <div class="field"><label class="field__label" for="loStart" id="loStartLabel">Première échéance</label><input class="input" id="loStart" type="date" name="start"></div>
-        </div>
-        <div data-loan="loa">
-          <div class="field"><label class="field__label" for="loResidual">Option d’achat finale · € <span class="field__opt">(facultatif)</span></label><input class="input" id="loResidual" name="residual" inputmode="decimal"></div>
-        </div>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        </section>
+        <section class="wz-step" data-group="L’achat" data-q="À combien de km ?" data-r="Km à l’achat">
+          <div class="field"><label class="field__label" for="puKm">Km à l’achat</label><input class="input" id="puKm" name="purchaseKm" inputmode="numeric" data-unit="km"></div>
+        </section>
+        <section class="wz-step" data-group="L’achat" data-q="À quel prix ?" data-r="Prix">
+          <div class="field"><label class="field__label" for="puPrice">Prix d’achat · €</label><input class="input" id="puPrice" name="purchasePrice" inputmode="decimal" placeholder="0" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Le financement" data-q="Comment ?" data-r="Financement" data-chips>
+          <div class="field"><label class="field__label" for="loType">Financement</label><select class="input select" id="loType" name="type"></select></div>
+        </section>
+        <section class="wz-step" data-group="Le financement" data-loan="credit" data-q="Le crédit" data-r="Crédit">
+          <div class="form-grid"><div class="field"><label class="field__label" for="loPrincipal">Montant emprunté · €</label><input class="input" id="loPrincipal" name="principal" inputmode="decimal" data-unit="€"></div><div class="field"><label class="field__label" for="loRate">Taux annuel · %</label><input class="input" id="loRate" name="rate" inputmode="decimal" placeholder="Ex. 4,5" data-unit="%"></div></div><p class="field__help">L’apport (prix − montant emprunté) est compté au mois d’achat.</p>
+        </section>
+        <section class="wz-step" data-group="Le financement" data-loan="lease" data-q="Premier loyer" data-r="Premier loyer">
+          <div class="field"><label class="field__label" for="loFirst">Premier loyer / apport · €</label><input class="input" id="loFirst" name="firstPayment" inputmode="decimal" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Le financement" data-loan="any" data-q="Durée et mensualité" data-r="Échéances">
+          <div class="form-grid"><div class="field"><label class="field__label" for="loMonths" id="loMonthsLabel">Durée (mois)</label><input class="input" id="loMonths" name="months" inputmode="numeric" placeholder="Ex. 48" data-unit="mois"></div><div class="field"><label class="field__label" for="loMonthly" id="loMonthlyLabel">Mensualité · €</label><input class="input" id="loMonthly" name="monthly" inputmode="decimal" placeholder="Calculée si vide" data-unit="€/mois"></div></div><div class="field"><label class="field__label" for="loStart" id="loStartLabel">Première échéance</label><input class="input" id="loStart" type="date" name="start"></div>
+        </section>
+        <section class="wz-step" data-group="Le financement" data-loan="loa" data-q="Option d’achat finale" data-r="Option d’achat" data-optional>
+          <div class="field"><label class="field__label" for="loResidual">Option d’achat finale · €</label><input class="input" id="loResidual" name="residual" inputmode="decimal" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Revente et solde" data-q="Revente estimée ?" data-r="Revente estimée" data-optional>
+          <div class="field"><label class="field__label" for="puResale">Revente estimée · €</label><input class="input" id="puResale" name="resaleValue" inputmode="decimal" placeholder="0" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Revente et solde" data-loan="credit" data-q="Crédit soldé en avance ?" data-r="Solde anticipé" data-optional>
+          <div class="form-grid"><div class="field"><label class="field__label" for="loPayoffAmount">Solde anticipé · €</label><input class="input" id="loPayoffAmount" name="earlyPayoffAmount" inputmode="decimal" placeholder="0" data-unit="€"></div><div class="field"><label class="field__label" for="loPayoffDate">Réglé le</label><input class="input" id="loPayoffDate" type="date" name="earlyPayoffDate"></div></div><p class="field__help">Les mensualités s’arrêtent à cette date, remplacées par ce montant.</p>
+        </section>
       </form>
     </div>
   </div>
@@ -414,22 +428,26 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fixedTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="fixedTitle">Nouveau frais fixe</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="fixedForm" novalidate>
+      <form class="form sheet__scroll" id="fixedForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="form-grid">
+        <section class="wz-step" data-group="Le frais" data-q="Lequel ?" data-r="Catégorie" data-chips>
           <div class="field"><label class="field__label" for="fiCategory">Catégorie</label><select class="input select" id="fiCategory" name="category"></select></div>
-          
-        </div>
-        <div class="form-grid">
-          <div class="field"><label class="field__label" for="fiAmount">Montant · €</label><input class="input" id="fiAmount" name="amount" inputmode="decimal" placeholder="0,00"></div>
+        </section>
+        <section class="wz-step" data-group="Le frais" data-q="Un libellé ?" data-r="Libellé" data-optional>
+          <div class="field"><label class="field__label" for="fiLabel">Libellé</label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div>
+        </section>
+        <section class="wz-step" data-group="Le montant" data-q="Combien ?" data-r="Montant">
+          <div class="field"><label class="field__label" for="fiAmount">Montant · €</label><input class="input" id="fiAmount" name="amount" inputmode="decimal" placeholder="0,00" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Le montant" data-q="À quelle fréquence ?" data-r="Fréquence" data-chips>
           <div class="field"><label class="field__label" for="fiPeriod">Fréquence</label><select class="input select" id="fiPeriod" name="period"><option value="month">Par mois</option><option value="year">Par an</option></select></div>
-        </div>
-        <div class="form-grid">
+        </section>
+        <section class="wz-step" data-group="La période" data-q="Depuis quand ?" data-r="Depuis le">
           <div class="field"><label class="field__label" for="fiStart">Depuis le</label><input class="input" id="fiStart" type="date" name="start"></div>
-          
-        </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="fiLabel">Libellé <span class="field__opt">(facultatif)</span></label><input class="input" id="fiLabel" name="label" maxlength="80" placeholder="Ex. MAAF tous risques" autocomplete="off"></div><div class="field"><label class="field__label" for="fiEnd">Jusqu’au <span class="field__opt">(facultatif)</span></label><input class="input" id="fiEnd" type="date" name="end"></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        </section>
+        <section class="wz-step" data-group="La période" data-q="Jusqu’à quand ?" data-r="Jusqu’au" data-optional>
+          <div class="field"><label class="field__label" for="fiEnd">Jusqu’au</label><input class="input" id="fiEnd" type="date" name="end"></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="fixedDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer</span></button>
       </form>
     </div>
@@ -440,26 +458,33 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="expenseTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="expenseTitle">Nouvelle dépense</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="expenseForm" novalidate>
+      <form class="form sheet__scroll" id="expenseForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="field"><label class="field__label" for="exLabel">Dépense</label><input class="input" id="exLabel" name="label" maxlength="120" autocomplete="off"></div>
-        <div class="form-grid">
+        <section class="wz-step" data-group="La dépense" data-q="Qu’avez-vous acheté ?" data-r="Dépense">
+          <div class="field"><label class="field__label" for="exLabel">Dépense</label><input class="input" id="exLabel" name="label" maxlength="120" autocomplete="off"></div>
+        </section>
+        <section class="wz-step" data-group="La dépense" data-q="Dans quelle catégorie ?" data-r="Catégorie" data-chips>
           <div class="field"><label class="field__label" for="exCategory">Catégorie</label><select class="input select" id="exCategory" name="category"></select></div>
+        </section>
+        <section class="wz-step" data-group="Le montant" data-q="Combien ?" data-r="Montant">
+          <div class="field"><label class="field__label" for="exCost">Montant · €</label><input class="input" id="exCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off" data-unit="€"></div>
+        </section>
+        <section class="wz-step" data-group="Le montant" data-q="Quand ?" data-r="Date" data-quick="today,yesterday">
           <div class="field"><label class="field__label" for="exDate">Date</label><input class="input" id="exDate" type="date" name="date"></div>
-        </div>
-        <div class="field"><label class="field__label" for="exCost">Montant · €</label><input class="input" id="exCost" name="cost" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
-        <div class="field">
-          <span class="field__label">Facture <span class="field__opt">(photo ou PDF, facultatif)</span></span>
-          <div class="file-attach">
-            <div id="exFilesList"></div>
-            <label class="btn btn--ghost btn--sm file-attach__btn" id="exFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
-              <input type="file" id="exFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
-            </label>
+        </section>
+        <section class="wz-step" data-group="Facture et note" data-q="La facture" data-r="Facture" data-optional>
+          <div class="field">
+            <div class="file-attach">
+              <div id="exFilesList"></div>
+              <label class="btn btn--ghost btn--sm file-attach__btn" id="exFileLabel"><span data-icon="upload" data-size="16"></span><span>Joindre la facture</span>
+                <input type="file" id="exFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
+              </label>
+            </div>
           </div>
-          <p class="field__help">Rangée automatiquement dans l’onglet Docs.</p>
-        </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="exNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="exNote" name="note" maxlength="1000" rows="2" placeholder="Magasin, référence, garantie…"></textarea></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        </section>
+        <section class="wz-step" data-group="Facture et note" data-q="Une note ?" data-r="Note" data-optional>
+          <div class="field"><label class="field__label" for="exNote">Note</label><textarea class="input textarea" id="exNote" name="note" maxlength="1000" rows="2" placeholder="Magasin, référence, garantie…"></textarea></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="expenseDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer la dépense</span></button>
       </form>
     </div>
@@ -470,23 +495,30 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="docTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="docTitle">Nouveau document</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="docForm" novalidate>
+      <form class="form sheet__scroll" id="docForm" novalidate data-wizard>
         <input type="hidden" name="editId">
-        <div class="field"><label class="field__label" for="doType">Type</label><select class="input select" id="doType" name="type"></select></div>
-        
-        <div class="field"><label class="field__label" for="doExpiry">Date d’échéance <span class="field__opt">(facultatif)</span></label><input class="input" id="doExpiry" type="date" name="expiry"><p class="field__help">Une alerte apparaît 30 jours avant.</p></div>
-        
-        <div class="field">
-          <span class="field__label">Pièces jointes <span class="field__opt">(photos ou PDF, facultatif, plusieurs possibles)</span></span>
-          <div class="file-attach">
-            <div id="docFilesList"></div>
-            <label class="btn btn--ghost btn--sm file-attach__btn" id="docFileLabel"><span data-icon="upload" data-size="16"></span><span>Ajouter des fichiers</span>
-              <input type="file" id="docFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
-            </label>
+        <section class="wz-step" data-group="Le document" data-q="Lequel ?" data-r="Type" data-chips>
+          <div class="field"><label class="field__label" for="doType">Type</label><select class="input select" id="doType" name="type"></select></div>
+        </section>
+        <section class="wz-step" data-group="Le document" data-q="Un détail ?" data-r="Détail" data-optional>
+          <div class="field"><label class="field__label" for="doLabel">Détail</label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div>
+        </section>
+        <section class="wz-step" data-group="Validité et fichiers" data-q="Valable jusqu’au ?" data-r="Échéance" data-optional data-quick="1y,2y">
+          <div class="field"><label class="field__label" for="doExpiry">Date d’échéance</label><input class="input" id="doExpiry" type="date" name="expiry"><p class="field__help">Une alerte apparaît 30 jours avant.</p></div>
+        </section>
+        <section class="wz-step" data-group="Validité et fichiers" data-q="Les fichiers" data-r="Fichiers" data-optional>
+          <div class="field">
+            <div class="file-attach">
+              <div id="docFilesList"></div>
+              <label class="btn btn--ghost btn--sm file-attach__btn" id="docFileLabel"><span data-icon="upload" data-size="16"></span><span>Ajouter des fichiers</span>
+                <input type="file" id="docFileInput" accept="image/*,application/pdf" class="photo-picker__input" multiple>
+              </label>
+            </div>
           </div>
-        </div>
-        <details class="more-fields"><summary>Plus de détails</summary><div class="more-fields__body"><div class="field"><label class="field__label" for="doLabel">Détail <span class="field__opt">(facultatif)</span></label><input class="input" id="doLabel" name="label" maxlength="120" placeholder="Ex. Contrat n° 123456 — MAAF" autocomplete="off"></div><div class="field"><label class="field__label" for="doNote">Note <span class="field__opt">(facultatif)</span></label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div></div></details>
-        <div class="form-actions"><button type="button" class="btn btn--ghost" data-close>Annuler</button><button type="submit" class="btn btn--primary">Enregistrer</button></div>
+        </section>
+        <section class="wz-step" data-group="Validité et fichiers" data-q="Une note ?" data-r="Note" data-optional>
+          <div class="field"><label class="field__label" for="doNote">Note</label><textarea class="input textarea" id="doNote" name="note" maxlength="1000" rows="2" placeholder="Numéro de contrat, contact, où est rangé l’original…"></textarea></div>
+        </section>
         <button type="button" class="btn btn--ghost btn--danger-text" id="docDelete" hidden><span data-icon="trash" data-size="18"></span><span>Supprimer le document</span></button>
       </form>
     </div>
