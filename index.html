@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/views/garage.css">
   <link rel="stylesheet" href="css/minimal.css">
-  <link rel="stylesheet" href="css/epure.css">
+  <link rel="stylesheet" href="css/carrousel.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
@@ -89,24 +89,17 @@
 
     <!-- ================= ACCUEIL ================= -->
     <section id="homeView" class="view">
-      <section class="summary" id="summary" aria-live="polite">
-        <p class="summary__date" id="summaryDate"></p>
-        <h2 class="summary__title" id="summaryTitle">Mon Garage</h2>
-        <p class="summary__sub" id="summarySub"></p>
+      <nav class="vnames" id="vehicleNames" aria-label="Vos véhicules"></nav>
+      <div class="rail" id="vehicleRail"></div>
+      <div class="rail-dots" id="railDots" aria-hidden="true"></div>
+      <section class="home-empty" id="homeEmpty" hidden>
+        <h2 class="home-empty__title">Votre garage est vide.</h2>
+        <p class="home-empty__sub">Ajoutez un véhicule ou un vélo pour suivre son entretien, ses documents et ses coûts.</p>
       </section>
-      <section class="home-block" id="dueSection" hidden>
-        <header class="home-block__head"><h2 class="home-block__title">À surveiller</h2></header>
-        <ul class="watch-list" id="dueList"></ul>
-        <p class="watch-more" id="dueMore" hidden></p>
-      </section>
-      <section class="home-block">
-        <header class="home-block__head"><h2 class="home-block__title">Véhicules <span class="home-block__count" id="vehicleCount">0</span></h2><button type="button" class="home-block__add" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Ajouter</span></button></header>
-        <ul class="vlist" id="vehicleCards"></ul>
-      </section>
-      <section class="home-block">
-        <header class="home-block__head"><h2 class="home-block__title">Vélos <span class="home-block__count" id="bikeCount">0</span></h2><button type="button" class="home-block__add" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Ajouter</span></button></header>
-        <ul class="vlist" id="bikeCards"></ul>
-      </section>
+      <div class="home-add">
+        <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
+        <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
+      </div>
       <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
       <p class="account" id="accountLine"></p>
       <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
@@ -123,7 +116,7 @@
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Plan d’entretien</h2><p class="card__sub">Rappels par date et kilométrage</p></div><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
           <p class="card__sub reminder-hint">Pré-rempli selon la motorisation à la création de la fiche (préconisations généralisées) : à ajuster selon le carnet d’entretien réel.</p>
-          <div class="stack" id="reminderList"></div>
+          <div class="stack crail" id="reminderList"></div>
         </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
@@ -193,7 +186,7 @@
       <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="card card--list" id="docList"></div>
+          <div class="docs" id="docList"></div>
         </section>
       </div>
     </section>

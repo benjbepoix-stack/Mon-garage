@@ -13,7 +13,7 @@ import { toast, toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
-import { renderHome, publishAlerts } from './views/home.js';
+import { renderHome, publishAlerts, initHome } from './views/home.js';
 import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
@@ -304,6 +304,12 @@ function onClick(e) {
     if (img?.src) openPhotoLightbox(img.src, img.alt);
     return;
   }
+  const kmBtn = e.target.closest('[data-km]');
+  if (kmBtn) {
+    // Depuis l'accueil : le compteur se met à jour sans ouvrir la fiche.
+    if (store.activeId() !== kmBtn.dataset.km) store.setKeys({ activeId: kmBtn.dataset.km });
+    return openKm();
+  }
   const card = e.target.closest('[data-vehicle]');
   if (card) return openVehicleView(card.dataset.vehicle);
   const add = e.target.closest('[data-new]');
@@ -336,6 +342,7 @@ async function init() {
   initDialogs();
   initCalendarPrompt();
   initVehicles({ deleted: () => goHome() });
+  initHome();
   initDetail({ onTab: goTab });
   initMaintenance();
   initFuel();

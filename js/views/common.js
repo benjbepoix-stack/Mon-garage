@@ -1,5 +1,5 @@
 /* Utilitaires d'affichage partagés. */
-import { parseNumber } from '../core/utils.js';
+import { parseNumber, esc } from '../core/utils.js';
 import { icon } from '../ui/icons.js';
 import * as store from '../core/store.js';
 import { currentKm } from '../core/calc.js';
@@ -43,6 +43,17 @@ export function photoHtml(v, size = 44, { full = false } = {}) {
   if (!src) return kindIcon(v, size);
   // full : photo entière (non recadrée) sur un fond flouté de la même image
   return full ? `<img class="photo-fill" src="${src}" alt="" aria-hidden="true"><img class="photo-main" src="${src}" alt="" loading="lazy">` : `<img src="${src}" alt="" loading="lazy">`;
+}
+
+/** Remplissage du trait sous une échéance : plein si elle est dépassée, proportionnel au temps écoulé sinon. */
+export const lineWidth = a => (a.level === 'late' ? 100 : Math.round(Math.min(1, Math.max(.06, 1 - a.score)) * 100));
+
+/** Encadré photo : la vignette ouvre la photo en grand ; sans photo, l'icône du type de véhicule. */
+export function photoFrame(v, cls) {
+  const hasImg = v.hasPhoto && store.photo(v.id);
+  return hasImg
+    ? `<button type="button" class="${cls} has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 26)}</button>`
+    : `<span class="${cls}" aria-hidden="true">${photoHtml(v, 26)}</span>`;
 }
 
 export const LEVEL_LABEL = { late: 'En retard', soon: 'Bientôt', ok: 'À jour', unknown: 'À renseigner', none: 'Sans échéance' };

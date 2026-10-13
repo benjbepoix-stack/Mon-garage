@@ -4,7 +4,7 @@ import * as store from '../core/store.js';
 import { alerts, currentKm } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, photoHtml } from './common.js';
+import { fieldsOf, photoFrame, lineWidth } from './common.js';
 import { scheduleAlertsSync } from '../services/carnet-sync.js';
 
 /**
@@ -35,90 +35,91 @@ export function publishAlerts() {
 }
 
 const TAB_OF = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
-const count = (n, one, many) => `${n} ${n > 1 ? many : one}`;
-const kmLabel = n => `${Math.round(n).toLocaleString('fr-FR')} km`;
+const KIND_LABEL = { reminder: 'Entretien', doc: 'Document', part: 'Usure' };
+const nf = n => Math.round(n).toLocaleString('fr-FR');
 
-/** Une ligne par véhicule : vignette, nom, marque / modèle, kilométrage et état en bout de ligne. */
-function row(v) {
+/** Une carte par véhicule dans le carrousel : nom, photo, compteur et les trois échéances les plus proches. */
+function card(v) {
   const f = fieldsOf(v.id);
-  const urgent = alerts(v, f).filter(a => a.level === 'late' || a.level === 'soon');
-  const late = urgent.filter(a => a.level === 'late').length;
-  const hasImg = v.hasPhoto && store.photo(v.id);
-  // Juste la marque, le modèle et (pour un véhicule) la plaque : pas d'année ni de carburant ici.
-  const sub = [v.brand, v.model, ...(isBike(v) ? [] : [v.plate])].filter(Boolean).join(' ');
+  const list = alerts(v, f);
+  const bike = isBike(v);
+  const sub = [v.brand, v.model, ...(bike ? [] : [v.plate])].filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' · ');
   const km = currentKm(v, f);
-  const state = late ? `<span class="vrow__state is-late">${count(late, 'en retard', 'en retard')}</span>`
-    : urgent.length ? `<span class="vrow__state is-soon">${count(urgent.length, 'à prévoir', 'à prévoir')}</span>`
-    : '<span class="vrow__state">À jour</span>';
-  return `<li class="vrow">
-    ${hasImg
-      ? `<button type="button" class="vrow__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 22)}</button>`
-      : `<span class="vrow__photo" aria-hidden="true">${photoHtml(v, 22)}</span>`}
-    <button type="button" class="vrow__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
-      <span class="vrow__text">
-        <span class="vrow__name">${esc(v.name)}</span>
-        ${sub ? `<span class="vrow__sub">${esc(sub)}</span>` : ''}
-      </span>
-      <span class="vrow__end">
-        ${km ? `<span class="vrow__km">${kmLabel(km)}</span>` : ''}
-        ${state}
-      </span>
-    </button>
-  </li>`;
+  const shown = list.slice(0, 3);
+  return `<article class="vcard" id="vcard-${esc(v.id)}" data-id="${esc(v.id)}" aria-label="${esc(v.name)}">
+    <header class="vcard__head">
+      <div class="vcard__titles">
+        <p class="vcard__kind">${bike ? 'Vélo' : 'Véhicule'}</p>
+        <h2 class="vcard__name">${esc(v.name)}</h2>
+        ${sub ? `<p class="vcard__sub">${sub}</p>` : ''}
+      </div>
+      ${photoFrame(v, 'vcard__photo')}
+    </header>
+    <p class="vcard__km num">${km ? nf(km) : '—'}<small>km</small></p>
+    <button type="button" class="pill" data-km="${esc(v.id)}">Mettre à jour le compteur</button>
+    ${shown.length
+      ? `<ul class="vcard__due">${shown.map(a => `<li><a class="is-${a.level}" href="#/v/${encodeURIComponent(v.id)}/${TAB_OF[a.kind] || ''}">
+          <span class="vcard__due-title">${esc(a.title)}</span><em>${esc(a.text)}</em><span class="tick" style="--v:${lineWidth(a)}%"></span></a></li>`).join('')}</ul>`
+      : '<p class="vcard__ok">Aucune échéance suivie pour l’instant.</p>'}
+    <button type="button" class="vcard__open" data-vehicle="${esc(v.id)}">Ouvrir la fiche ${icon('chevronRight', 16)}</button>
+  </article>`;
 }
 
-/** Échéances en retard ou proches, tous véhicules actifs confondus, les plus urgentes d'abord. */
-function dueList(active) {
-  const order = { late: 0, soon: 1 };
-  return active
-    .flatMap(v => alerts(v, fieldsOf(v.id)).filter(a => a.level in order).map(a => ({ ...a, vehicle: v })))
-    .sort((a, b) => order[a.level] - order[b.level] || a.score - b.score);
+/** Marge d'accrochage du carrousel (la carte s'aligne sur la gouttière de la page). */
+const pad = rail => parseFloat(getComputedStyle(rail).scrollPaddingLeft) || 0;
+
+let current = 0; // carte affichée, conservée d'un rendu à l'autre
+
+function show(i, smooth = true) {
+  const rail = $('#vehicleRail');
+  const cards = rail.children;
+  if (!cards[i]) return;
+  rail.scrollTo({ left: cards[i].offsetLeft - pad(rail), behavior: smooth ? 'smooth' : 'auto' });
 }
 
-function renderSummary(active, watch) {
-  const late = watch.filter(a => a.level === 'late');
-  const soon = watch.length - late.length;
-  const level = !active.length ? 'empty' : late.length ? 'late' : soon ? 'soon' : 'ok';
-  const title = {
-    empty: 'Votre garage est vide.',
-    late: `${count(late.length, 'échéance', 'échéances')} en retard.`,
-    soon: `${count(soon, 'échéance', 'échéances')} à prévoir.`,
-    ok: 'Tout est à jour.'
-  }[level];
-  const names = [...new Set(watch.map(a => a.vehicle.name))];
-  const sub = {
-    empty: 'Ajoutez un véhicule ou un vélo pour suivre son entretien.',
-    late: `Concerne ${names.join(', ')}.${soon ? ` ${count(soon, 'autre échéance arrive', 'autres échéances arrivent')} sous 30 jours.` : ''}`,
-    soon: `Concerne ${names.join(', ')}, sous 30 jours.`,
-    ok: 'Rien à prévoir dans les 30 prochains jours.'
-  }[level];
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  $('#summary').dataset.level = level;
-  $('#summaryDate').textContent = today.charAt(0).toUpperCase() + today.slice(1);
-  $('#summaryTitle').textContent = title;
-  $('#summarySub').textContent = sub;
-
-  const shown = watch.slice(0, 5);
-  $('#dueSection').hidden = !shown.length;
-  $('#dueList').innerHTML = shown.map(a => `<li><a class="watch" href="#/v/${encodeURIComponent(a.vehicle.id)}/${TAB_OF[a.kind] || ''}">
-      <span class="watch__text"><span class="watch__title">${esc(a.title)}</span><span class="watch__vehicle">${esc(a.vehicle.name)}</span></span>
-      <span class="watch__when is-${a.level}">${esc(a.text)}</span>
-    </a></li>`).join('');
-  $('#dueMore').hidden = watch.length <= shown.length;
-  $('#dueMore').textContent = `Et ${count(watch.length - shown.length, 'autre', 'autres')}, dans les fiches.`;
+function mark(i) {
+  current = i;
+  [...$('#vehicleNames').children].forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
+  [...$('#railDots').children].forEach((d, j) => d.classList.toggle('is-on', j === i));
 }
 
 export function renderHome() {
   const all = store.vehicles();
   const active = all.filter(v => !v.archived);
   const archived = all.filter(v => v.archived);
-  const cars = active.filter(v => !isBike(v));
-  const bikes = active.filter(isBike);
-  renderSummary(active, dueList(active));
-  $('#vehicleCount').textContent = cars.length;
-  $('#bikeCount').textContent = bikes.length;
-  $('#vehicleCards').innerHTML = cars.length ? cars.map(row).join('') : '<li class="vlist__empty">Aucun véhicule pour l’instant.</li>';
-  $('#bikeCards').innerHTML = bikes.length ? bikes.map(row).join('') : '<li class="vlist__empty">Aucun vélo pour l’instant.</li>';
+  const list = [...active.filter(v => !isBike(v)), ...active.filter(isBike)];
+  const lateOf = v => alerts(v, fieldsOf(v.id)).some(a => a.level === 'late');
+  const rail = $('#vehicleRail');
+  $('#homeEmpty').hidden = !!list.length;
+  $('#vehicleNames').innerHTML = list.map((v, i) => `<button type="button" data-goto-card="${i}" aria-current="false">${esc(v.name)}${lateOf(v) ? '<span class="dot" aria-label="en retard"></span>' : ''}</button>`).join('');
+  rail.innerHTML = list.map(card).join('');
+  $('#railDots').innerHTML = list.length > 1 ? list.map(() => '<i></i>').join('') : '';
+  current = Math.min(current, Math.max(0, list.length - 1));
+  mark(current);
+  requestAnimationFrame(() => show(current, false));
   $('#archivesLink').hidden = !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
+}
+
+export function initHome() {
+  const rail = $('#vehicleRail');
+  let raf = 0;
+  rail.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const cards = [...rail.children];
+      if (!cards.length) return;
+      const x = rail.scrollLeft + pad(rail);
+      let best = 0;
+      cards.forEach((c, i) => { if (Math.abs(c.offsetLeft - x) < Math.abs(cards[best].offsetLeft - x)) best = i; });
+      if (best !== current) mark(best);
+    });
+  }, { passive: true });
+  $('#vehicleNames').addEventListener('click', e => {
+    const b = e.target.closest('[data-goto-card]');
+    if (!b) return;
+    const i = Number(b.dataset.gotoCard);
+    mark(i);
+    show(i);
+  });
 }
