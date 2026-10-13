@@ -8,7 +8,7 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, kmOf, km, euro, euroRound, photoHtml, intInput, toNumber, positive, capitalize } from './common.js';
+import { fieldsOf, kmOf, km, euro, euroRound, photoFrame, lineWidth, intInput, toNumber, positive, capitalize } from './common.js';
 import { renderMaintenance } from './maintenance.js';
 import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
@@ -31,16 +31,18 @@ export function setTab(name, v = store.active()) {
 }
 
 const ALERT_TAB = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
-const ALERT_ICON = { reminder: 'wrench', doc: 'doc', part: 'gear' };
+const KIND_LABEL = { reminder: 'Entretien', doc: 'Document', part: 'Usure' };
 
 function renderHero(v, f) {
   const sub = isBike(v) ? [v.brand, v.model, v.bikeType] : [v.brand, v.model, v.year, v.plate];
+  const n = kmOf(v, f);
   $('#vehicleHero').innerHTML = `
-    <div class="vhero__photo">${photoHtml(v, 34)}</div>
     <div class="vhero__body">
       <p class="vhero__sub">${sub.filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' · ') || (isBike(v) ? 'Vélo' : 'Véhicule')}${v.archived ? ` <span class="level is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>
-      <button type="button" class="vhero__km" data-open="km" aria-label="Mettre à jour le compteur">${icon('gauge', 17)}<span>${esc(km(kmOf(v, f)))}</span><small>Mettre à jour</small></button>
-    </div>`;
+      <p class="vhero__km num">${n ? Math.round(n).toLocaleString('fr-FR') : '—'}<small>km</small></p>
+      <button type="button" class="pill" data-open="km">Mettre à jour</button>
+    </div>
+    ${photoFrame(v, 'vhero__photo')}`;
 }
 
 function renderTabs(v, list) {
@@ -68,22 +70,26 @@ function renderOverview(v, f, list) {
     ['Coût au km', summary.perKm ? `${summary.perKm.toFixed(2).replace('.', ',')} €` : '—', summary.km ? `${km(summary.km)} parcourus` : ''],
     ['Dernier entretien', last ? capitalize(formatKey(last.date, { day: 'numeric', month: 'short', year: 'numeric' })) : '—', last ? last.type : 'Aucun']
   ];
-  const shown = list.slice(0, 6);
+  const urgent = list.filter(a => a.level === 'late' || a.level === 'soon');
+  const next = list.filter(a => !urgent.includes(a)).slice(0, 4);
   $('#panel-overview').innerHTML = `
-    <div class="kpis">${kpis.map(([l, val, s]) => `<div class="kpi"><span>${l}</span><strong>${esc(val)}</strong>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>
     <section class="section">
-      <header class="section__head"><h2 class="section__title">Prochaines échéances</h2></header>
-      <div class="card card--list alert-list">${
-        shown.length
-          ? shown
-              .map(
-                a => `<div class="row" data-edit data-goto="${ALERT_TAB[a.kind]}"><span class="row__icon is-${a.level}">${icon(ALERT_ICON[a.kind], 18)}</span>
-                  <div class="row__body"><span class="row__title">${esc(a.title)}</span><span class="row__sub">${esc(a.text)}</span></div>${icon('chevronRight', 16)}</div>`
-              )
-              .join('')
-          : `<div class="empty-state"><p>Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.</p></div>`
-      }</div>
+      <header class="section__head"><h2 class="section__title">À régler</h2>${urgent.length ? `<span class="section__count">${urgent.length}</span>` : ''}</header>
+      ${urgent.length
+        ? `<div class="crail">${urgent.map(a => `<article class="cc is-${a.level}" data-goto="${ALERT_TAB[a.kind]}">
+            <p class="cc__k">${KIND_LABEL[a.kind]}</p><h3 class="cc__t">${esc(a.title)}</h3>
+            <p class="cc__big">${esc(a.text)}</p><span class="tick" style="--v:${lineWidth(a)}%"></span>
+            <span class="cc__go">Voir ${icon('chevronRight', 15)}</span></article>`).join('')}</div>`
+        : `<p class="calm">${list.length ? 'Rien à régler dans les 30 prochains jours.' : `Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.`}</p>`}
     </section>
+    <section class="section">
+      <header class="section__head"><h2 class="section__title">Ce véhicule</h2></header>
+      <div class="kpis">${kpis.map(([l, val, s]) => `<div class="kpi"><span>${l}</span><strong>${esc(val)}</strong>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>
+    </section>
+    ${next.length ? `<section class="section">
+      <header class="section__head"><h2 class="section__title">Ensuite</h2></header>
+      <ul class="clist">${next.map(a => `<li data-goto="${ALERT_TAB[a.kind]}"><span class="clist__t">${esc(a.title)}</span><small>${esc(a.text)}</small></li>`).join('')}</ul>
+    </section>` : ''}
     ${v.notes ? `<section class="section card"><h2 class="card__title">Notes</h2><p class="notes-text">${esc(v.notes)}</p></section>` : ''}
     <section class="section">
       <button type="button" class="btn btn--soft btn--block" data-action="resale-dossier">${icon('doc', 18)}<span>Exporter le dossier de revente</span></button>

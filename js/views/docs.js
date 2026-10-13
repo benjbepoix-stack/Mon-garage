@@ -32,10 +32,33 @@ function row(d) {
   </div>`;
 }
 
+/** Carte du carrousel pour un document à échéance : l'état en grand, la date en dessous. */
+function card(d) {
+  const s = docStatus(d);
+  const n = d.files.length;
+  const days = Math.abs(s.daysLeft);
+  const big = s.level === 'late' ? 'Expiré' : s.daysLeft <= 1 ? (s.daysLeft === 0 ? 'Aujourd’hui' : 'Demain') : s.level === 'soon' ? `${days} j` : 'Valide';
+  const when = s.level === 'late' ? `depuis le ${fmtDate(d.expiry)}` : `jusqu’au ${fmtDate(d.expiry)}`;
+  return `<article class="cc cc--doc is-${s.level}" data-edit data-doc="${esc(d.id)}">
+    <p class="cc__k">${esc(d.type)}${d.label ? ` · ${esc(d.label)}` : ''}</p>
+    <h3 class="cc__t">${big}</h3>
+    <p class="cc__f">${esc(when)}${d.source ? ` · ${esc(SOURCE_LABEL[d.source])}` : ''}</p>
+    <div class="cc__actions">
+      ${n ? `<button type="button" class="pill pill--soft" data-doc-file="${esc(d.id)}">${icon('paperclip', 15)}${n > 1 ? `${n} pièces jointes` : 'Voir le document'}</button>` : ''}
+      ${s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 17)}</button>` : ''}
+    </div>
+  </article>`;
+}
+
 export function renderDocs(v, f) {
   const soon = f.docs.filter(d => ['late', 'soon'].includes(docStatus(d).level)).length;
   $('#docsSub').textContent = f.docs.length ? `${f.docs.length} document${f.docs.length > 1 ? 's' : ''}${soon ? ` · ${soon} à renouveler` : ''}` : '';
-  $('#docList').innerHTML = f.docs.length ? f.docs.map(row).join('') : `<div class="empty-state"><p>Aucun document. Ajoutez ${v.kind === 'bike' ? 'la facture et la garantie' : 'l’assurance et le contrôle technique'} avec leur date d’échéance pour être prévenu à temps.</p></div>`;
+  const dated = f.docs.filter(d => d.expiry).sort((a, b) => a.expiry.localeCompare(b.expiry));
+  const undated = f.docs.filter(d => !d.expiry);
+  $('#docList').innerHTML = f.docs.length
+    ? `${dated.length ? `<div class="crail">${dated.map(card).join('')}</div>` : ''}
+       ${undated.length ? `<h3 class="docs__sub">Sans échéance</h3><div class="card card--list">${undated.map(row).join('')}</div>` : ''}`
+    : `<div class="empty-state"><p>Aucun document. Ajoutez ${v.kind === 'bike' ? 'la facture et la garantie' : 'l’assurance et le contrôle technique'} avec leur date d’échéance pour être prévenu à temps.</p></div>`;
 }
 
 export function openDoc(id = null) {

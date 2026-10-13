@@ -1,10 +1,10 @@
 /* Accueil : cartes des véhicules et vélos, avec la prochaine échéance. */
 import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { alerts } from '../core/calc.js';
+import { alerts, currentKm } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, photoHtml } from './common.js';
+import { fieldsOf, photoFrame, lineWidth } from './common.js';
 import { scheduleAlertsSync } from '../services/carnet-sync.js';
 
 /**
@@ -34,40 +34,92 @@ export function publishAlerts() {
   scheduleAlertsSync(Object.fromEntries(active.map(v => [v.id, alertsDigest(v, fieldsOf(v.id))])));
 }
 
+const TAB_OF = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
+const KIND_LABEL = { reminder: 'Entretien', doc: 'Document', part: 'Usure' };
+const nf = n => Math.round(n).toLocaleString('fr-FR');
+
+/** Une carte par véhicule dans le carrousel : nom, photo, compteur et les trois échéances les plus proches. */
 function card(v) {
   const f = fieldsOf(v.id);
   const list = alerts(v, f);
-  const next = list[0];
-  // Autres échéances à surveiller (en retard ou bientôt) : un simple compteur.
-  const more = list.slice(1).filter(a => a.level === 'late' || a.level === 'soon').length;
-  const hasImg = v.hasPhoto && store.photo(v.id);
-  // Juste la marque, le modèle et (pour un véhicule) la plaque : pas d'année, de km ni de carburant ici.
-  const sub = [v.brand, v.model, ...(isBike(v) ? [] : [v.plate])].filter(Boolean).join(' · ');
-  return `<article class="gcard">
-    ${hasImg
-      ? `<button type="button" class="gcard__photo has-img" data-photo aria-label="Voir la photo de ${esc(v.name)} en grand">${photoHtml(v, 34)}</button>`
-      : `<div class="gcard__photo">${photoHtml(v, 34)}</div>`}
-    <button type="button" class="gcard__main" data-vehicle="${esc(v.id)}" aria-label="Ouvrir ${esc(v.name)}">
-      <div class="gcard__text">
-        <div class="gcard__name">${esc(v.name)}</div>
-        ${sub ? `<div class="gcard__sub">${esc(sub)}</div>` : ''}
-        ${next ? `<span class="gcard__alert is-${next.level}"><i></i><span>${esc(next.title)} · ${esc(next.text)}</span>${more ? `<b>+${more}</b>` : ''}</span>` : ''}
+  const bike = isBike(v);
+  const sub = [v.brand, v.model, ...(bike ? [] : [v.plate])].filter(Boolean).map(x => `<span class="nobr">${esc(x)}</span>`).join(' · ');
+  const km = currentKm(v, f);
+  const shown = list.slice(0, 3);
+  return `<article class="vcard" id="vcard-${esc(v.id)}" data-id="${esc(v.id)}" aria-label="${esc(v.name)}">
+    <header class="vcard__head">
+      <div class="vcard__titles">
+        <p class="vcard__kind">${bike ? 'Vélo' : 'Véhicule'}</p>
+        <h2 class="vcard__name">${esc(v.name)}</h2>
+        ${sub ? `<p class="vcard__sub">${sub}</p>` : ''}
       </div>
-      <span class="gcard__chevron">${icon('chevronRight', 20)}</span>
-    </button>
+      ${photoFrame(v, 'vcard__photo')}
+    </header>
+    <p class="vcard__km num">${km ? nf(km) : '—'}<small>km</small></p>
+    <button type="button" class="pill" data-km="${esc(v.id)}">Mettre à jour le compteur</button>
+    ${shown.length
+      ? `<ul class="vcard__due">${shown.map(a => `<li><a class="is-${a.level}" href="#/v/${encodeURIComponent(v.id)}/${TAB_OF[a.kind] || ''}">
+          <span class="vcard__due-title">${esc(a.title)}</span><em>${esc(a.text)}</em><span class="tick" style="--v:${lineWidth(a)}%"></span></a></li>`).join('')}</ul>`
+      : '<p class="vcard__ok">Aucune échéance suivie pour l’instant.</p>'}
+    <button type="button" class="vcard__open" data-vehicle="${esc(v.id)}">Ouvrir la fiche ${icon('chevronRight', 16)}</button>
   </article>`;
+}
+
+/** Marge d'accrochage du carrousel (la carte s'aligne sur la gouttière de la page). */
+const pad = rail => parseFloat(getComputedStyle(rail).scrollPaddingLeft) || 0;
+
+let current = 0; // carte affichée, conservée d'un rendu à l'autre
+
+function show(i, smooth = true) {
+  const rail = $('#vehicleRail');
+  const cards = rail.children;
+  if (!cards[i]) return;
+  rail.scrollTo({ left: cards[i].offsetLeft - pad(rail), behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function mark(i) {
+  current = i;
+  [...$('#vehicleNames').children].forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
+  [...$('#railDots').children].forEach((d, j) => d.classList.toggle('is-on', j === i));
 }
 
 export function renderHome() {
   const all = store.vehicles();
   const active = all.filter(v => !v.archived);
   const archived = all.filter(v => v.archived);
-  const cars = active.filter(v => !isBike(v));
-  const bikes = active.filter(isBike);
-  $('#vehicleCount').textContent = cars.length;
-  $('#bikeCount').textContent = bikes.length;
-  $('#vehicleCards').innerHTML = cars.length ? cars.map(card).join('') : '<div class="empty-card">Aucun véhicule dans votre garage.</div>';
-  $('#bikeCards').innerHTML = bikes.length ? bikes.map(card).join('') : '<div class="empty-card">Aucun vélo dans votre garage.</div>';
+  const list = [...active.filter(v => !isBike(v)), ...active.filter(isBike)];
+  const lateOf = v => alerts(v, fieldsOf(v.id)).some(a => a.level === 'late');
+  const rail = $('#vehicleRail');
+  $('#homeEmpty').hidden = !!list.length;
+  $('#vehicleNames').innerHTML = list.map((v, i) => `<button type="button" data-goto-card="${i}" aria-current="false">${esc(v.name)}${lateOf(v) ? '<span class="dot" aria-label="en retard"></span>' : ''}</button>`).join('');
+  rail.innerHTML = list.map(card).join('');
+  $('#railDots').innerHTML = list.length > 1 ? list.map(() => '<i></i>').join('') : '';
+  current = Math.min(current, Math.max(0, list.length - 1));
+  mark(current);
+  requestAnimationFrame(() => show(current, false));
   $('#archivesLink').hidden = !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
+}
+
+export function initHome() {
+  const rail = $('#vehicleRail');
+  let raf = 0;
+  rail.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const cards = [...rail.children];
+      if (!cards.length) return;
+      const x = rail.scrollLeft + pad(rail);
+      let best = 0;
+      cards.forEach((c, i) => { if (Math.abs(c.offsetLeft - x) < Math.abs(cards[best].offsetLeft - x)) best = i; });
+      if (best !== current) mark(best);
+    });
+  }, { passive: true });
+  $('#vehicleNames').addEventListener('click', e => {
+    const b = e.target.closest('[data-goto-card]');
+    if (!b) return;
+    const i = Number(b.dataset.gotoCard);
+    mark(i);
+    show(i);
+  });
 }

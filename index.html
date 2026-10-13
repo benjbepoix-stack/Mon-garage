@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Suivi de vos véhicules et vélos : entretiens, carburant, coûts, documents.">
-  <meta name="theme-color" content="#16171c">
+  <meta name="theme-color" content="#0f1011">
   <meta name="color-scheme" content="dark light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
       if (th === 'dark' && !localStorage.getItem('garage_theme_auto')) th = 'auto';
       if (th !== 'dark' && th !== 'light') th = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.dataset.theme = th;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f4f4f7' : '#16171c');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f5f5f3' : '#0f1011');
     } catch (e) {}
     try { var st = JSON.parse(localStorage.getItem('mon_garage_v2_style')); if (typeof st === 'string') document.documentElement.dataset.style = st; } catch (e) {}
   </script>
@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/views/garage.css">
   <link rel="stylesheet" href="css/minimal.css">
+  <link rel="stylesheet" href="css/carrousel.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
@@ -88,16 +89,17 @@
 
     <!-- ================= ACCUEIL ================= -->
     <section id="homeView" class="view">
-      <section class="section">
-        <header class="section__head"><h2 class="section__title">Véhicules</h2><span class="section__count" id="vehicleCount">0</span></header>
-        <div class="garage-cards" id="vehicleCards"></div>
-        <button type="button" class="add-tile" data-new="vehicle"><span data-icon="plus" data-size="20"></span><span>Ajouter un véhicule</span></button>
+      <nav class="vnames" id="vehicleNames" aria-label="Vos véhicules"></nav>
+      <div class="rail" id="vehicleRail"></div>
+      <div class="rail-dots" id="railDots" aria-hidden="true"></div>
+      <section class="home-empty" id="homeEmpty" hidden>
+        <h2 class="home-empty__title">Votre garage est vide.</h2>
+        <p class="home-empty__sub">Ajoutez un véhicule ou un vélo pour suivre son entretien, ses documents et ses coûts.</p>
       </section>
-      <section class="section">
-        <header class="section__head"><h2 class="section__title">Vélos</h2><span class="section__count" id="bikeCount">0</span></header>
-        <div class="garage-cards" id="bikeCards"></div>
-        <button type="button" class="add-tile" data-new="bike"><span data-icon="plus" data-size="20"></span><span>Ajouter un vélo</span></button>
-      </section>
+      <div class="home-add">
+        <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
+        <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
+      </div>
       <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
       <p class="account" id="accountLine"></p>
       <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
@@ -114,7 +116,7 @@
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Plan d’entretien</h2><p class="card__sub">Rappels par date et kilométrage</p></div><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
           <p class="card__sub reminder-hint">Pré-rempli selon la motorisation à la création de la fiche (préconisations généralisées) : à ajuster selon le carnet d’entretien réel.</p>
-          <div class="stack" id="reminderList"></div>
+          <div class="stack crail" id="reminderList"></div>
         </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
@@ -184,7 +186,7 @@
       <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="card card--list" id="docList"></div>
+          <div class="docs" id="docList"></div>
         </section>
       </div>
     </section>

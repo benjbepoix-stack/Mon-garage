@@ -6,7 +6,7 @@
  */
 import { $, $$ } from '../core/utils.js';
 
-const BAR_COLORS = { dark: '#16171c', light: '#f4f4f7' };
+const BAR_COLORS = { dark: '#0f1011', light: '#f5f5f3' };
 const media = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
 let choice = 'auto';
 let currentStyle = 'acier';
