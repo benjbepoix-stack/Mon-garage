@@ -2,7 +2,7 @@
 import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { docStatus, docTitle, dueIn } from '../core/calc.js';
+import { docStatus, docTitle } from '../core/calc.js';
 import { DOC_TYPES, makeId } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
@@ -32,18 +32,21 @@ function row(d) {
   </div>`;
 }
 
-/** Document à échéance, en liste : nom et date à gauche, état à droite (en couleur s'il faut le renouveler). */
-function item(d) {
+/** Carte du carrousel pour un document à échéance : l'état en grand, la date en dessous. */
+function card(d) {
   const s = docStatus(d);
   const n = d.files.length;
-  const state = s.level === 'late' ? 'Expiré' : s.level === 'soon' ? dueIn(s.daysLeft) : LEVEL_LABEL.ok;
-  const when = `${s.level === 'late' ? 'Depuis le' : 'Jusqu’au'} ${fmtDate(d.expiry)}`;
-  return `<li class="dl is-${s.level}" data-edit data-doc="${esc(d.id)}">
-    <span class="dl__body"><span class="dl__t">${esc(docTitle(d))}</span><span class="dl__s">${esc(when)}${d.source ? ` · ${esc(SOURCE_LABEL[d.source])}` : ''}</span></span>
-    <span class="dl__when">${esc(state)}</span>
-    ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-file="${esc(d.id)}" aria-label="${n > 1 ? `Voir les pièces jointes (${n})` : 'Voir la pièce jointe'}">${icon('paperclip', 16)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
-    ${s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 16)}</button>` : ''}
-  </li>`;
+  const big = s.level === 'late' ? 'Expiré' : s.level === 'soon' ? (s.daysLeft === 0 ? 'Aujourd’hui' : s.daysLeft === 1 ? 'Demain' : `${s.daysLeft} j`) : 'Valide';
+  const when = `${s.level === 'late' ? 'depuis le' : 'jusqu’au'} ${fmtDate(d.expiry)}`;
+  return `<article class="cc cc--doc is-${s.level}" data-edit data-doc="${esc(d.id)}">
+    <p class="cc__k">${esc(docTitle(d))}</p>
+    <h3 class="cc__t">${esc(big)}</h3>
+    <p class="cc__f">${esc(when)}${d.source ? ` · ${esc(SOURCE_LABEL[d.source])}` : ''}</p>
+    <div class="cc__actions">
+      ${n ? `<button type="button" class="pill pill--soft" data-doc-file="${esc(d.id)}">${icon('paperclip', 15)}${n > 1 ? `${n} pièces jointes` : 'Voir le document'}</button>` : ''}
+      ${s.daysLeft >= 0 ? `<button type="button" class="icon-btn icon-btn--sm" data-doc-cal aria-label="Ajouter l’échéance au calendrier">${icon('calendarPlus', 17)}</button>` : ''}
+    </div>
+  </article>`;
 }
 
 export function renderDocs(v, f) {
@@ -52,7 +55,7 @@ export function renderDocs(v, f) {
   const dated = f.docs.filter(d => d.expiry).sort((a, b) => a.expiry.localeCompare(b.expiry));
   const undated = f.docs.filter(d => !d.expiry);
   $('#docList').innerHTML = f.docs.length
-    ? `${dated.length ? `<ul class="dlist">${dated.map(item).join('')}</ul>` : ''}
+    ? `${dated.length ? `<div class="crail">${dated.map(card).join('')}</div>` : ''}
        ${undated.length ? `<h3 class="docs__sub">Sans échéance</h3><div class="card card--list">${undated.map(row).join('')}</div>` : ''}`
     : `<div class="empty-state"><p>Aucun document. Ajoutez ${v.kind === 'bike' ? 'la facture et la garantie' : 'l’assurance et le contrôle technique'} avec leur date d’échéance pour être prévenu à temps.</p></div>`;
 }

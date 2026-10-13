@@ -7,7 +7,7 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, kmOf, km, euroRound, photoFrame, intInput, toNumber, positive, identity, kmLine } from './common.js';
+import { fieldsOf, kmOf, km, euroRound, photoFrame, lineWidth, intInput, toNumber, positive, identity, kmLine } from './common.js';
 import { renderMaintenance } from './maintenance.js';
 import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
@@ -67,7 +67,8 @@ function renderOverview(v, f, list) {
     <section class="section">
       <header class="section__head"><h2 class="section__title">À régler</h2>${urgent.length ? `<span class="section__count">${urgent.length}</span>` : ''}</header>
       ${urgent.length
-        ? `<ul class="clist clist--urgent">${urgent.map(item).join('')}</ul>`
+        ? `<div class="crail">${urgent.map(a => `<article class="cc is-${a.level}" data-goto="${ALERT_TAB[a.kind]}">
+            <h3 class="cc__t">${esc(a.title)}</h3><p class="cc__big">${esc(a.text)}</p><span class="tick" style="--v:${lineWidth(a)}%"></span></article>`).join('')}</div>`
         : `<p class="calm">${list.length ? 'Rien à régler dans les 30 prochains jours.' : `Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.`}</p>`}
     </section>
     <section class="section">

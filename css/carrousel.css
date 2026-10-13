@@ -93,11 +93,11 @@ body:not(.is-detail) .topbar__title { font-size: 17px; letter-spacing: -.02em; }
 .vnames button[aria-current="true"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--text); }
 .vnames .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--late); }
 
-/* Rail de l'accueil : défilement horizontal aimanté */
-.rail { position: relative; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scroll-padding: 0 var(--gutter); }
-.rail::-webkit-scrollbar { display: none; }
+/* Rails : défilement horizontal aimanté, la carte suivante dépasse pour inviter à glisser */
+.rail, .crail { position: relative; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scroll-padding: 0 var(--gutter); }
+.rail::-webkit-scrollbar, .crail::-webkit-scrollbar { display: none; }
 .rail { margin-top: 18px; }
-.rail > * { scroll-snap-align: start; }
+.rail > *, .crail > * { scroll-snap-align: start; }
 
 .vcard { flex: 0 0 min(86%, 420px); display: flex; flex-direction: column; border-radius: 26px; background: var(--surface); padding: 22px 20px 10px; cursor: pointer; }
 .rail > .vcard:only-child { flex-basis: 100%; }
@@ -160,8 +160,6 @@ button.vcard__photo:active, button.vhero__photo:active { transform: scale(.96); 
 .clist li:active { opacity: .6; }
 .clist small { flex: none; max-width: 50%; text-align: right; font-size: 13px; color: var(--text-3); }
 .clist li:last-child { border-bottom: 1px solid var(--border); }
-.clist .is-late small { color: var(--late); font-weight: 500; }
-.clist .is-soon small { color: var(--soon); font-weight: 500; }
 .kpis--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* ---------- Boutons ---------- */
@@ -209,27 +207,25 @@ button.vcard__photo:active, button.vhero__photo:active { transform: scale(.96); 
 .vtab[aria-selected="true"] { color: var(--text); box-shadow: inset 0 -2px 0 var(--text); }
 .vtab .dot { width: 6px; height: 6px; }
 
-/* Plan d'entretien : un rappel par ligne, échéance et bouton « Fait » à droite */
-.rlist, .dlist { list-style: none; margin: 0; padding: 0; }
-.rem, .dl { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0 10px; padding: 13px 0 12px; border-top: 1px solid var(--border); }
-.rem:last-child, .dl:last-child { border-bottom: 1px solid var(--border); }
-.rem__body, .dl__body { all: unset; display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: pointer; }
-.dl { display: flex; cursor: pointer; }
-.dl__body { flex: 1; }
-.rem__body:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 6px; }
-.rem__t, .dl__t { font-size: 16px; font-weight: 500; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.rem__s, .dl__s { font-size: 13px; color: var(--text-3); }
-.rem__when, .dl__when { font-size: 13.5px; text-align: right; color: var(--text-2); font-variant-numeric: tabular-nums; }
-.is-late > .rem__when, .is-late > .dl__when { color: var(--late); font-weight: 500; }
-.is-soon > .rem__when, .is-soon > .dl__when { color: var(--soon); font-weight: 500; }
-.rem__done { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-2); cursor: pointer; }
-.rem__done:hover { color: var(--text); background: var(--surface-2); }
-.rem__bar { grid-column: 1 / -1; position: relative; height: 2px; margin-top: 10px; border-radius: 2px; background: var(--border); overflow: hidden; }
-.rem__bar i { position: absolute; inset: 0 auto 0 0; background: var(--text-3); }
-.is-late > .rem__bar i { background: var(--late); }
-.is-soon > .rem__bar i { background: var(--soon); }
-.rlist .empty-card { list-style: none; }
-.dl .icon-btn { border: 1px solid var(--border-strong); border-radius: 999px; background: transparent; }
+/* Cartes du carrousel dans la fiche (à régler, rappels, documents) */
+.cc { flex: 0 0 min(82%, 360px); display: flex; flex-direction: column; border-radius: 26px; background: var(--surface); padding: 20px; cursor: pointer; }
+.crail > .cc:only-child { flex-basis: 100%; }
+.cc__k { font-size: 12.5px; color: var(--text-3); overflow-wrap: anywhere; }
+.cc__t { margin-top: 0; font-size: 24px; font-weight: 500; line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.cc__k + .cc__t { margin-top: 4px; }
+.cc__big { margin-top: 12px; font-size: 24px; font-weight: 400; line-height: 1.1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.cc.is-late .cc__big { color: var(--late); }
+.cc.is-soon .cc__big { color: var(--soon); }
+.cc .tick { margin-top: 14px; }
+.cc__f { margin-top: 6px; font-size: 13px; color: var(--text-3); }
+.cc--doc .cc__t { font-size: 30px; }
+.cc--doc.is-late .cc__t { color: var(--late); }
+.cc--doc.is-soon .cc__t { color: var(--soon); }
+.cc__actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 16px; }
+.cc--doc .cc__actions { justify-content: flex-start; }
+.cc__actions .icon-btn { border: 1px solid var(--border-strong); border-radius: 999px; background: transparent; }
+.rcard .cc__big { font-size: 20px; }
+#reminderList .empty-card { flex: 0 0 100%; }
 .due__head .row__icon { display: none; }
 .due__title { font-size: 24px; font-weight: 500; letter-spacing: -.035em; line-height: 1.15; }
 .due__sub { font-size: 12.5px; }
@@ -271,6 +267,6 @@ button.vcard__photo:active, button.vhero__photo:active { transform: scale(.96); 
 .auth__title { font-weight: 600; letter-spacing: -.03em; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rail { scroll-behavior: auto; }
+  .rail, .crail { scroll-behavior: auto; }
   .pill, .home-add__btn, .btn, .vnames button, .kmline__edit, button.vcard__photo, button.vhero__photo { transition: none; transform: none !important; }
 }

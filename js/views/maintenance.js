@@ -32,20 +32,21 @@ function lastText(r, s, v) {
   return 'Dernière fois inconnue : touchez pour la renseigner (ou « jamais réalisé »)';
 }
 
-/** Un rappel du plan d'entretien : nom et fréquence, échéance à droite, bouton « Fait », trait d'avancement. */
-function reminderItem(r, v, current, alert) {
+/** Carte du carrousel pour un rappel : nom et fréquence, échéance en grand, trait d'avancement, bouton « Fait ». */
+function reminderCard(r, v, current, alert) {
   const s = reminderStatus(r, v, current);
   // Un seul « tous les » devant les deux critères (pas de répétition) pour rester court sur une ligne.
   const everyParts = [r.everyKm ? km(r.everyKm) : '', r.everyMonths ? `${r.everyMonths} mois` : ''].filter(Boolean);
   const every = everyParts.length ? `Tous les ${everyParts.join(' ou ')}` : '';
   // Dernière fois inconnue ou jamais faite : c'est ce qu'il faut savoir (et renseigner), pas la fréquence.
   const hint = s.level === 'unknown' || s.base.neverDone ? lastText(r, s, v) : '';
-  return `<li class="rem is-${s.level}" data-reminder="${esc(r.id)}">
-    <button type="button" class="rem__body" data-reminder-edit aria-label="Modifier le rappel ${esc(r.label)}"><span class="rem__t">${esc(r.label)}</span><span class="rem__s">${esc(hint || every)}</span></button>
-    <span class="rem__when">${esc(alert?.text || LEVEL_LABEL[s.level])}</span>
-    <button type="button" class="rem__done" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 15)}</button>
-    ${s.level !== 'unknown' ? `<span class="rem__bar"><i style="width:${Math.round(s.ratio * 100)}%"></i></span>` : ''}
-  </li>`;
+  return `<article class="cc rcard is-${s.level}" data-reminder="${esc(r.id)}" aria-label="Modifier le rappel ${esc(r.label)}">
+    <h3 class="cc__t">${esc(r.label)}</h3>
+    <p class="cc__f">${esc(hint || every)}</p>
+    <p class="cc__big">${esc(alert?.text || LEVEL_LABEL[s.level])}</p>
+    ${s.level !== 'unknown' ? `<span class="tick" style="--v:${Math.max(6, Math.round(s.ratio * 100))}%"></span>` : ''}
+    <div class="cc__actions"><button type="button" class="icon-btn icon-btn--sm" data-reminder-done aria-label="Marquer comme fait" title="Fait">${icon('check', 16)}</button></div>
+  </article>`;
 }
 
 function maintenanceRow(x, docs) {
@@ -63,8 +64,8 @@ export function renderMaintenance(v, f) {
   const current = currentKm(v, f);
   const byId = new Map(alerts(v, f).filter(a => a.kind === 'reminder').map(a => [a.id, a]));
   $('#reminderList').innerHTML = f.reminders.length
-    ? f.reminders.map(r => reminderItem(r, v, current, byId.get(r.id))).join('')
-    : `<li class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</li>`;
+    ? f.reminders.map(r => reminderCard(r, v, current, byId.get(r.id))).join('')
+    : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
   $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(x => maintenanceRow(x, f.docs)).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
@@ -291,7 +292,7 @@ export function initMaintenance() {
   $('#panel-maintenance').addEventListener('click', e => {
     const card = e.target.closest('[data-reminder]');
     if (card && e.target.closest('[data-reminder-done]')) return openMaintenance(null, { reminderId: card.dataset.reminder });
-    if (card && e.target.closest('[data-reminder-edit]')) return openReminder(card.dataset.reminder);
+    if (card) return openReminder(card.dataset.reminder);
     const row = e.target.closest('[data-maintenance]');
     if (row && e.target.closest('[data-invoice]')) return openInvoice(row.dataset.maintenance);
     if (row) openMaintenance(row.dataset.maintenance);
