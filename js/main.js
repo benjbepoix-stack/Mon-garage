@@ -17,7 +17,8 @@ import { renderHome, publishAlerts, initHome } from './views/home.js';
 import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
-import { initFuel } from './views/fuel.js';
+import { initFuel, applyMarketPrices } from './views/fuel.js';
+import { refreshMarketPrices } from './services/fuel-price.js';
 import { initParts, openPart } from './views/parts.js';
 import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/costs.js';
 import { initDocs, openDoc } from './views/docs.js';
@@ -136,8 +137,19 @@ function migrateFiles() {
  * Données prêtes (premier instantané du compte, ou appareil seul) : liaisons, envois de fichiers
  * en attente, migration des pièces jointes.
  */
+/** Prix moyen du carburant : une requête par mois au plus, puis report sur les estimations qui le suivent. */
+let fuelPricesOn = false;
+function syncFuelPrices() {
+  fuelPricesOn = true;
+  refreshMarketPrices().then(fresh => {
+    applyMarketPrices();
+    if (fresh) render();
+  });
+}
+
 function onDataReady() {
   enableLinks();
+  syncFuelPrices();
   publishLinks();
   checkOverdue();
   // En arrière-plan : hors ligne, la base Firebase ne répond qu'au retour du réseau.
@@ -381,7 +393,10 @@ async function init() {
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushNow();
-    else render();
+    else {
+      render();
+      if (fuelPricesOn) syncFuelPrices();
+    }
   });
   window.addEventListener('pagehide', flushNow);
   window.addEventListener('resize', debounce(render, 200));

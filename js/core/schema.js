@@ -273,7 +273,9 @@ const normalizers = {
           // Entrée « Carburant » générée par l'estimation automatique (coûts) plutôt que saisie à la main.
           auto: Boolean(x.auto),
           fuelConsumption: num(x.fuelConsumption, 100),
-          fuelPrice: num(x.fuelPrice, 1000)
+          fuelPrice: Math.round(num(x.fuelPrice * 1000, 1e6)) / 1000, // au millième (1,689 €/L)
+          // Prix suivi sur la moyenne France du mois (voir js/services/fuel-price.js).
+          fuelPriceAuto: Boolean(x.fuelPriceAuto)
         }))
         .filter(x => x.id && x.amount && x.start)
     ),

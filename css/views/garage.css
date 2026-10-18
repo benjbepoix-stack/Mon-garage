@@ -190,6 +190,8 @@ button.gcard__photo.has-img:active { transform: scale(.96); }
 /* Carburant : estimation mensuelle (onglet Carburant) */
 .field__value { font-size: var(--fs-lg); font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .fuel-fixed__estimate { margin-top: var(--sp-2); padding: 10px 12px; border-radius: var(--r-md); background: var(--accent-soft); color: var(--accent); font-weight: 750; font-size: var(--fs-sm); }
+.fuel-fixed__auto { margin-top: var(--sp-2); }
+.fuel-fixed__auto .field__help { margin: 4px 2px 0; }
 .form-actions--end { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-3); }
 .cost-hero .kpi strong { font-size: var(--fs-md); }
 .facts { display: grid; gap: 0; margin: 0; }
