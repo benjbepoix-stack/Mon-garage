@@ -1,27 +1,28 @@
-/* Fiche d'un véhicule : en-tête, onglets, mise à jour du compteur, aperçu. */
+/* Fiche d'un véhicule (onglet Garage) : photo, compteur et route, onglets, aperçu. */
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
-import { alerts, costSummary } from '../core/calc.js';
+import { alerts } from '../core/calc.js';
 import { isBike, isElectric } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { fieldsOf, kmOf, km, euroRound, photoFrame, lineWidth, intInput, toNumber, positive, identity, kmLine } from './common.js';
+import { fieldsOf, kmOf, km, photoFrame, intInput, toNumber, positive, identity } from './common.js';
+import { tile, badge } from './alert-ui.js';
+import { heroRoadHtml, mountRoad } from './road.js';
 import { renderMaintenance } from './maintenance.js';
 import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
-import { renderCosts } from './costs.js';
 import { renderDocs } from './docs.js';
 import { openResaleDossier } from '../features/resale-dossier.js';
 
 let tab = 'overview';
 
-/** Onglets de la fiche : libellés courts, les 5 tiennent sur un écran de 375 px sans défilement. */
+/** Onglets de la fiche (les coûts ont leur propre écran dans la barre du bas). */
 export function tabsFor(v) {
   return isBike(v)
-    ? [['overview', 'Aperçu'], ['parts', 'Usure'], ['maintenance', 'Entretien'], ['costs', 'Coûts'], ['docs', 'Docs']]
-    : [['overview', 'Aperçu'], ['maintenance', 'Entretien'], ['fuel', isElectric(v) ? 'Recharge' : 'Carburant'], ['costs', 'Coûts'], ['docs', 'Docs']];
+    ? [['overview', 'Fiche'], ['maintenance', 'Entretiens'], ['parts', 'Usure'], ['docs', 'Docs']]
+    : [['overview', 'Fiche'], ['maintenance', 'Entretiens'], ['fuel', isElectric(v) ? 'Recharge' : 'Carburant'], ['docs', 'Docs']];
 }
 
 export const currentTab = () => tab;
@@ -33,12 +34,21 @@ const ALERT_TAB = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
 
 function renderHero(v, f) {
   const sub = identity(v, isBike(v) ? [v.bikeType] : []);
-  $('#vehicleHero').innerHTML = `
-    <div class="vhero__body">
-      ${sub || v.archived ? `<p class="vhero__sub">${sub}${v.archived ? ` <span class="level is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>` : ''}
-      ${kmLine(kmOf(v, f), 'vhero__km', 'data-open="km"')}
+  const current = kmOf(v, f);
+  const hero = $('#vehicleHero');
+  hero.innerHTML = `
+    <div class="vhero__top">
+      <div class="vhero__body">
+        <h2 class="vhero__name">${esc(v.name)}</h2>
+        ${sub || v.archived ? `<p class="vhero__sub">${sub}${v.archived ? ` <span class="badge is-late">Archivé · ${esc(v.archivedReason)}</span>` : ''}</p>` : ''}
+      </div>
+      ${photoFrame(v, 'vhero__photo')}
     </div>
-    ${photoFrame(v, 'vhero__photo')}`;
+    ${heroRoadHtml(v, f, current)}`;
+  mountRoad(hero, v, f, current, value => {
+    store.updateVehicle(v.id, { mileage: value });
+    toast(`Compteur : ${km(value)}`);
+  });
 }
 
 function renderTabs(v, list) {
@@ -55,37 +65,29 @@ function renderTabs(v, list) {
 }
 
 function renderOverview(v, f, list) {
-  const summary = costSummary(v, f);
-  const kpis = [
-    ['Coût / mois', summary.monthsOwned ? euroRound(summary.perMonth) : '—'],
-    ['Coût au km', summary.perKm ? `${summary.perKm.toFixed(2).replace('.', ',')} €` : '—']
-  ];
-  const urgent = list.filter(a => a.level === 'late' || a.level === 'soon');
-  const next = list.filter(a => !urgent.includes(a)).slice(0, 4);
-  const item = a => `<li class="is-${a.level}" data-goto="${ALERT_TAB[a.kind]}"><span class="clist__t">${esc(a.title)}</span><small>${esc(a.text)}</small></li>`;
+  const reminders = list.filter(a => a.kind === 'reminder' || a.kind === 'part' || a.kind === 'doc');
+  const cardOf = a => `<article class="cc acard is-${a.level}" data-goto="${ALERT_TAB[a.kind]}"${a.kind === 'reminder' ? ` data-reminder-id="${esc(a.id)}"` : ''}>
+      <div class="acard__top">${tile(a.title, a.kind, a.level)}${badge(a.level)}</div>
+      <h3 class="cc__t">${esc(a.title)}</h3><p class="cc__big">${esc(a.text)}</p>
+      ${a.kind === 'reminder' ? `<button type="button" class="acard__done" data-done aria-label="${esc(a.title)} : c’est fait">${icon('check', 16)}<span>Fait</span></button>` : ''}
+    </article>`;
   $('#panel-overview').innerHTML = `
     <section class="section">
-      <header class="section__head"><h2 class="section__title">À régler</h2>${urgent.length ? `<span class="section__count">${urgent.length}</span>` : ''}</header>
-      ${urgent.length
-        ? `<div class="crail">${urgent.map(a => `<article class="cc is-${a.level}" data-goto="${ALERT_TAB[a.kind]}">
-            <h3 class="cc__t">${esc(a.title)}</h3><p class="cc__big">${esc(a.text)}</p><span class="tick" style="--v:${lineWidth(a)}%"></span></article>`).join('')}</div>`
-        : `<p class="calm">${list.length ? 'Rien à régler dans les 30 prochains jours.' : `Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.`}</p>`}
+      <header class="section__head"><h2 class="section__title">Rappels</h2>${reminders.length ? `<span class="section__count">${reminders.length}</span>` : ''}</header>
+      ${reminders.length
+        ? `<div class="crail">${reminders.map(cardOf).join('')}</div>`
+        : `<p class="calm">Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.</p>`}
     </section>
-    <section class="section">
-      <header class="section__head"><h2 class="section__title">${isBike(v) ? 'Ce vélo' : 'Ce véhicule'}</h2></header>
-      <div class="kpis kpis--2">${kpis.map(([l, val]) => `<div class="kpi"><span>${l}</span><strong>${esc(val)}</strong></div>`).join('')}</div>
+    <section class="section card note-card">
+      <header class="card__head"><h2 class="card__title">${icon('note', 18)}<span>Note</span></h2><button type="button" class="link-btn" data-edit-note>${v.notes ? 'Modifier' : 'Ajouter'}</button></header>
+      ${v.notes ? `<p class="notes-text">${esc(v.notes)}</p>` : '<p class="card__sub">Un mot sur ce véhicule : pression des pneus, code radio, garage habituel…</p>'}
     </section>
-    ${next.length ? `<section class="section">
-      <header class="section__head"><h2 class="section__title">Ensuite</h2></header>
-      <ul class="clist">${next.map(item).join('')}</ul>
-    </section>` : ''}
-    ${v.notes ? `<section class="section card"><h2 class="card__title">Notes</h2><p class="notes-text">${esc(v.notes)}</p></section>` : ''}
     <section class="section">
       <button type="button" class="btn btn--soft btn--block" data-action="resale-dossier">${icon('doc', 18)}<span>Exporter le dossier de revente</span></button>
     </section>`;
 }
 
-const PANELS = { maintenance: renderMaintenance, fuel: renderFuel, parts: renderParts, costs: renderCosts, docs: renderDocs };
+const PANELS = { maintenance: renderMaintenance, fuel: renderFuel, parts: renderParts, docs: renderDocs };
 
 export function renderDetail() {
   const v = store.active();
@@ -113,14 +115,16 @@ function openKm() {
   openSheet('kmSheet');
 }
 
-export function initDetail({ onTab }) {
+export function initDetail({ onTab, onReminderDone, onEditNote }) {
   $('#vehicleTabs').addEventListener('click', e => {
     const b = e.target.closest('[data-tab]');
     if (b) onTab(b.dataset.tab);
   });
   $('#panel-overview').addEventListener('click', e => {
     const row = e.target.closest('[data-goto]');
+    if (row && e.target.closest('[data-done]')) return onReminderDone(row.dataset.reminderId);
     if (row) return onTab(row.dataset.goto);
+    if (e.target.closest('[data-edit-note]')) return onEditNote();
     if (e.target.closest('[data-action="resale-dossier"]')) {
       const v = store.active();
       if (v) openResaleDossier(v, fieldsOf(v.id));

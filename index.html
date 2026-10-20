@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Suivi de vos véhicules et vélos : entretiens, carburant, coûts, documents.">
-  <meta name="theme-color" content="#0f1011">
+  <meta name="theme-color" content="#131210">
   <meta name="color-scheme" content="dark light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
       if (th === 'dark' && !localStorage.getItem('garage_theme_auto')) th = 'auto';
       if (th !== 'dark' && th !== 'light') th = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.dataset.theme = th;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f5f5f3' : '#0f1011');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', th === 'light' ? '#f5f3ef' : '#131210');
     } catch (e) {}
     try { var st = JSON.parse(localStorage.getItem('mon_garage_v2_style')); if (typeof st === 'string') document.documentElement.dataset.style = st; } catch (e) {}
   </script>
@@ -39,6 +39,7 @@
   <link rel="stylesheet" href="css/views/garage.css">
   <link rel="stylesheet" href="css/minimal.css">
   <link rel="stylesheet" href="css/carrousel.css">
+  <link rel="stylesheet" href="css/vivant.css">
 
   <script type="module" src="js/main.js"></script>
 </head>
@@ -72,14 +73,16 @@
   <!-- ================= EN-TÊTE ================= -->
   <header class="topbar">
     <div class="topbar__inner">
-      <button type="button" class="icon-btn icon-btn--glass" id="backBtn" aria-label="Retour au garage" hidden><span data-icon="chevronLeft" data-size="22"></span></button>
-      <div class="topbar__titles">
+      <div class="topbar__titles" id="topTitles">
+        <p class="topbar__kicker" id="topKicker"></p>
         <h1 class="topbar__title" id="topTitle">Mon Garage</h1>
       </div>
+      <button type="button" class="vpick" id="vehiclePick" aria-haspopup="dialog" hidden><span class="vpick__name" id="vehiclePickName"></span><span data-icon="chevronDown" data-size="18"></span></button>
       <div class="topbar__actions">
         <span class="sync-pill" id="syncStatus" data-status="connecting" role="status"><span class="spinner spinner--xs"></span><span>Connexion…</span></span>
         <button type="button" class="icon-btn icon-btn--glass" id="editVehicleBtn" aria-label="Modifier la fiche" hidden><span data-icon="edit" data-size="19"></span></button>
         <button type="button" class="icon-btn icon-btn--glass" id="settingsBtn" aria-label="Réglages"><span data-icon="settings" data-size="19"></span></button>
+        <button type="button" class="fab" id="fabBtn" aria-label="Noter un entretien"><span data-icon="plus" data-size="24"></span></button>
       </div>
     </div>
   </header>
@@ -88,19 +91,26 @@
 
     <!-- ================= ACCUEIL ================= -->
     <section id="homeView" class="view">
-      <nav class="vnames" id="vehicleNames" aria-label="Vos véhicules"></nav>
       <div class="rail" id="vehicleRail"></div>
       <section class="home-empty" id="homeEmpty" hidden>
         <h2 class="home-empty__title">Votre garage est vide.</h2>
         <p class="home-empty__sub">Ajoutez un véhicule ou un vélo pour suivre son entretien, ses documents et ses coûts.</p>
+        <div class="home-add">
+          <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
+          <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
+        </div>
+        <button type="button" class="link-btn archives-link" id="homeArchives" hidden><span data-icon="archive" data-size="16"></span><span>Voir les archives</span></button>
       </section>
-      <div class="home-add">
-        <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
-        <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
-      </div>
-      <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
-      <p class="account" id="accountLine"></p>
-      <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
+      <section class="section" id="todoSection" hidden>
+        <header class="section__head"><h2 class="section__title">À régler</h2><span class="section__count" id="todoCount"></span></header>
+        <div class="todo" id="todoList"></div>
+        <p class="todo__hint" id="todoHint">Glissez un rappel vers la droite quand c’est fait.</p>
+      </section>
+      <p class="calm calm--home" id="todoCalm" hidden>Tout est à jour. Rien à régler dans les 30 prochains jours.</p>
+      <section class="section" id="laterSection" hidden>
+        <header class="section__head"><h2 class="section__title">Plus tard</h2></header>
+        <div class="todo" id="laterList"></div>
+      </section>
     </section>
 
     <!-- ================= FICHE VÉHICULE ================= -->
@@ -117,7 +127,7 @@
         </section>
         <section class="section">
           <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="card card--list" id="maintenanceList"></div>
+          <div class="hist" id="maintenanceList"></div>
         </section>
       </div>
 
@@ -143,20 +153,20 @@
         </section>
       </div>
 
-      <div class="vpanel" id="panel-costs" data-panel="costs" hidden>
+      <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
+        <section class="section">
+          <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
+          <div class="docs" id="docList"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ================= COÛTS ================= -->
+    <section id="costsView" class="view" hidden>
+      <div id="panel-costs">
         <section class="card cost-hero" id="costHero"></section>
         <section class="card section">
-          <header class="card__head">
-            <div><h2 class="card__title">Coût par mois</h2><p class="card__sub" id="costRange"></p></div>
-            <div class="chart-steps">
-              <button type="button" class="icon-btn icon-btn--sm" id="costOlder" aria-label="Mois plus anciens"><span data-icon="chevronLeft" data-size="18"></span></button>
-              <button type="button" class="icon-btn icon-btn--sm" id="costNewer" aria-label="Mois plus récents"><span data-icon="chevronRight" data-size="18"></span></button>
-            </div>
-          </header>
-          <div id="costChart"></div>
-        </section>
-        <section class="card section">
-          <header class="card__head"><div><h2 class="card__title">Répartition depuis l’achat</h2><p class="card__sub" id="costSplitSub"></p></div></header>
+          <header class="card__head"><div><h2 class="card__title">Répartition</h2><p class="card__sub" id="costSplitSub"></p></div></header>
           <div class="donut-chart donut-chart--stack">
             <div class="donut" id="costDonut"><div class="donut__center"><strong id="costDonutTotal">0 €</strong><span>payés</span></div></div>
             <div class="legend" id="costLegend"></div>
@@ -176,14 +186,15 @@
         </section>
       </div>
 
-      <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
-        <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="docs" id="docList"></div>
-        </section>
-      </div>
     </section>
   </main>
+
+  <!-- ================= NAVIGATION ================= -->
+  <nav class="tabbar" id="tabbar" aria-label="Navigation">
+    <button type="button" class="tabbar__item" data-nav="home"><span data-icon="clock" data-size="22"></span><span>Rappels</span></button>
+    <button type="button" class="tabbar__item" data-nav="detail"><span data-icon="car" data-size="22"></span><span>Garage</span></button>
+    <button type="button" class="tabbar__item" data-nav="costs"><span data-icon="coins" data-size="22"></span><span>Coûts</span></button>
+  </nav>
 
   <!-- ================= FEUILLES ================= -->
   <!-- Véhicule / vélo -->
@@ -255,6 +266,22 @@
     </div>
   </div>
 
+  <!-- Choix du véhicule -->
+  <div class="sheet-backdrop" id="pickSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pickTitle" tabindex="-1">
+      <div class="sheet__grabber" aria-hidden="true"></div>
+      <header class="sheet__head"><h2 class="sheet__title" id="pickTitle">Vos véhicules</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
+      <div class="sheet__scroll">
+        <div class="pick" id="pickList"></div>
+        <div class="home-add">
+          <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
+          <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
+        </div>
+        <button type="button" class="link-btn archives-link" id="archivesLink" hidden><span data-icon="archive" data-size="16"></span><span id="archivesLinkLabel">Archives</span></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Réglages (thème et style graphique) -->
   <div class="sheet-backdrop" id="settingsSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
@@ -270,6 +297,8 @@
           </div>
           <p class="field__help">Auto suit le réglage clair / sombre de l’appareil.</p>
         </div>
+        <p class="account" id="accountLine"></p>
+        <button type="button" class="btn btn--ghost btn--block" id="logoutBtn" hidden>Se déconnecter</button>
       </div>
     </div>
   </div>
@@ -290,7 +319,7 @@
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle" tabindex="-1">
       <div class="sheet__grabber" aria-hidden="true"></div>
       <header class="sheet__head"><h2 class="sheet__title" id="maintenanceTitle">Nouvel entretien</h2><button type="button" class="icon-btn" data-close aria-label="Fermer"><span data-icon="close"></span></button></header>
-      <form class="form sheet__scroll" id="maintenanceForm" novalidate data-wizard>
+      <form class="form sheet__scroll" id="maintenanceForm" novalidate data-wizard data-hold>
         <input type="hidden" name="editId">
         <section class="wz-step" data-group="Ce qui a été fait" data-q="Quel entretien ?" data-r="Entretien" data-chips data-cols="4">
           <div class="field"><label class="field__label" for="maType">Type</label><select class="input select" id="maType" name="type"></select></div>

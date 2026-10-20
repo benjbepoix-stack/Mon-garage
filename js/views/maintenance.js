@@ -10,12 +10,15 @@ import { toast, toastError } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
 import { createFileField } from '../ui/file-field.js';
+import { tile } from './alert-ui.js';
 import { openAttachment } from '../ui/attachment-viewer.js';
 import { linkedDoc, withLinkedDoc, withoutLinkedDoc } from '../features/linked-doc.js';
 import { deleteFiles } from '../services/files.js';
 
 const fmtDate = d => formatKey(d, { day: 'numeric', month: 'short', year: 'numeric' });
 let invoiceField = null;
+let stampId = ''; // entretien qu'on vient d'ajouter : il reçoit son tampon daté dans l'historique
+let saved = false; // la feuille d'entretien s'est fermée sur un enregistrement
 
 /** « depuis la mise en circulation » (véhicule) ou « depuis l'achat » (vélo). */
 const sinceLabel = v => (isBike(v) ? 'l’achat' : 'la mise en circulation');
@@ -49,15 +52,37 @@ function reminderCard(r, v, current, alert) {
   </article>`;
 }
 
+function stamp(date) {
+  const [y, m, d] = date.split('-');
+  return `<span class="stamp" aria-hidden="true"><b>Fait</b><span>${d}.${m}</span><span>${y}</span></span>`;
+}
+
 function maintenanceRow(x, docs) {
   const sub = [fmtDate(x.date), x.km ? km(x.km) : '', x.garage].filter(Boolean).join(' · ');
   const n = linkedDoc(docs, x.id)?.files.length || 0;
-  return `<div class="row" data-edit data-maintenance="${esc(x.id)}">
-    <span class="row__icon">${icon('wrench', 18)}</span>
+  const fresh = x.id === stampId;
+  return `<div class="row${fresh ? ' is-new' : ''}" data-edit data-maintenance="${esc(x.id)}">
+    ${tile(x.label || x.type, 'reminder')}
     <div class="row__body"><span class="row__title">${esc(x.label || x.type)}</span><span class="row__sub">${esc(sub)}</span></div>
     ${n ? `<button type="button" class="icon-btn icon-btn--sm" data-invoice aria-label="Voir la facture" title="Facture">${icon('paperclip', 16)}${n > 1 ? `<span class="icon-btn__badge">${n}</span>` : ''}</button>` : ''}
     <div class="row__amount">${x.cost ? esc(euro(x.cost)) : '—'}</div>
+    ${fresh ? stamp(x.date) : ''}
   </div>`;
+}
+
+/** Historique rangé par année, la plus récente d'abord, avec le total de l'année. */
+function historyHtml(list, docs) {
+  const years = new Map();
+  [...list].sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(x => {
+    const y = (x.date || '').slice(0, 4) || '—';
+    if (!years.has(y)) years.set(y, []);
+    years.get(y).push(x);
+  });
+  return [...years].map(([y, items]) => {
+    const total = items.reduce((t, x) => t + x.cost, 0);
+    return `<h3 class="yr"><span>${esc(y)}</span>${total ? `<small>${esc(euro(total))}</small>` : ''}</h3>
+      <div class="card card--list">${items.map(x => maintenanceRow(x, docs)).join('')}</div>`;
+  }).join('');
 }
 
 export function renderMaintenance(v, f) {
@@ -68,12 +93,13 @@ export function renderMaintenance(v, f) {
     : `<div class="empty-card">Aucun rappel. Ajoutez par exemple ${isBike(v) ? 'la révision tous les 3 000 km ou 6 mois' : 'la vidange tous les 15 000 km ou 1 an'}.</div>`;
   const total = f.maintenance.reduce((s, x) => s + x.cost, 0);
   $('#maintenanceSub').textContent = f.maintenance.length ? `${f.maintenance.length} entretien${f.maintenance.length > 1 ? 's' : ''} · ${euro(total)}` : '';
-  $('#maintenanceList').innerHTML = f.maintenance.length ? f.maintenance.map(x => maintenanceRow(x, f.docs)).join('') : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
+  $('#maintenanceList').innerHTML = f.maintenance.length ? historyHtml(f.maintenance, f.docs) : '<div class="empty-state"><p>Aucun entretien enregistré.</p></div>';
 }
 
 /* ---------- Entretien ---------- */
-export function openMaintenance(id = null, { reminderId = '' } = {}) {
+export function openMaintenance(id = null, { reminderId = '', onClose } = {}) {
   const v = store.active();
+  saved = false;
   const f = fieldsOf(v.id);
   const x = id ? f.maintenance.find(m => m.id === id) : null;
   const form = $('#maintenanceForm');
@@ -118,7 +144,7 @@ export function openMaintenance(id = null, { reminderId = '' } = {}) {
   $('#maPartField').hidden = !(bike && f.parts.length);
   $('#maintenanceTitle').textContent = x ? 'Modifier l’entretien' : 'Nouvel entretien';
   $('#maintenanceDelete').hidden = !x;
-  openSheet('maintenanceSheet', { focus: false });
+  openSheet('maintenanceSheet', { focus: false, onClose: () => onClose?.(saved) });
 }
 
 const maintenanceSchema = {
@@ -169,9 +195,17 @@ async function onMaintenanceSubmit(e) {
   if (checkedIds.size) {
     patch.reminders = f.reminders.map(r => (checkedIds.has(r.id) && (!r.lastDate || item.date >= r.lastDate) ? { ...r, lastDate: item.date, lastKm: item.km || r.lastKm, neverDone: false } : r));
   }
+  if (!existing) {
+    stampId = item.id;
+    setTimeout(() => {
+      if (stampId === item.id) stampId = '';
+    }, 2600);
+  }
+  saved = true;
   store.setKeys(Object.fromEntries(Object.entries(patch).map(([k, value]) => [fieldKey(v.id, k), value])));
   closeSheet('maintenanceSheet');
   toast(existing ? 'Entretien modifié' : 'Entretien enregistré');
+  document.dispatchEvent(new CustomEvent('garage:maintenance-saved', { detail: { id: item.id, vehicleId: v.id, isNew: !existing } }));
 }
 
 async function removeMaintenance() {

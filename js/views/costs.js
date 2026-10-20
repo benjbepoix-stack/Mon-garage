@@ -2,22 +2,20 @@
 import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
-import { costSummary, monthCosts, addMonths, monthOf, monthDiff, withType } from '../core/calc.js';
+import { costSummary, addMonths, monthOf, monthDiff, withType } from '../core/calc.js';
 import { LOAN_TYPES, FIXED_CATEGORIES, isBike, makeId, fieldKey } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { renderBarChart, renderDonut } from '../ui/charts.js';
-import { euro, euroRound, km, toNumber, numInput, intInput, positive, capitalize, fieldsOf } from './common.js';
+import { renderDonut } from '../ui/charts.js';
+import { euro, euroRound, km, toNumber, numInput, intInput, positive, fieldsOf } from './common.js';
 import { renderExpenses } from './expenses.js';
 
 /* Catégorie gérée par l'estimation automatique de l'onglet Carburant : jamais proposée
    à la main ici, et jamais listée parmi les frais fixes (voir js/views/fuel.js). */
 const FUEL_FIXED_CATEGORY = 'Carburant';
 
-const WINDOW = 12;
-let offset = 0;
 const CATS = [
   ['loan', 'Financement', 'var(--series-1)'],
   ['maintenance', 'Entretien', 'var(--series-2)'],
@@ -28,41 +26,15 @@ const CATS = [
 const monthLabel = (m, opts) => new Date(`${m}-01T12:00:00`).toLocaleDateString('fr-FR', opts);
 
 function renderHero(v, s) {
+  const note = [`Coût réel depuis l’achat : ${euroRound(s.realCost)}`];
+  if (s.remainingDebt) note.push(`dont ${euroRound(s.remainingDebt)} restant dû`);
+  if (s.resale) note.push(`revente estimée déduite (${euroRound(s.resale)})`);
   $('#costHero').innerHTML = `
-    <p class="cost-hero__label">Coût réel depuis l’achat</p>
-    <p class="cost-hero__value">${esc(euroRound(s.realCost))}</p>
-    ${s.remainingDebt || s.resale ? `<p class="cost-hero__note">${esc(euroRound(s.paid))} payés${s.remainingDebt ? ` + ${euroRound(s.remainingDebt)} restant dû` : ''}${s.resale ? ` − ${euroRound(s.resale)} de revente estimée` : ''}</p>` : ''}
-    <div class="kpis">
-      <div class="kpi"><span>Par mois</span><strong>${s.monthsOwned ? esc(euroRound(s.perMonth)) : '—'}</strong></div>
-      <div class="kpi"><span>Au km</span><strong>${s.perKm ? esc(`${s.perKm.toFixed(2).replace('.', ',')} €`) : '—'}</strong></div>
-      <div class="kpi"><span>Hors achat / mois</span><strong>${s.monthsOwned ? esc(euroRound(s.usagePerMonth)) : '—'}</strong></div>
-    </div>`;
-}
-
-function renderChart(v, f, s) {
-  const now = monthOf(todayKey());
-  const first = s.first || now;
-  const maxOffset = Math.max(0, monthDiff(first, now) + 1 - WINDOW);
-  offset = Math.min(offset, maxOffset);
-  const end = addMonths(now, -offset);
-  const groups = Array.from({ length: WINDOW }, (_, i) => {
-    const m = addMonths(end, i - WINDOW + 1);
-    const c = monthCosts(v, f, m, s.schedule);
-    return { key: m, label: monthLabel(m, { month: 'short' }).replace('.', ''), title: capitalize(monthLabel(m, { month: 'long', year: 'numeric' })), values: c, extra: c.purchase };
-  });
-  const total = groups.reduce((t, g) => t + CATS.reduce((x, [k]) => x + g.values[k], 0), 0);
-  $('#costRange').textContent = `${groups[0].title} → ${groups[WINDOW - 1].title} · ${euroRound(total)} hors achat`;
-  $('#costOlder').disabled = offset >= maxOffset;
-  $('#costNewer').disabled = offset === 0;
-  const cats = isBike(v) ? CATS.filter(([k]) => k !== 'fuel') : CATS;
-  renderBarChart($('#costChart'), groups, {
-    bars: cats.map(([key, label, color]) => ({ key, label, color })),
-    stacked: true,
-    fmt: euro,
-    axisFmt: n => (n >= 1000 ? `${(n / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} k€` : `${Math.round(n)} €`),
-    highlight: now,
-    extra: g => (g.extra ? `<span class="chart-tip__row">Achat / apport<b>${esc(euro(g.extra))}</b></span>` : '')
-  });
+    <div class="cstats">
+      <div class="cstat"><span>Par mois</span><strong>${s.monthsOwned ? esc(euroRound(s.perMonth)) : '—'}</strong><small>${s.monthsOwned ? `${esc(euroRound(s.usagePerMonth))} hors achat` : 'Renseignez l’achat'}</small></div>
+      <div class="cstat"><span>Coût / km</span><strong>${s.perKm ? esc(`${s.perKm.toFixed(2).replace('.', ',')} €`) : '—'}</strong><small>${s.monthsOwned ? `sur ${s.monthsOwned} mois` : ''}</small></div>
+    </div>
+    <p class="cost-hero__note">${esc(note.join(' · '))}</p>`;
 }
 
 function renderSplit(s) {
@@ -128,7 +100,6 @@ function renderFixed(f) {
 export function renderCosts(v, f) {
   const s = costSummary(v, f);
   renderHero(v, s);
-  renderChart(v, f, s);
   renderSplit(s);
   renderFinance(v, f, s);
   renderFixed(f);
@@ -276,16 +247,5 @@ export function initCosts() {
     const r = e.target.closest('[data-fixed]');
     if (r) openFixed(r.dataset.fixed);
   });
-  $('#costOlder').addEventListener('click', () => {
-    offset++;
-    const v = store.active();
-    renderCosts(v, fieldsOf(v.id));
-  });
-  $('#costNewer').addEventListener('click', () => {
-    offset = Math.max(0, offset - 1);
-    const v = store.active();
-    renderCosts(v, fieldsOf(v.id));
-  });
 }
 
-export const resetCostWindow = () => (offset = 0);
