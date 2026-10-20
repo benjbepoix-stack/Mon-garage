@@ -1,0 +1,283 @@
+/* =========================================================
+   GARAGE — style « Vivant » (palette Pétrole)
+   Fond crème, cartes blanches arrondies à ombre douce, pastilles
+   « En retard / Bientôt / À jour », barre du bas Rappels · Garage · Coûts.
+   Les gestes (glisser, route, maintenir) sont dans js/ui/motion.js.
+   Chargé après carrousel.css, avec les mêmes sélecteurs pour le surcharger.
+   ========================================================= */
+:root, :root[data-style] {
+  --bg: #131210;
+  --bg-2: #131210;
+  --surface: #1d1c19;
+  --surface-solid: #1d1c19;
+  --surface-2: #292824;
+  --surface-3: #33312c;
+  --field: #292824;
+  --tile: #292824;
+  --road: #2b2a26;
+  --border: rgba(255, 250, 240, .07);
+  --border-strong: rgba(255, 250, 240, .13);
+  --text: #f4f1ec;
+  --text-2: #b0aa9f;
+  --text-3: #77726a;
+  --fill: #3cc3b4;
+  --fill-ink: #04211e;
+  --accent: #5fd3c5;
+  --accent-2: #3cc3b4;
+  --accent-ink: #04211e;
+  --accent-soft: rgba(95, 211, 197, .14);
+  --late: #ff8a72;
+  --late-bg: rgba(255, 138, 114, .15);
+  --soon: #f2c45a;
+  --soon-bg: rgba(242, 196, 90, .14);
+  --ok: #7fd49b;
+  --ok-bg: rgba(127, 212, 155, .13);
+  --danger: #ff8a72;
+  --danger-soft: rgba(255, 138, 114, .15);
+  --amber: #f2c45a;
+  --amber-soft: rgba(242, 196, 90, .14);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 28px -18px rgba(0, 0, 0, .7);
+  --r-card: 22px;
+  --series-1: #3cc3b4;
+  --series-2: #8fd8cd;
+  --series-3: #f2c45a;
+  --series-4: #8ea2c8;
+  --series-5: #2f7f77;
+  --series-6: #b39ad6;
+}
+:root[data-theme="light"], :root[data-style][data-theme="light"] {
+  --bg: #f5f3ef;
+  --bg-2: #f5f3ef;
+  --surface: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-2: #f1eee8;
+  --surface-3: #e8e4dc;
+  --field: #f1eee8;
+  --tile: #f1eee8;
+  --road: #e7e2d9;
+  --border: rgba(30, 25, 20, .07);
+  --border-strong: rgba(30, 25, 20, .13);
+  --text: #1b1a17;
+  --text-2: #6f6a62;
+  --text-3: #a39d93;
+  --fill: #0f6f68;
+  --fill-ink: #ffffff;
+  --accent: #0f6f68;
+  --accent-2: #0f6f68;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(15, 111, 104, .12);
+  --late: #c2381f;
+  --late-bg: #fde9e4;
+  --soon: #8a6100;
+  --soon-bg: #fbf1d9;
+  --ok: #22743f;
+  --ok-bg: #e2f3e7;
+  --danger: #c2381f;
+  --danger-soft: #fde9e4;
+  --amber: #8a6100;
+  --amber-soft: #fbf1d9;
+  --shadow-card: 0 1px 2px rgba(40, 30, 20, .05), 0 10px 26px -14px rgba(60, 40, 20, .2);
+  --series-1: #0f6f68;
+  --series-2: #5bb5a9;
+  --series-3: #c99a2e;
+  --series-4: #5b6b8c;
+  --series-5: #a9cbc5;
+  --series-6: #8a6fb0;
+}
+
+body { font-variant-numeric: tabular-nums; -webkit-tap-highlight-color: transparent; }
+.card, .gcard, .work-card { border: 0; border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
+
+/* ---------- En-tête : « Bonjour » sur l'accueil, choix du véhicule ailleurs, + rond ---------- */
+.topbar { background: var(--bg); }
+body[data-view="home"] .topbar__kicker { display: block; font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+body[data-view="home"] .topbar__title { font-size: 30px; font-weight: 700; letter-spacing: -.035em; }
+.topbar .icon-btn { border: 0; background: var(--surface); box-shadow: var(--shadow-card); }
+.sync-pill { border: 0; background: var(--surface); box-shadow: var(--shadow-card); }
+.vpick { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 62%; min-height: 44px; padding: 0 14px 0 16px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-card); color: var(--text); font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.vpick__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vpick [data-icon] { flex: none; color: var(--text-2); }
+.vpick:active { transform: scale(.97); }
+.fab { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--fill); color: var(--fill-ink); box-shadow: 0 10px 22px -10px var(--fill); transition: transform .16s ease-out; }
+.fab:active { transform: scale(.92); }
+.fab[hidden] { display: none; }
+.fab:focus-visible, .vpick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Barre du bas : toujours en bas, trois onglets ---------- */
+.tabbar, :root[data-style] .tabbar { grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(400px, calc(100% - 32px)); border: 0; border-radius: 24px; background: color-mix(in srgb, var(--surface) 84%, transparent); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); box-shadow: var(--shadow-card), 0 18px 40px -20px rgba(0, 0, 0, .35); }
+.tabbar__item, :root[data-style] .tabbar__item { min-height: 52px; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
+.tabbar__item.is-active, :root[data-style] .tabbar__item.is-active { color: var(--accent); background: transparent; }
+.tabbar__item.is-active [data-icon] { color: var(--accent); }
+@media (min-width: 900px) {
+  .tabbar, :root[data-style] .tabbar { position: fixed; top: auto; left: 50%; bottom: calc(var(--safe-bottom) + 16px); transform: translateX(-50%); width: 400px; margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 24px; }
+  .tabbar__item { flex-direction: column; gap: 3px; min-height: 52px; font-size: 11.5px; }
+  .app { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 48px); }
+}
+
+/* ---------- Rappels : carrousel des véhicules avec leur anneau ---------- */
+.rail, .crail { padding-top: 4px; padding-bottom: 16px; margin-bottom: -10px; }
+.rail { margin-top: 8px; }
+.vcard { border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-card); padding: 20px; }
+.rail--single > .vcard { flex-basis: 100%; }
+.vcard__name { font-size: 30px; font-weight: 700; letter-spacing: -.035em; }
+.vcard__photo, .vhero__photo { border-radius: 18px; background: var(--tile); color: var(--accent); }
+.vcard__foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.vcard__km { font-size: 34px; font-weight: 700; letter-spacing: -.04em; }
+.vcard__state { margin-top: 6px; font-size: 14px; font-weight: 500; color: var(--text-2); }
+.vcard__state.is-late { color: var(--late); }
+.ring { position: relative; flex: none; width: 84px; height: 84px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 8; }
+.ring__bg { stroke: var(--tile); }
+.ring__fill { stroke: var(--accent); stroke-linecap: round; }
+.ring__label { position: absolute; inset: 0; display: grid; place-content: center; grid-auto-flow: column; align-items: baseline; font-size: 20px; font-weight: 700; letter-spacing: -.03em; }
+.ring__label small { font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+.todo { display: grid; gap: 9px; }
+.trow { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-card); color: var(--text); text-decoration: none; }
+a.trow:active { transform: scale(.985); }
+.trow .row__body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.trow .row__title { font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.trow .row__sub { font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.todo__hint { margin-top: 10px; font-size: 13px; color: var(--text-3); text-align: center; }
+.calm--home { margin-top: 18px; }
+
+/* Glisser « c'est fait » : le dessous se révèle avec la coche, qui grossit jusqu'au seuil */
+.sw { --p: 0; position: relative; overflow: hidden; border-radius: 20px; box-shadow: var(--shadow-card); }
+.sw__under { position: absolute; inset: 0; opacity: min(1, calc(var(--p) * 8)); display: flex; align-items: center; gap: 8px; padding-left: 20px; background: var(--fill); color: var(--fill-ink); font-size: 15px; font-weight: 600; }
+.sw__check { display: grid; transform: scale(calc(.6 + .5 * var(--p))); opacity: calc(.45 + .55 * var(--p)); }
+.sw__front { position: relative; box-shadow: none; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; will-change: transform; }
+.sw__front:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sw.is-dragging .sw__front { cursor: grabbing; }
+
+/* Pastilles et tuiles d'état */
+.tile { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: var(--tile); color: var(--accent); }
+.tile.is-late { background: var(--late-bg); color: var(--late); }
+.tile.is-soon { background: var(--soon-bg); color: var(--soon); }
+.tile.is-ok { background: var(--ok-bg); color: var(--ok); }
+.badge { height: auto; padding: 4px 10px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
+.badge.is-late { background: var(--late-bg); color: var(--late); }
+.badge.is-soon { background: var(--soon-bg); color: var(--soon); }
+.badge.is-ok { background: var(--ok-bg); color: var(--ok); }
+.badge.is-unknown, .badge.is-none { background: var(--tile); color: var(--text-2); }
+
+/* ---------- Garage : fiche avec compteur et route ---------- */
+.vhero, :root[data-style] .vhero { display: block; padding: 18px 18px 16px; border-radius: 26px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.vhero__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.vhero__body { min-width: 0; }
+.vhero__name { font-size: 28px; font-weight: 700; line-height: 1.1; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.vhero__sub { margin-top: 4px; }
+.vhero__photo { width: 64px; height: 64px; }
+
+.odo { display: flex; align-items: baseline; gap: 6px; margin-top: 14px; }
+.odo__digits { display: inline-flex; height: 1em; overflow: hidden; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -.04em; }
+.odo__col { display: flex; flex-direction: column; will-change: transform; }
+.odo__col span { display: block; height: 1em; }
+.odo__col--gap { margin-left: .2em; }
+.odo small { font-size: 16px; font-weight: 500; color: var(--text-3); }
+
+.road { position: relative; height: 154px; margin: 10px -18px 0; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.road:active { cursor: grabbing; }
+.road__track { position: absolute; left: 0; top: 0; bottom: 0; width: 1px; will-change: transform; }
+.road__asphalt { position: absolute; left: -600px; width: 6000px; top: 84px; height: 44px; border-radius: 6px; background: var(--road); }
+.road__asphalt::after { content: ""; position: absolute; left: 0; right: 0; top: 21px; height: 2px; background: repeating-linear-gradient(90deg, var(--surface) 0 22px, transparent 22px 40px); }
+.road__car { position: absolute; left: 33px; top: 84px; z-index: 2; display: grid; place-items: center; width: 46px; height: 44px; border-radius: 14px; background: var(--fill); color: var(--fill-ink); box-shadow: 0 8px 18px -8px var(--fill); will-change: transform; }
+.road__sign { position: absolute; top: 26px; display: grid; justify-items: center; transform: translateX(-50%); }
+.road__sign--high { top: 0; }
+.road__label { display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-card); font-size: 12.5px; font-weight: 600; white-space: nowrap; color: var(--text); transition: transform .16s ease-out, background .16s, color .16s; }
+:root:not([data-theme="light"]) .road__label { background: var(--surface-3); }
+.road__label svg { color: var(--accent); }
+.road__sign.is-late .road__label svg { color: var(--late); }
+.road__sign.is-soon .road__label svg { color: var(--soon); }
+.road__sign.is-late .road__label { color: var(--late); }
+.road__sign.is-near .road__label { background: var(--fill); color: var(--fill-ink); transform: scale(1.06); }
+.road__sign.is-near .road__label svg { color: currentColor; }
+.road__pole { width: 2px; height: 28px; background: var(--border-strong); }
+.road__sign--high .road__pole { height: 54px; }
+.road__tick { position: absolute; top: 106px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.road__sign--high .road__tick { top: 132px; }
+.road__look { margin-top: 2px; font-size: 14px; color: var(--text-2); }
+.road__look b { font-weight: 600; color: var(--text); }
+.road__look:empty { display: none; }
+.kmform { display: flex; gap: 8px; margin-top: 14px; }
+.kmform .input { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; }
+.kmform .btn { flex: none; }
+.kmform__err { margin-top: 8px; font-size: 13px; color: var(--late); }
+.kmform__err:empty { display: none; }
+
+/* Onglets de la fiche : segmenté */
+.vtabs, :root[data-style] .vtabs { display: flex; gap: 4px; margin: 14px 0 0; padding: 4px; border: 0; border-radius: 16px; background: var(--surface-3); }
+.vtab, .vtab[aria-selected="true"] { flex: 1; min-height: 38px; padding: 0 6px; border-radius: 12px; font-size: 13.5px; font-weight: 600; }
+.vtab { color: var(--text-2); }
+.vtab[aria-selected="true"] { color: var(--text); background: var(--surface); box-shadow: var(--shadow-card); }
+
+/* Cartes du carrousel de la fiche */
+.cc { border-radius: var(--r-card); box-shadow: var(--shadow-card); }
+.acard__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.acard .cc__t { font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+.acard .cc__big { margin-top: 4px; font-size: 15px; font-weight: 500; letter-spacing: 0; color: var(--text-2); }
+.acard__done { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding: 8px 14px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 14px; font-weight: 600; }
+.acard .cc__big + .acard__done { margin-top: 16px; }
+.acard__done:active { transform: scale(.96); }
+.note-card .card__title { display: inline-flex; align-items: center; gap: 8px; }
+.note-card .card__title svg { color: var(--accent); }
+
+/* Historique par année, avec le tampon du dernier entretien noté */
+#maintenanceList, .hist { padding-left: 0; }
+#maintenanceList::before, #maintenanceList .row::before { display: none; }
+.yr { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 4px 8px; font-size: 15px; font-weight: 700; }
+.yr:first-child { margin-top: 4px; }
+.yr small { font-size: 13px; font-weight: 500; color: var(--text-2); }
+#maintenanceList .row { gap: 12px; padding: 12px 14px; border-color: var(--border); }
+#maintenanceList .row.is-new { animation: row-new 2.6s ease-out; }
+@keyframes row-new { 0%, 40% { background: var(--accent-soft); } 100% { background: transparent; } }
+.stamp { position: absolute; right: 74px; top: 50%; display: grid; place-content: center; width: 58px; height: 58px; margin-top: -29px; border: 2px solid var(--accent); border-radius: 50%; color: var(--accent); font-size: 9.5px; font-weight: 800; line-height: 1.1; letter-spacing: .06em; text-align: center; text-transform: uppercase; pointer-events: none; animation: stamp 2.6s cubic-bezier(.2, .9, .3, 1) forwards; }
+.stamp::before { content: ""; position: absolute; inset: 4px; border: 1px dashed var(--accent); border-radius: 50%; opacity: .6; }
+.stamp b { font-weight: 800; }
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(2.2) rotate(-24deg); }
+  14% { opacity: 1; transform: scale(.94) rotate(-12deg); }
+  20% { transform: scale(1) rotate(-12deg); }
+  80% { opacity: 1; transform: scale(1) rotate(-12deg); }
+  100% { opacity: 0; transform: scale(1) rotate(-12deg); }
+}
+
+/* ---------- Coûts ---------- */
+.cost-hero, :root[data-style] .cost-hero { padding: 4px 0 0; background: none; border: 0; box-shadow: none; }
+.cstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cstat { display: grid; gap: 2px; padding: 16px; border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
+.cstat span { font-size: 13px; font-weight: 500; color: var(--text-2); }
+.cstat strong { font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: -.035em; }
+.cstat small { font-size: 12.5px; color: var(--text-3); }
+.cost-hero__note { margin-top: 10px; font-size: 13px; color: var(--text-2); }
+
+/* ---------- Feuilles ---------- */
+.sheet { border-radius: 28px 28px 0 0; }
+.pick { display: grid; gap: 8px; }
+.pick__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 18px; background: var(--surface-2); color: var(--text); text-align: left; }
+.pick__row > img, .pick__row > svg { flex: none; width: 40px; height: 40px; border-radius: 12px; object-fit: cover; }
+.pick__row > svg { padding: 8px; background: var(--tile); color: var(--accent); }
+.pick__name { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.pick__check { color: var(--accent); }
+.pick__row[aria-current="true"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.pick + .home-add { margin-top: 14px; }
+
+/* Maintenir pour enregistrer */
+.wz-hold { position: relative; overflow: hidden; background: var(--surface-3); color: var(--text); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.wz-foot .wz-hold, .wz-foot .wz-hold:hover { border-color: transparent; background: var(--surface-3); color: var(--text); box-shadow: none; }
+.wz-hold__fill { position: absolute; inset: 0; background: var(--fill); transform: scaleX(0); transform-origin: left; }
+.wz-hold__label { position: relative; transition: color .15s .2s; }
+.wz-hold.is-holding .wz-hold__label { color: var(--fill-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp { animation: none; opacity: 1; transform: rotate(-12deg); }
+  #maintenanceList .row.is-new { animation: none; }
+  .road__label, .fab, .wz-hold__label { transition: none; }
+  .wz-hold { background: var(--fill); color: var(--fill-ink); }
+  .wz-hold__label { color: inherit; }
+}
+@media (max-width: 380px) {
+  .odo__digits { font-size: 38px; }
+  .vcard__name { font-size: 26px; }
+  .cstat strong { font-size: 26px; }
+}

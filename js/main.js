@@ -1,10 +1,10 @@
-/* Point d'entrée : connexion, navigation (accueil / fiche), synchronisation. */
-import { $, $$, debounce } from './core/utils.js';
+/* Point d'entrée : connexion, navigation (Rappels / Garage / Coûts), synchronisation. */
+import { $, $$, esc, debounce } from './core/utils.js';
 import * as store from './core/store.js';
 import { rules, validate } from './core/validation.js';
 import { readText, write } from './services/storage.js';
 import { initFirebase, pushCloud, flushNow, clearPending, signIn, signUp, resetPassword, signOutUser, describeAuthError, currentUser, isConfigured } from './services/firebase.js';
-import { initDialogs, confirmDialog, openPhotoLightbox, openSheet, closeAllSheets } from './ui/dialog.js';
+import { initDialogs, confirmDialog, openPhotoLightbox, openSheet, closeSheet, closeAllSheets, isOpen } from './ui/dialog.js';
 import { initWizards } from './ui/wizard.js';
 import { applyTheme, renderStylePicker, renderThemeSwitch } from './ui/theme.js';
 import { STYLES } from './core/schema.js';
@@ -13,20 +13,20 @@ import { toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
-import { renderHome, publishAlerts, initHome } from './views/home.js';
+import { renderHome, publishAlerts, initHome, shownVehicle } from './views/home.js';
 import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
 import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
 import { initFuel } from './views/fuel.js';
 import { initParts, openPart } from './views/parts.js';
-import { initCosts, openPurchase, openFixed, resetCostWindow } from './views/costs.js';
+import { initCosts, openPurchase, openFixed, renderCosts } from './views/costs.js';
 import { initDocs, openDoc } from './views/docs.js';
 import { initExpenses, openExpense } from './views/expenses.js';
 import { scheduleBudgetSync, enableBudgetSync, resetBudgetSync } from './services/budget-sync.js';
 import { enableAlertsSync, resetAlertsSync } from './services/carnet-sync.js';
 import { retryPendingFiles, clearLocalFiles } from './services/files.js';
 import { migrateInlineFiles } from './features/files-migration.js';
-import { fieldsOf } from './views/common.js';
+import { fieldsOf, photoHtml } from './views/common.js';
 
 const LAST_UID = 'garage_last_uid';
 const THEME_MIGRATED = 'garage_theme_auto';
@@ -36,18 +36,21 @@ let view = 'home';
 let dataReady = false; // premier instantané du compte reçu
 let firstAccount = false; // premier compte sur cet appareil : ses données priment sur les saisies sans compte
 
-/* ---------- Navigation (#/v/<id>/<onglet>) ---------- */
+/* ---------- Navigation : #/v/<id>/<onglet> (Garage), #/couts/<id> (Coûts), sinon Rappels ---------- */
 const hashFor = (id, tab) => `#/v/${encodeURIComponent(id)}${tab && tab !== 'overview' ? `/${tab}` : ''}`;
+const costsHash = id => `#/couts/${encodeURIComponent(id)}`;
+const activeVehicles = () => store.vehicles().filter(v => !v.archived);
 
 function route() {
-  const m = /^#\/v\/([^/]+)(?:\/(\w+))?/.exec(location.hash);
-  const id = m ? decodeURIComponent(m[1]) : null;
+  const m = /^#\/(v|couts)\/([^/]+)(?:\/(\w+))?/.exec(location.hash);
+  const id = m ? decodeURIComponent(m[2]) : null;
   const v = id ? store.vehicle(id) : null;
   if (v) {
     if (store.activeId() !== id) store.setKeys({ activeId: id });
-    if (view !== 'detail') resetCostWindow();
-    setTab(m[2] || 'overview', v);
-    view = 'detail';
+    if (m[1] === 'v') {
+      setTab(m[3] || 'overview', v);
+      view = 'detail';
+    } else view = 'costs';
   } else {
     if (id) history.replaceState(null, '', location.pathname + location.search);
     view = 'home';
@@ -74,33 +77,103 @@ function goTab(tab) {
   history.replaceState(null, '', hashFor(v.id, currentTab()));
   render();
   const tabs = $('#vehicleTabs');
-  if (tabs.getBoundingClientRect().top < 0 || window.scrollY > tabs.offsetTop) window.scrollTo({ top: Math.max(0, $('#vehicleHero').offsetTop + $('#vehicleHero').offsetHeight - 40), behavior: 'smooth' });
+  if (tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: Math.max(0, tabs.offsetTop - 80), behavior: 'smooth' });
 }
 
 function goHome() {
-  if (history.length > 1 && /^#\/v\//.test(location.hash)) history.back();
-  else location.hash = '';
+  location.hash = '';
+}
+
+/** Véhicule par défaut des onglets Garage et Coûts : celui affiché, sinon le premier. */
+function pickVehicle() {
+  const list = activeVehicles();
+  const a = store.active();
+  return a && !a.archived ? a : list[0] || null;
+}
+
+function goNav(target) {
+  if (target === 'home') return goHome();
+  const v = pickVehicle();
+  if (!v) return openVehicle('vehicle');
+  location.hash = target === 'costs' ? costsHash(v.id) : hashFor(v.id);
+}
+
+/** Changer de véhicule depuis Garage ou Coûts : même écran, autre véhicule. */
+function chooseVehicle(id) {
+  closeSheet('pickSheet');
+  location.hash = view === 'costs' ? costsHash(id) : hashFor(id, currentTab());
+}
+
+function renderPick() {
+  const cur = store.activeId();
+  $('#pickList').innerHTML = activeVehicles()
+    .map(v => `<button type="button" class="pick__row" data-pick="${esc(v.id)}" aria-current="${v.id === cur}">${photoHtml(v, 40)}<span class="pick__name">${esc(v.name)}</span>${v.id === cur ? `<span class="pick__check">${icon('check', 18)}</span>` : ''}</button>`)
+    .join('');
+  const archived = store.vehicles().filter(v => v.archived);
+  $('#archivesLink').hidden = !archived.length;
+  if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
 }
 
 /* ---------- Rendu ---------- */
+const greetDate = () => {
+  const s = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 function render() {
-  const v = view === 'detail' ? store.active() : null;
-  if (view === 'detail' && !v) {
+  const v = view !== 'home' ? store.active() : null;
+  if (view !== 'home' && !v) {
     view = 'home';
     history.replaceState(null, '', location.pathname + location.search);
   }
-  const detail = view === 'detail';
-  $('#homeView').hidden = detail;
-  $('#detailView').hidden = !detail;
-  $('#backBtn').hidden = !detail;
-  $('#editVehicleBtn').hidden = !detail;
-  $('#settingsBtn').hidden = detail;
-  document.body.classList.toggle('is-detail', detail);
-  $('#topTitle').textContent = detail ? v.name : 'Mon Garage';
-  document.title = detail ? `${v.name} · Mon Garage` : 'Mon Garage';
-  if (detail) renderDetail();
-  else renderHome();
+  const home = view === 'home';
+  $('#homeView').hidden = !home;
+  $('#detailView').hidden = view !== 'detail';
+  $('#costsView').hidden = view !== 'costs';
+  $('#topTitles').hidden = !home;
+  $('#vehiclePick').hidden = home;
+  $('#editVehicleBtn').hidden = view !== 'detail';
+  $('#settingsBtn').hidden = !home;
+  $('#fabBtn').hidden = !store.vehicles().some(x => !x.archived);
+  $('#fabBtn').setAttribute('aria-label', view === 'costs' ? 'Ajouter une dépense' : 'Noter un entretien');
+  document.body.dataset.view = view;
+  document.body.classList.toggle('is-detail', !home);
+  $$('#tabbar [data-nav]').forEach(b => {
+    const on = b.dataset.nav === view;
+    b.classList.toggle('is-active', on);
+    if (on) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  if (home) {
+    $('#topKicker').textContent = greetDate();
+    $('#topTitle').textContent = 'Bonjour';
+    document.title = 'Mon Garage';
+    renderHome();
+  } else {
+    $('#vehiclePickName').textContent = v.name;
+    document.title = `${v.name} · ${view === 'costs' ? 'Coûts' : 'Mon Garage'}`;
+    if (view === 'detail') renderDetail();
+    else renderCosts(v, fieldsOf(v.id));
+  }
+  if (isOpen('pickSheet')) renderPick();
   publishLinks();
+}
+
+/** Bouton + : un entretien (Rappels, Garage) ou une dépense (Coûts). Sur l'accueil, pour le véhicule affiché. */
+function onFab() {
+  if (view === 'costs') return openExpense();
+  if (view === 'home') {
+    const v = shownVehicle();
+    if (!v) return;
+    if (store.activeId() !== v.id) store.setKeys({ activeId: v.id });
+  }
+  openMaintenance();
+}
+
+/** Un rappel glissé « c'est fait » (accueil) ou coché (fiche) : la saisie de l'entretien s'ouvre, rappel coché. */
+function reminderDone(vehicleId, reminderId, onClose) {
+  if (store.activeId() !== vehicleId) store.setKeys({ activeId: vehicleId });
+  openMaintenance(null, { reminderId, onClose });
 }
 
 /** Publication (débouncée) vers Mon Budget et Carnet ; n'a lieu qu'une fois les données du compte chargées. */
@@ -343,8 +416,12 @@ async function init() {
   initWizards();
   initCalendarPrompt();
   initVehicles({ deleted: () => goHome() });
-  initHome();
-  initDetail({ onTab: goTab });
+  initHome({ onReminderDone: reminderDone });
+  initDetail({
+    onTab: goTab,
+    onReminderDone: id => reminderDone(store.activeId(), id),
+    onEditNote: () => store.active() && openVehicle(store.active().kind, store.activeId())
+  });
   initMaintenance();
   initFuel();
   initParts();
@@ -365,10 +442,27 @@ async function init() {
   });
   document.addEventListener('click', onClick);
   window.addEventListener('hashchange', route);
-  $('#backBtn').addEventListener('click', goHome);
+  $('#tabbar').addEventListener('click', e => {
+    const b = e.target.closest('[data-nav]');
+    if (b) goNav(b.dataset.nav);
+  });
+  $('#fabBtn').addEventListener('click', onFab);
+  $('#vehiclePick').addEventListener('click', () => {
+    renderPick();
+    openSheet('pickSheet', { focus: false });
+  });
+  $('#pickList').addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]');
+    if (b) chooseVehicle(b.dataset.pick);
+  });
+  // Nouvel entretien depuis la fiche : on montre l'historique, où il reçoit son tampon.
+  document.addEventListener('garage:maintenance-saved', e => {
+    if (e.detail.isNew && view === 'detail' && e.detail.vehicleId === store.activeId()) goTab('maintenance');
+  });
   $('#editVehicleBtn').addEventListener('click', () => store.active() && openVehicle(store.active().kind, store.activeId()));
   $('#settingsBtn').addEventListener('click', () => openSheet('settingsSheet'));
   $('#archivesLink').addEventListener('click', openArchives);
+  $('#homeArchives').addEventListener('click', openArchives);
   $('#stylePicker')?.addEventListener('click', e => {
     const pick = e.target.closest('[data-style-pick]')?.dataset.stylePick;
     if (pick && pick !== store.style()) store.setKeys({ style: pick });

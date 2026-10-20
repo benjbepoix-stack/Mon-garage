@@ -13,9 +13,11 @@
  * - data-auto : en page seule, toucher un choix passe à la suite ;
  * - data-quick="today,yesterday" / "1y,2y" : raccourcis de date.
  * Une question masquée par l'appli (attribut hidden, ex. data-kind, data-loan) est sautée.
+ * Formulaire marqué data-hold : on maintient le bouton Enregistrer pour enregistrer (le clavier l'active directement).
  */
 import { esc } from '../core/utils.js';
 import { todayKey, formatKey } from '../core/dates.js';
+import { spring, buzz, reducedMotion } from './motion.js';
 
 const QUICK = {
   today: ['Aujourd’hui', () => todayKey()],
@@ -102,6 +104,7 @@ function setup(form) {
     <button type="button" class="btn btn--primary wz-next">Suivant</button>
     <button type="submit" class="btn btn--primary wz-save">Enregistrer</button>`;
   form.append(foot);
+  if (form.dataset.hold !== undefined) holdToSave(form, foot.querySelector('.wz-save'));
 
   let page = 0;
   let backToRecap = false; // arrivé depuis « Modifier » du récapitulatif : Suivant y ramène directement
@@ -234,6 +237,59 @@ function setup(form) {
   });
   form.addEventListener('change', e => {
     if (e.target.matches('input[type=file], input[type=checkbox]')) setTimeout(render);
+  });
+}
+
+const HOLD_MS = 650;
+
+/** Bouton « Maintenir pour enregistrer » : il se remplit sous le doigt ; relâché trop tôt, il se vide. */
+function holdToSave(form, btn) {
+  btn.classList.add('wz-hold');
+  btn.innerHTML = `<span class="wz-hold__fill" aria-hidden="true"></span><span class="wz-hold__label">${reducedMotion() ? 'Enregistrer' : 'Maintenir pour enregistrer'}</span>`;
+  btn.setAttribute('aria-label', 'Enregistrer');
+  const fill = btn.firstElementChild;
+  let raf = 0;
+  let t0 = 0;
+  let p = 0;
+  let stop = () => {};
+  let fired = false;
+  const draw = v => {
+    p = v;
+    fill.style.transform = `scaleX(${Math.max(0, Math.min(1, v))})`;
+  };
+  const release = () => {
+    cancelAnimationFrame(raf);
+    btn.classList.remove('is-holding');
+    if (fired || !p) return;
+    stop = spring(p, 0, { response: 0.35 }, draw);
+  };
+  btn.addEventListener('pointerdown', e => {
+    if (e.button > 0 || btn.disabled) return;
+    stop();
+    fired = false;
+    btn.classList.add('is-holding');
+    if (reducedMotion()) return;
+    t0 = performance.now() - p * HOLD_MS;
+    const tick = now => {
+      draw((now - t0) / HOLD_MS);
+      if (p >= 1) {
+        fired = true;
+        btn.classList.remove('is-holding');
+        buzz(18);
+        form.requestSubmit(btn);
+        setTimeout(() => draw(0), 400);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, release));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+  // Le clic du doigt ne doit pas enregistrer : seul l'appui long (ou le clavier, ou le mouvement réduit) le fait.
+  btn.addEventListener('click', e => {
+    if (e.detail === 0 || reducedMotion()) return;
+    e.preventDefault();
   });
 }
 
