@@ -13,9 +13,9 @@ import { toastError } from './ui/toast.js';
 import { icon } from './ui/icons.js';
 import { initCalendarPrompt } from './features/calendar-prompt.js';
 import { initOverduePrompt, checkOverdue } from './features/overdue-prompt.js';
-import { renderHome, publishAlerts, initHome, shownVehicle } from './views/home.js';
+import { renderHome, publishAlerts, initHome } from './views/home.js';
 import { initVehicles, openVehicle, openArchives } from './views/vehicles.js';
-import { initDetail, renderDetail, setTab, currentTab, openKm } from './views/detail.js';
+import { initDetail, renderDetail, scrollToSection, openKm } from './views/detail.js';
 import { initMaintenance, openMaintenance, openReminder } from './views/maintenance.js';
 import { initFuel } from './views/fuel.js';
 import { initParts, openPart } from './views/parts.js';
@@ -37,7 +37,7 @@ let dataReady = false; // premier instantané du compte reçu
 let firstAccount = false; // premier compte sur cet appareil : ses données priment sur les saisies sans compte
 
 /* ---------- Navigation : #/v/<id>/<onglet> (Garage), #/couts/<id> (Coûts), sinon Rappels ---------- */
-const hashFor = (id, tab) => `#/v/${encodeURIComponent(id)}${tab && tab !== 'overview' ? `/${tab}` : ''}`;
+const hashFor = id => `#/v/${encodeURIComponent(id)}`;
 const costsHash = id => `#/couts/${encodeURIComponent(id)}`;
 const activeVehicles = () => store.vehicles().filter(v => !v.archived);
 
@@ -47,10 +47,7 @@ function route() {
   const v = id ? store.vehicle(id) : null;
   if (v) {
     if (store.activeId() !== id) store.setKeys({ activeId: id });
-    if (m[1] === 'v') {
-      setTab(m[3] || 'overview', v);
-      view = 'detail';
-    } else view = 'costs';
+    view = m[1] === 'v' ? 'detail' : 'costs';
   } else {
     if (id) history.replaceState(null, '', location.pathname + location.search);
     view = 'home';
@@ -63,28 +60,18 @@ function openVehicleView(id) {
   location.hash = hashFor(id);
 }
 
-/** Depuis le pop-up des retards : fiche du véhicule, onglet Entretiens, saisie de l'entretien (rappel coché). */
+/** Depuis le pop-up des retards : page Entretien du véhicule, saisie de l'entretien (rappel coché). */
 function goToReminder(vehicleId, reminderId) {
-  location.hash = hashFor(vehicleId, 'maintenance');
+  location.hash = hashFor(vehicleId);
   route();
   openMaintenance(null, { reminderId });
-}
-
-function goTab(tab) {
-  const v = store.active();
-  if (!v) return;
-  setTab(tab, v);
-  history.replaceState(null, '', hashFor(v.id, currentTab()));
-  render();
-  const tabs = $('#vehicleTabs');
-  if (tabs.getBoundingClientRect().top < 0) window.scrollTo({ top: Math.max(0, tabs.offsetTop - 80), behavior: 'smooth' });
 }
 
 function goHome() {
   location.hash = '';
 }
 
-/** Véhicule par défaut des onglets Garage et Coûts : celui affiché, sinon le premier. */
+/** Véhicule par défaut des onglets Entretien et Coûts : celui affiché, sinon le premier. */
 function pickVehicle() {
   const list = activeVehicles();
   const a = store.active();
@@ -98,28 +85,27 @@ function goNav(target) {
   location.hash = target === 'costs' ? costsHash(v.id) : hashFor(v.id);
 }
 
-/** Changer de véhicule depuis Garage ou Coûts : même écran, autre véhicule. */
+/** Changer de véhicule depuis Entretien ou Coûts : même écran, autre véhicule. */
 function chooseVehicle(id) {
   closeSheet('pickSheet');
-  location.hash = view === 'costs' ? costsHash(id) : hashFor(id, currentTab());
+  location.hash = view === 'costs' ? costsHash(id) : hashFor(id);
 }
 
+/** Feuille « Vos véhicules » ; depuis le Garage (bouton +), seulement les boutons d'ajout. */
 function renderPick() {
+  const home = view === 'home';
+  $('#pickTitle').textContent = home ? 'Ajouter au garage' : 'Vos véhicules';
+  $('#pickList').hidden = home;
   const cur = store.activeId();
   $('#pickList').innerHTML = activeVehicles()
     .map(v => `<button type="button" class="pick__row" data-pick="${esc(v.id)}" aria-current="${v.id === cur}">${photoHtml(v, 40)}<span class="pick__name">${esc(v.name)}</span>${v.id === cur ? `<span class="pick__check">${icon('check', 18)}</span>` : ''}</button>`)
     .join('');
   const archived = store.vehicles().filter(v => v.archived);
-  $('#archivesLink').hidden = !archived.length;
+  $('#archivesLink').hidden = home || !archived.length;
   if (archived.length) $('#archivesLinkLabel').textContent = `Archives (${archived.length})`;
 }
 
 /* ---------- Rendu ---------- */
-const greetDate = () => {
-  const s = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
-
 function render() {
   const v = view !== 'home' ? store.active() : null;
   if (view !== 'home' && !v) {
@@ -134,8 +120,7 @@ function render() {
   $('#vehiclePick').hidden = home;
   $('#editVehicleBtn').hidden = view !== 'detail';
   $('#settingsBtn').hidden = !home;
-  $('#fabBtn').hidden = !store.vehicles().some(x => !x.archived);
-  $('#fabBtn').setAttribute('aria-label', view === 'costs' ? 'Ajouter une dépense' : 'Noter un entretien');
+  $('#fabBtn').setAttribute('aria-label', { home: 'Ajouter un véhicule', detail: 'Noter un entretien', costs: 'Ajouter une dépense' }[view]);
   document.body.dataset.view = view;
   document.body.classList.toggle('is-detail', !home);
   $$('#tabbar [data-nav]').forEach(b => {
@@ -145,8 +130,8 @@ function render() {
     else b.removeAttribute('aria-current');
   });
   if (home) {
-    $('#topKicker').textContent = greetDate();
-    $('#topTitle').textContent = 'Bonjour';
+    $('#topKicker').textContent = '';
+    $('#topTitle').textContent = 'Garage';
     document.title = 'Mon Garage';
     renderHome();
   } else {
@@ -159,18 +144,15 @@ function render() {
   publishLinks();
 }
 
-/** Bouton + : un entretien (Rappels, Garage) ou une dépense (Coûts). Sur l'accueil, pour le véhicule affiché. */
+/** Bouton + : un véhicule (Garage), un entretien (Entretien) ou une dépense (Coûts). */
 function onFab() {
   if (view === 'costs') return openExpense();
-  if (view === 'home') {
-    const v = shownVehicle();
-    if (!v) return;
-    if (store.activeId() !== v.id) store.setKeys({ activeId: v.id });
-  }
-  openMaintenance();
+  if (view === 'detail') return openMaintenance();
+  renderPick();
+  openSheet('pickSheet', { focus: false });
 }
 
-/** Un rappel glissé « c'est fait » (accueil) ou coché (fiche) : la saisie de l'entretien s'ouvre, rappel coché. */
+/** Un rappel glissé « c'est fait » : la saisie de l'entretien s'ouvre, rappel coché. */
 function reminderDone(vehicleId, reminderId, onClose) {
   if (store.activeId() !== vehicleId) store.setKeys({ activeId: vehicleId });
   openMaintenance(null, { reminderId, onClose });
@@ -386,7 +368,10 @@ function onClick(e) {
   const card = e.target.closest('[data-vehicle]');
   if (card && !e.target.closest('a[href]')) return openVehicleView(card.dataset.vehicle);
   const add = e.target.closest('[data-new]');
-  if (add) return openVehicle(add.dataset.new);
+  if (add) {
+    closeSheet('pickSheet');
+    return openVehicle(add.dataset.new);
+  }
   const open = e.target.closest('[data-open]');
   if (open && OPENERS[open.dataset.open] && store.active()) OPENERS[open.dataset.open]();
 }
@@ -416,10 +401,9 @@ async function init() {
   initWizards();
   initCalendarPrompt();
   initVehicles({ deleted: () => goHome() });
-  initHome({ onReminderDone: reminderDone });
+  initHome();
   initDetail({
-    onTab: goTab,
-    onReminderDone: id => reminderDone(store.activeId(), id),
+    onReminderDone: reminderDone,
     onEditNote: () => store.active() && openVehicle(store.active().kind, store.activeId())
   });
   initMaintenance();
@@ -457,7 +441,7 @@ async function init() {
   });
   // Nouvel entretien depuis la fiche : on montre l'historique, où il reçoit son tampon.
   document.addEventListener('garage:maintenance-saved', e => {
-    if (e.detail.isNew && view === 'detail' && e.detail.vehicleId === store.activeId()) goTab('maintenance');
+    if (e.detail.isNew && view === 'detail' && e.detail.vehicleId === store.activeId()) requestAnimationFrame(() => scrollToSection('history'));
   });
   $('#editVehicleBtn').addEventListener('click', () => store.active() && openVehicle(store.active().kind, store.activeId()));
   $('#settingsBtn').addEventListener('click', () => openSheet('settingsSheet'));

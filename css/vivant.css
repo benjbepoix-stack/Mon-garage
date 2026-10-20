@@ -6,43 +6,43 @@
    Chargé après carrousel.css, avec les mêmes sélecteurs pour le surcharger.
    ========================================================= */
 :root, :root[data-style] {
-  --bg: #131210;
-  --bg-2: #131210;
-  --surface: #1d1c19;
-  --surface-solid: #1d1c19;
-  --surface-2: #292824;
-  --surface-3: #33312c;
-  --field: #292824;
-  --tile: #292824;
-  --road: #2b2a26;
-  --border: rgba(255, 250, 240, .07);
-  --border-strong: rgba(255, 250, 240, .13);
-  --text: #f4f1ec;
-  --text-2: #b0aa9f;
-  --text-3: #77726a;
-  --fill: #3cc3b4;
-  --fill-ink: #04211e;
-  --accent: #5fd3c5;
-  --accent-2: #3cc3b4;
-  --accent-ink: #04211e;
-  --accent-soft: rgba(95, 211, 197, .14);
-  --late: #ff8a72;
-  --late-bg: rgba(255, 138, 114, .15);
-  --soon: #f2c45a;
-  --soon-bg: rgba(242, 196, 90, .14);
-  --ok: #7fd49b;
-  --ok-bg: rgba(127, 212, 155, .13);
-  --danger: #ff8a72;
-  --danger-soft: rgba(255, 138, 114, .15);
-  --amber: #f2c45a;
-  --amber-soft: rgba(242, 196, 90, .14);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 12px 28px -18px rgba(0, 0, 0, .7);
+  --bg: #0d1312;
+  --bg-2: #0d1312;
+  --surface: #161e1d;
+  --surface-solid: #161e1d;
+  --surface-2: #1e2827;
+  --surface-3: #263231;
+  --field: #1e2827;
+  --tile: #1f2b2a;
+  --road: #1f2a29;
+  --border: rgba(220, 240, 236, .07);
+  --border-strong: rgba(220, 240, 236, .13);
+  --text: #edf2f1;
+  --text-2: #9db0ac;
+  --text-3: #667875;
+  --fill: #1f8f83;
+  --fill-ink: #ffffff;
+  --accent: #6ccfc2;
+  --accent-2: #1f8f83;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(108, 207, 194, .12);
+  --late: #ff9480;
+  --late-bg: rgba(255, 148, 128, .13);
+  --soon: #e8c36b;
+  --soon-bg: rgba(232, 195, 107, .12);
+  --ok: #82d1a3;
+  --ok-bg: rgba(130, 209, 163, .11);
+  --danger: #ff9480;
+  --danger-soft: rgba(255, 148, 128, .13);
+  --amber: #e8c36b;
+  --amber-soft: rgba(232, 195, 107, .12);
+  --shadow-card: 0 0 0 1px rgba(220, 240, 236, .05) inset;
   --r-card: 22px;
-  --series-1: #3cc3b4;
-  --series-2: #8fd8cd;
-  --series-3: #f2c45a;
+  --series-1: #6ccfc2;
+  --series-2: #1f8f83;
+  --series-3: #e8c36b;
   --series-4: #8ea2c8;
-  --series-5: #2f7f77;
+  --series-5: #b6dcd6;
   --series-6: #b39ad6;
 }
 :root[data-theme="light"], :root[data-style][data-theme="light"] {
@@ -281,3 +281,21 @@ a.trow:active { transform: scale(.985); }
   .vcard__name { font-size: 26px; }
   .cstat strong { font-size: 26px; }
 }
+
+/* ---------- Simplification : Garage en liste, Entretien sans onglets ---------- */
+.vlist { display: grid; gap: 12px; margin-top: 8px; }
+.vlist .vcard { flex: none; width: 100%; }
+.vlist .vcard__name { font-size: 26px; }
+.vlist .vcard__km { font-size: 28px; }
+.vlist .vcard__foot { margin-top: 12px; }
+.vlist .ring { width: 72px; height: 72px; }
+#homeArchives { margin-top: 16px; }
+#detailView > .section { margin-top: 26px; }
+.row__done { flex: none; border: 0; background: var(--accent-soft); color: var(--accent); border-radius: 999px; }
+#reminderList .row, #docList .row { gap: 12px; padding: 12px 14px; cursor: pointer; }
+#reminderList .row__sub { overflow-wrap: anywhere; }
+.trow { width: 100%; text-align: left; font: inherit; }
+/* La barre du bas ne cache plus le bas de la page */
+.app, :root[data-style] .app { padding-bottom: calc(var(--safe-bottom) + 124px); }
+@media (min-width: 900px) { .app { padding-bottom: calc(var(--safe-bottom) + 124px); } }
+body[data-view="home"] .topbar__kicker:empty { display: none; }

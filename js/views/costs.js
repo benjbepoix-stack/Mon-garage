@@ -3,7 +3,7 @@ import { $, $$, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { todayKey, formatKey } from '../core/dates.js';
 import { costSummary, addMonths, monthOf, monthDiff, withType } from '../core/calc.js';
-import { LOAN_TYPES, FIXED_CATEGORIES, isBike, makeId, fieldKey } from '../core/schema.js';
+import { LOAN_TYPES, FIXED_CATEGORIES, isBike, isElectric, makeId, fieldKey } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
@@ -11,6 +11,7 @@ import { icon } from '../ui/icons.js';
 import { renderDonut } from '../ui/charts.js';
 import { euro, euroRound, km, toNumber, numInput, intInput, positive, fieldsOf } from './common.js';
 import { renderExpenses } from './expenses.js';
+import { renderFuel } from './fuel.js';
 
 /* Catégorie gérée par l'estimation automatique de l'onglet Carburant : jamais proposée
    à la main ici, et jamais listée parmi les frais fixes (voir js/views/fuel.js). */
@@ -100,6 +101,11 @@ function renderFixed(f) {
 export function renderCosts(v, f) {
   const s = costSummary(v, f);
   renderHero(v, s);
+  $('#fuelFixedSection').hidden = isBike(v);
+  if (!isBike(v)) {
+    $('#fuelTitle').textContent = isElectric(v) ? 'Recharge' : 'Carburant';
+    renderFuel(v, f);
+  }
   renderSplit(s);
   renderFinance(v, f, s);
   renderFixed(f);
