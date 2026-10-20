@@ -1,10 +1,9 @@
-/* Page Garage : les véhicules l'un sous l'autre, avec leur anneau « à jour ». Toucher une carte ouvre son entretien. */
+/* Page Garage : les véhicules l'un sous l'autre, avec ce qu'il reste à régler. Toucher une carte ouvre son entretien. */
 import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { alerts, currentKm } from '../core/calc.js';
 import { isBike } from '../core/schema.js';
 import { fieldsOf, photoFrame, identity, kmLine } from './common.js';
-import { spring } from '../ui/motion.js';
 import { scheduleAlertsSync } from '../services/carnet-sync.js';
 
 /**
@@ -35,11 +34,7 @@ export function publishAlerts() {
 }
 
 
-const RING_R = 34;
-const RING_C = 2 * Math.PI * RING_R;
-const rings = new Map(); // dernier % affiché par véhicule : l'anneau part de là au rendu suivant
 
-const ratioOf = all => (all.length ? all.filter(a => a.level === 'ok').length / all.length : 0);
 
 function stateLine(all) {
   const due = all.filter(a => a.level !== 'ok').length;
@@ -52,7 +47,6 @@ function card(v) {
   const f = fieldsOf(v.id);
   const all = alerts(v, f);
   const sub = identity(v);
-  const pct = Math.round(ratioOf(all) * 100);
   return `<article class="vcard" id="vcard-${esc(v.id)}" data-id="${esc(v.id)}" data-vehicle="${esc(v.id)}">
     <header class="vcard__head">
       <div class="vcard__titles">
@@ -66,29 +60,8 @@ function card(v) {
         ${kmLine(currentKm(v, f), 'vcard__km', `data-km="${esc(v.id)}"`)}
         <p class="vcard__state${all.some(a => a.level === 'late') ? ' is-late' : ''}">${esc(stateLine(all))}</p>
       </div>
-      <div class="ring" role="img" aria-label="${pct} % à jour" data-ring="${esc(v.id)}" data-pct="${all.length ? pct : 0}">
-        <svg viewBox="0 0 80 80" aria-hidden="true"><circle class="ring__bg" cx="40" cy="40" r="${RING_R}"/><circle class="ring__fill" cx="40" cy="40" r="${RING_R}" stroke-dasharray="${RING_C.toFixed(2)}" stroke-dashoffset="${RING_C.toFixed(2)}"/></svg>
-        <span class="ring__label"><b>${all.length ? pct : '—'}</b>${all.length ? '<small>%</small>' : ''}</span>
-      </div>
     </div>
   </article>`;
-}
-
-function animateRings() {
-  $('#vehicleRail').querySelectorAll('[data-ring]').forEach(el => {
-    const id = el.dataset.ring;
-    const to = Number(el.dataset.pct);
-    const from = rings.has(id) ? rings.get(id) : 0;
-    rings.set(id, to);
-    const fill = el.querySelector('.ring__fill');
-    const label = el.querySelector('.ring__label b');
-    const paint = p => {
-      fill.style.strokeDashoffset = (RING_C * (1 - Math.max(0, p) / 100)).toFixed(2);
-      if (label.textContent !== '—') label.textContent = Math.round(Math.max(0, Math.min(100, p)));
-    };
-    paint(from);
-    if (from !== to) requestAnimationFrame(() => spring(from, to, { response: 0.9, damping: 0.8 }, paint));
-  });
 }
 
 export function renderHome() {
@@ -100,7 +73,6 @@ export function renderHome() {
   $('#homeArchives').hidden = !archived;
   $('#homeArchivesLabel').textContent = `Archives (${archived})`;
   $('#vehicleRail').innerHTML = list.map(card).join('');
-  animateRings();
 }
 
 export function initHome() {}

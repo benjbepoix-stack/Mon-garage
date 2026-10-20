@@ -8,26 +8,23 @@ import { rules, validate, showErrors, clearErrors, formValues } from '../core/va
 import { openSheet, closeSheet, confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
-import { km, euro, toNumber, numInput, intInput, positive, LEVEL_LABEL, fieldsOf } from './common.js';
+import { km, euro, toNumber, numInput, intInput, positive, fieldsOf } from './common.js';
+import { tile } from './alert-ui.js';
 
-function card(p, current) {
+/** Ligne d'un composant, au format du plan d'entretien : usure, état, bouton « Remplacé ». */
+function partRow(p, current) {
   const s = partStatus(p, current);
-  const since = [p.installedDate ? `depuis le ${formatKey(p.installedDate, { day: 'numeric', month: 'short', year: 'numeric' })}` : '', `monté à ${km(p.installedKm)}`].filter(Boolean).join(' · ');
-  return `<article class="due card is-${s.level}" data-part="${esc(p.id)}">
-    <div class="due__head">
-      <span class="row__icon">${icon('gear', 18)}</span>
-      <button type="button" class="due__body" data-part-edit aria-label="Modifier ${esc(p.name)}"><span class="due__title">${esc(p.name)}</span><span class="due__sub">${esc(since)}</span></button>
-      <span class="level is-${s.level}">${s.level === 'late' ? 'À changer' : LEVEL_LABEL[s.level]}</span>
-    </div>
-    <div class="due__bar"><span style="--value:${Math.round(Math.min(1, s.ratio) * 100)}%"></span></div>
-    <div class="due__foot"><span>${esc(km(s.used))} / ${esc(km(p.limitKm))}${s.left > 0 ? ` · reste ${esc(km(s.left))}` : ''}</span>
-      <button type="button" class="btn btn--soft btn--sm" data-part-replace>${icon('refresh', 15)}<span>Remplacé</span></button></div>
-  </article>`;
+  const sub = [`${km(s.used)} / ${km(p.limitKm)}`, s.left > 0 ? `reste ${km(s.left)}` : 'à changer'].join(' · ');
+  return `<div class="row" data-part="${esc(p.id)}" aria-label="Modifier ${esc(p.name)}">
+    ${tile(p.name, 'part', s.level)}
+    <div class="row__body"><span class="row__title">${esc(p.name)}</span><span class="row__sub">${esc(sub)}</span></div>
+    <button type="button" class="icon-btn icon-btn--sm row__done" data-part-replace aria-label="${esc(p.name)} : remplacé" title="Remplacé">${icon('refresh', 16)}</button>
+  </div>`;
 }
 
 export function renderParts(v, f) {
   const current = currentKm(v, f);
-  $('#partList').innerHTML = f.parts.length ? f.parts.map(p => card(p, current)).join('') : '<div class="empty-card">Aucun composant suivi.</div>';
+  $('#partList').innerHTML = f.parts.length ? `<div class="card card--list">${f.parts.map(p => partRow(p, current)).join('')}</div>` : '<div class="empty-state"><p>Aucun composant suivi.</p></div>';
 }
 
 export function openPart(id = null) {
@@ -108,6 +105,6 @@ export function initParts() {
     const c = e.target.closest('[data-part]');
     if (!c) return;
     if (e.target.closest('[data-part-replace]')) return replace(c.dataset.part);
-    if (e.target.closest('[data-part-edit]')) openPart(c.dataset.part);
+    openPart(c.dataset.part);
   });
 }
