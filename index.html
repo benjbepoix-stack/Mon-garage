@@ -91,7 +91,7 @@
 
     <!-- ================= ACCUEIL ================= -->
     <section id="homeView" class="view">
-      <div class="rail" id="vehicleRail"></div>
+      <div class="vlist" id="vehicleRail"></div>
       <section class="home-empty" id="homeEmpty" hidden>
         <h2 class="home-empty__title">Votre garage est vide.</h2>
         <p class="home-empty__sub">Ajoutez un véhicule ou un vélo pour suivre son entretien, ses documents et ses coûts.</p>
@@ -99,40 +99,49 @@
           <button type="button" class="home-add__btn" data-new="vehicle"><span data-icon="plus" data-size="16"></span><span>Véhicule</span></button>
           <button type="button" class="home-add__btn" data-new="bike"><span data-icon="plus" data-size="16"></span><span>Vélo</span></button>
         </div>
-        <button type="button" class="link-btn archives-link" id="homeArchives" hidden><span data-icon="archive" data-size="16"></span><span>Voir les archives</span></button>
       </section>
-      <section class="section" id="todoSection" hidden>
-        <header class="section__head"><h2 class="section__title">À régler</h2><span class="section__count" id="todoCount"></span></header>
-        <div class="todo" id="todoList"></div>
-        <p class="todo__hint" id="todoHint">Glissez un rappel vers la droite quand c’est fait.</p>
-      </section>
-      <p class="calm calm--home" id="todoCalm" hidden>Tout est à jour. Rien à régler dans les 30 prochains jours.</p>
-      <section class="section" id="laterSection" hidden>
-        <header class="section__head"><h2 class="section__title">Plus tard</h2></header>
-        <div class="todo" id="laterList"></div>
-      </section>
+      <button type="button" class="link-btn archives-link" id="homeArchives" hidden><span data-icon="archive" data-size="16"></span><span id="homeArchivesLabel">Voir les archives</span></button>
     </section>
 
     <!-- ================= FICHE VÉHICULE ================= -->
     <section id="detailView" class="view" hidden>
       <section class="vhero card" id="vehicleHero"></section>
-      <nav class="vtabs" id="vehicleTabs" role="tablist" aria-label="Rubriques du véhicule"></nav>
 
-      <div class="vpanel" id="panel-overview" data-panel="overview"></div>
+      <section class="section" id="todoSection" hidden>
+        <header class="section__head"><h2 class="section__title">À régler</h2><span class="section__count" id="todoCount"></span></header>
+        <div class="todo" id="todoList"></div>
+        <p class="todo__hint" id="todoHint">Glissez un rappel vers la droite quand c’est fait.</p>
+      </section>
 
-      <div class="vpanel" id="panel-maintenance" data-panel="maintenance" hidden>
-        <section class="section">
-          <header class="section__head"><h2 class="section__title">Plan d’entretien</h2><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="crail" id="reminderList"></div>
-        </section>
-        <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="hist" id="maintenanceList"></div>
-        </section>
-      </div>
+      <section class="section" id="panel-maintenance">
+        <header class="section__head"><h2 class="section__title">Plan d’entretien</h2><button type="button" class="add-btn" data-open="reminder" aria-label="Ajouter un rappel"><span data-icon="plus" data-size="18"></span></button></header>
+        <div class="card card--list" id="reminderList"></div>
+      </section>
 
-      <div class="vpanel" id="panel-fuel" data-panel="fuel" hidden>
+      <section class="section" id="panel-parts" hidden>
+        <header class="section__head"><div><h2 class="section__title">Usure des composants</h2><p class="card__sub" id="partsSub"></p></div><button type="button" class="add-btn" data-open="part" aria-label="Ajouter un composant"><span data-icon="plus" data-size="18"></span></button></header>
+        <div class="stack" id="partList"></div>
+      </section>
+
+      <section class="section" id="historySection">
+        <header class="section__head"><div><h2 class="section__title">Historique</h2><p class="card__sub" id="maintenanceSub"></p></div><button type="button" class="add-btn" data-open="maintenance" aria-label="Ajouter un entretien"><span data-icon="plus" data-size="18"></span></button></header>
+        <div class="hist" id="maintenanceList"></div>
+      </section>
+
+      <section class="section" id="panel-docs">
+        <header class="section__head"><div><h2 class="section__title">Documents</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
+        <div class="docs" id="docList"></div>
+      </section>
+
+      <div id="panel-overview"></div>
+    </section>
+
+    <!-- ================= COÛTS ================= -->
+    <section id="costsView" class="view" hidden>
+      <div id="panel-costs">
+        <section class="card cost-hero" id="costHero"></section>
         <section class="section" id="fuelFixedSection">
+          <header class="section__head"><h2 class="section__title" id="fuelTitle">Carburant</h2></header>
           <div class="card" id="fuelFixedCard">
             <div class="form-grid">
               <div class="field"><label class="field__label" for="ffConsumption" id="ffConsumptionLabel">Conso. · L/100 km</label><input class="input" id="ffConsumption" inputmode="decimal" placeholder="Ex. 6,5" autocomplete="off"></div>
@@ -144,27 +153,6 @@
           </div>
           <p class="field__help">Estimé avec votre kilométrage moyen depuis l’achat. Les mois passés ne changent pas ; « Réinitialiser » recalcule tout depuis l’achat.</p>
         </section>
-      </div>
-
-      <div class="vpanel" id="panel-parts" data-panel="parts" hidden>
-        <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Usure des composants</h2><p class="card__sub" id="partsSub"></p></div><button type="button" class="add-btn" data-open="part" aria-label="Ajouter un composant"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="stack" id="partList"></div>
-        </section>
-      </div>
-
-      <div class="vpanel" id="panel-docs" data-panel="docs" hidden>
-        <section class="section">
-          <header class="section__head"><div><h2 class="section__title">Documents &amp; échéances</h2><p class="card__sub" id="docsSub"></p></div><button type="button" class="add-btn" data-open="doc" aria-label="Ajouter un document"><span data-icon="plus" data-size="18"></span></button></header>
-          <div class="docs" id="docList"></div>
-        </section>
-      </div>
-    </section>
-
-    <!-- ================= COÛTS ================= -->
-    <section id="costsView" class="view" hidden>
-      <div id="panel-costs">
-        <section class="card cost-hero" id="costHero"></section>
         <section class="card section">
           <header class="card__head"><div><h2 class="card__title">Répartition</h2><p class="card__sub" id="costSplitSub"></p></div></header>
           <div class="donut-chart donut-chart--stack">
@@ -191,8 +179,8 @@
 
   <!-- ================= NAVIGATION ================= -->
   <nav class="tabbar" id="tabbar" aria-label="Navigation">
-    <button type="button" class="tabbar__item" data-nav="home"><span data-icon="clock" data-size="22"></span><span>Rappels</span></button>
-    <button type="button" class="tabbar__item" data-nav="detail"><span data-icon="car" data-size="22"></span><span>Garage</span></button>
+    <button type="button" class="tabbar__item" data-nav="home"><span data-icon="car" data-size="22"></span><span>Garage</span></button>
+    <button type="button" class="tabbar__item" data-nav="detail"><span data-icon="wrench" data-size="22"></span><span>Entretien</span></button>
     <button type="button" class="tabbar__item" data-nav="costs"><span data-icon="coins" data-size="22"></span><span>Coûts</span></button>
   </nav>
 

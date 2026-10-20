@@ -1,36 +1,27 @@
-/* Fiche d'un véhicule (onglet Garage) : photo, compteur et route, onglets, aperçu. */
-import { $, $$, esc } from '../core/utils.js';
+/* Page Entretien d'un véhicule : compteur et route, à régler, plan d'entretien, historique, documents, note. */
+import { $, esc } from '../core/utils.js';
 import * as store from '../core/store.js';
 import { alerts } from '../core/calc.js';
-import { isBike, isElectric } from '../core/schema.js';
+import { isBike } from '../core/schema.js';
 import { rules, validate, showErrors, clearErrors, formValues } from '../core/validation.js';
 import { openSheet, closeSheet } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { icon } from '../ui/icons.js';
 import { fieldsOf, kmOf, km, photoFrame, intInput, toNumber, positive, identity } from './common.js';
-import { tile, badge } from './alert-ui.js';
+import { row, attachSwipe, nudgeOnce } from './todo.js';
 import { heroRoadHtml, mountRoad } from './road.js';
 import { renderMaintenance } from './maintenance.js';
-import { renderFuel } from './fuel.js';
 import { renderParts } from './parts.js';
 import { renderDocs } from './docs.js';
 import { openResaleDossier } from '../features/resale-dossier.js';
 
-let tab = 'overview';
+const SECTION = { maintenance: 'panel-maintenance', parts: 'panel-parts', docs: 'panel-docs', history: 'historySection' };
 
-/** Onglets de la fiche (les coûts ont leur propre écran dans la barre du bas). */
-export function tabsFor(v) {
-  return isBike(v)
-    ? [['overview', 'Fiche'], ['maintenance', 'Entretiens'], ['parts', 'Usure'], ['docs', 'Docs']]
-    : [['overview', 'Fiche'], ['maintenance', 'Entretiens'], ['fuel', isElectric(v) ? 'Recharge' : 'Carburant'], ['docs', 'Docs']];
+/** Fait défiler la page jusqu'à une rubrique (maintenance, parts, docs, history). */
+export function scrollToSection(key) {
+  const el = document.getElementById(SECTION[key] || key);
+  if (el && !el.hidden) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 76), behavior: 'smooth' });
 }
-
-export const currentTab = () => tab;
-export function setTab(name, v = store.active()) {
-  tab = v && tabsFor(v).some(([k]) => k === name) ? name : 'overview';
-}
-
-const ALERT_TAB = { reminder: 'maintenance', doc: 'docs', part: 'parts' };
 
 function renderHero(v, f) {
   const sub = identity(v, isBike(v) ? [v.bikeType] : []);
@@ -51,33 +42,28 @@ function renderHero(v, f) {
   });
 }
 
-function renderTabs(v, list) {
-  const levelOf = key => {
-    const l = list.filter(a => ALERT_TAB[a.kind] === key).map(a => a.level);
-    return l.includes('late') ? 'late' : l.includes('soon') ? 'soon' : '';
-  };
-  $('#vehicleTabs').innerHTML = tabsFor(v)
-    .map(([k, label]) => {
-      const lvl = levelOf(k);
-      return `<button type="button" class="vtab" role="tab" data-tab="${k}" aria-selected="${k === tab}">${label}${lvl ? `<span class="dot ${lvl === 'soon' ? 'is-soon' : ''}" aria-label="${lvl === 'late' ? 'en retard' : 'bientôt'}"></span>` : ''}</button>`;
+function renderTodo(v, list) {
+  // Un document et un rappel du même nom (contrôle technique) : une seule ligne, celle qui se glisse.
+  const seen = new Set();
+  const todo = list
+    .filter(a => a.level === 'late' || a.level === 'soon')
+    .sort((a, b) => (a.kind === 'reminder' ? 0 : 1) - (b.kind === 'reminder' ? 0 : 1))
+    .filter(a => {
+      const key = a.title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     })
-    .join('');
+    .sort((a, b) => (a.level === b.level ? a.score - b.score : a.level === 'late' ? -1 : 1));
+  $('#todoSection').hidden = !todo.length;
+  $('#todoCount').textContent = todo.length || '';
+  $('#todoList').innerHTML = todo.map(a => row(v, a, true)).join('');
+  $('#todoHint').hidden = !todo.some(a => a.kind === 'reminder');
+  nudgeOnce();
 }
 
-function renderOverview(v, f, list) {
-  const reminders = list.filter(a => a.kind === 'reminder' || a.kind === 'part' || a.kind === 'doc');
-  const cardOf = a => `<article class="cc acard is-${a.level}" data-goto="${ALERT_TAB[a.kind]}"${a.kind === 'reminder' ? ` data-reminder-id="${esc(a.id)}"` : ''}>
-      <div class="acard__top">${tile(a.title, a.kind, a.level)}${badge(a.level)}</div>
-      <h3 class="cc__t">${esc(a.title)}</h3><p class="cc__big">${esc(a.text)}</p>
-      ${a.kind === 'reminder' ? `<button type="button" class="acard__done" data-done aria-label="${esc(a.title)} : c’est fait">${icon('check', 16)}<span>Fait</span></button>` : ''}
-    </article>`;
+function renderNote(v) {
   $('#panel-overview').innerHTML = `
-    <section class="section">
-      <header class="section__head"><h2 class="section__title">Rappels</h2>${reminders.length ? `<span class="section__count">${reminders.length}</span>` : ''}</header>
-      ${reminders.length
-        ? `<div class="crail">${reminders.map(cardOf).join('')}</div>`
-        : `<p class="calm">Aucune échéance suivie. Ajoutez des rappels d’entretien${isBike(v) ? ', des composants' : ''} ou des documents avec leur date.</p>`}
-    </section>
     <section class="section card note-card">
       <header class="card__head"><h2 class="card__title">${icon('note', 18)}<span>Note</span></h2><button type="button" class="link-btn" data-edit-note>${v.notes ? 'Modifier' : 'Ajouter'}</button></header>
       ${v.notes ? `<p class="notes-text">${esc(v.notes)}</p>` : '<p class="card__sub">Un mot sur ce véhicule : pression des pneus, code radio, garage habituel…</p>'}
@@ -87,19 +73,18 @@ function renderOverview(v, f, list) {
     </section>`;
 }
 
-const PANELS = { maintenance: renderMaintenance, fuel: renderFuel, parts: renderParts, docs: renderDocs };
-
 export function renderDetail() {
   const v = store.active();
   if (!v) return;
-  setTab(tab, v);
   const f = fieldsOf(v.id);
   const list = alerts(v, f);
   renderHero(v, f);
-  renderTabs(v, list);
-  $$('#detailView [data-panel]').forEach(p => (p.hidden = p.dataset.panel !== tab));
-  if (tab === 'overview') renderOverview(v, f, list);
-  else PANELS[tab](v, f);
+  renderTodo(v, list);
+  renderMaintenance(v, f);
+  $('#panel-parts').hidden = !isBike(v);
+  if (isBike(v)) renderParts(v, f);
+  renderDocs(v, f);
+  renderNote(v);
 }
 
 /* ---------- Compteur ---------- */
@@ -115,15 +100,13 @@ function openKm() {
   openSheet('kmSheet');
 }
 
-export function initDetail({ onTab, onReminderDone, onEditNote }) {
-  $('#vehicleTabs').addEventListener('click', e => {
-    const b = e.target.closest('[data-tab]');
-    if (b) onTab(b.dataset.tab);
+export function initDetail({ onReminderDone, onEditNote }) {
+  attachSwipe($('#todoList'), onReminderDone);
+  $('#todoList').addEventListener('click', e => {
+    const b = e.target.closest('button[data-goto]');
+    if (b) scrollToSection(b.dataset.goto);
   });
   $('#panel-overview').addEventListener('click', e => {
-    const row = e.target.closest('[data-goto]');
-    if (row && e.target.closest('[data-done]')) return onReminderDone(row.dataset.reminderId);
-    if (row) return onTab(row.dataset.goto);
     if (e.target.closest('[data-edit-note]')) return onEditNote();
     if (e.target.closest('[data-action="resale-dossier"]')) {
       const v = store.active();
