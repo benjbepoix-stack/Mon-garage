@@ -35,6 +35,43 @@ function signsOf(v, f, km) {
   return out.sort((a, b) => a.km - b.km);
 }
 
+const LANE_H = 38; // hauteur d'un étage de panneaux (pastille + marge)
+const LABEL_GAP = 10; // espace minimal entre deux pastilles d'un même étage
+const ROAD_H = 44;
+
+/**
+ * Range les panneaux en étages sans aucun chevauchement : chaque pastille va sur le
+ * plus bas étage où elle tient (sa largeur réelle est mesurée), la route descend
+ * d'autant d'étages. Les kilométrages trop proches sous la route ne sont écrits qu'une fois.
+ */
+function layoutSigns(road, track) {
+  const els = [...track.querySelectorAll('.road__sign')];
+  const lanes = []; // bord droit occupé, par étage (0 = juste au-dessus de la route)
+  const placed = els.map(el => {
+    const x = parseFloat(el.style.left);
+    const w = el.querySelector('.road__label').offsetWidth;
+    let lane = lanes.findIndex(right => right + LABEL_GAP <= x - w / 2);
+    if (lane === -1) lane = lanes.length;
+    lanes[lane] = x + w / 2;
+    return { el, x, lane };
+  });
+  const n = Math.max(1, lanes.length);
+  const asphalt = n * LANE_H + 14;
+  let lastTick = -Infinity;
+  placed.forEach(({ el, x, lane }) => {
+    const top = (n - 1 - lane) * LANE_H;
+    el.style.top = `${top}px`;
+    el.querySelector('.road__pole').style.height = `${asphalt - top - 30}px`;
+    const tick = el.querySelector('.road__tick');
+    tick.style.top = `${asphalt + ROAD_H + 6 - top}px`;
+    tick.hidden = x - lastTick < 56;
+    if (!tick.hidden) lastTick = x;
+  });
+  road.style.height = `${asphalt + ROAD_H + 26}px`;
+  track.querySelector('.road__asphalt').style.top = `${asphalt}px`;
+  track.querySelector('.road__car').style.top = `${asphalt}px`;
+}
+
 export function odometerHtml(n) {
   const digits = String(Math.max(0, Math.round(n))).split('');
   return digits
@@ -130,15 +167,9 @@ export function mountRoad(hero, v, f, km, onSubmit) {
     start = Math.min(km, ...signs.map(s => s.km), roll ?? km);
     // Panneaux en retard derrière la voiture : on garde un peu de recul pour les voir.
     if (start < km) start = Math.max(start, km - (CAR_X - 8) / scale);
-    let row = 0;
-    let lastX = -Infinity;
-    track.insertAdjacentHTML('beforeend', signs.map(s => {
-      const x = toX(s.km);
-      row = x - lastX < 128 ? (row + 1) % 2 : 0;
-      lastX = x;
-      return `<div class="road__sign is-${s.level}${row ? ' road__sign--high' : ''}" style="left:${x}px" data-km="${s.km}" data-title="${esc(s.title)}">
-        <span class="road__label">${alertIcon(s.title, 'reminder', 14)}${esc(s.title)}</span><span class="road__pole"></span><span class="road__tick">${esc(intFmt(s.km))}</span></div>`;
-    }).join(''));
+    track.insertAdjacentHTML('beforeend', signs.map(s => `<div class="road__sign is-${s.level}" style="left:${toX(s.km)}px" data-km="${s.km}" data-title="${esc(s.title)}">
+        <span class="road__label">${alertIcon(s.title, 'reminder', 14)}${esc(s.title)}</span><span class="road__pole"></span><span class="road__tick">${esc(intFmt(s.km))}</span></div>`).join(''));
+    layoutSigns(road, track);
     car.style.transform = `translateX(${toX(carKm) - CAR_X}px)`;
     setOffset(0);
     attachDrag();
