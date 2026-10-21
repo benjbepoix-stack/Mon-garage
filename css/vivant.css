@@ -296,5 +296,10 @@ a.trow:active { transform: scale(.985); }
 .app, :root[data-style] .app { padding-bottom: calc(var(--safe-bottom) + 124px); }
 @media (min-width: 900px) { .app { padding-bottom: calc(var(--safe-bottom) + 124px); } }
 body[data-view="home"] .topbar__kicker:empty { display: none; }
-.vlist .vcard__photo { width: 56px; height: 56px; border-radius: 16px; }
-.vlist .vcard__foot { margin-top: 6px; }
+/* Photo plus grande : elle occupe toute la hauteur de la carte, à droite */
+.vlist .vcard { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: start; }
+.vlist .vcard__head { display: contents; }
+.vlist .vcard__titles { grid-column: 1; grid-row: 1; min-width: 0; }
+.vlist .vcard__photo { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 112px; height: 112px; border-radius: 22px; }
+.vlist .vcard__foot { grid-column: 1; grid-row: 2; margin-top: 6px; }
+@media (max-width: 360px) { .vlist .vcard__photo { width: 92px; height: 92px; } }
