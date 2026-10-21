@@ -183,8 +183,7 @@ a.trow:active { transform: scale(.985); }
 .road__asphalt::after { content: ""; position: absolute; left: 0; right: 0; top: 21px; height: 2px; background: repeating-linear-gradient(90deg, var(--surface) 0 22px, transparent 22px 40px); }
 .road__car { position: absolute; left: 33px; top: 84px; z-index: 2; display: grid; place-items: center; width: 46px; height: 44px; border-radius: 14px; background: var(--fill); color: var(--fill-ink); box-shadow: 0 8px 18px -8px var(--fill); will-change: transform; }
 .road__sign { position: absolute; top: 26px; display: grid; justify-items: center; transform: translateX(-50%); }
-.road__sign--high { top: 0; }
-.road__label { display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-card); font-size: 12.5px; font-weight: 600; white-space: nowrap; color: var(--text); transition: transform .16s ease-out, background .16s, color .16s; }
+.road__label { position: relative; z-index: 1; box-sizing: border-box; height: 30px; display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-card); font-size: 12.5px; font-weight: 600; white-space: nowrap; color: var(--text); transition: transform .16s ease-out, background .16s, color .16s; }
 :root:not([data-theme="light"]) .road__label { background: var(--surface-3); }
 .road__label svg { color: var(--accent); }
 .road__sign.is-late .road__label svg { color: var(--late); }
@@ -193,9 +192,7 @@ a.trow:active { transform: scale(.985); }
 .road__sign.is-near .road__label { background: var(--fill); color: var(--fill-ink); transform: scale(1.06); }
 .road__sign.is-near .road__label svg { color: currentColor; }
 .road__pole { width: 2px; height: 28px; background: var(--border-strong); }
-.road__sign--high .road__pole { height: 54px; }
 .road__tick { position: absolute; top: 106px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.road__sign--high .road__tick { top: 132px; }
 .road__look { margin-top: 2px; font-size: 14px; color: var(--text-2); }
 .road__look b { font-weight: 600; color: var(--text); }
 .road__look:empty { display: none; }
