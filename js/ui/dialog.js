@@ -9,9 +9,57 @@
 import { esc } from '../core/utils.js';
 import { icon } from './icons.js';
 import { startWizard } from './wizard.js';
+import { buzz, reducedMotion } from './motion.js';
 
 const stack = [];
 const ANIMATION_MS = 320;
+
+/* ---------- Ouverture depuis un bouton + (comme Mon budget) ---------- */
+const PLUS = '.fab, .add-btn, .home-add__btn';
+const SPRING = 'cubic-bezier(.34, 1.5, .64, 1)';
+const REVEAL_MS = 560;
+const SHRINK_MS = 460;
+let lastPlus = null;
+
+/** Bouton + touché à l'instant (Safari ne lui donne pas le focus : on retient le clic). */
+function takePlus() {
+  const hit = lastPlus && performance.now() - lastPlus.at < 800 ? lastPlus.el : null;
+  lastPlus = null;
+  return hit?.isConnected && hit.offsetParent ? hit : null;
+}
+
+/**
+ * Passage bouton ⇄ feuille : la feuille part du bouton (même place, même taille, même couleur,
+ * découpée en rond) et s'agrandit jusqu'à sa position.
+ */
+function morph(sheet, btn) {
+  const r = sheet.getBoundingClientRect();
+  const b = btn.getBoundingClientRect();
+  const side = Math.min(r.width, r.height);
+  const k = Math.max(b.width, b.height) / side;
+  const dx = b.left + b.width / 2 - (r.left + r.width / 2);
+  const dy = b.top + b.height / 2 - (r.top + r.height / 2);
+  const far = Math.ceil(Math.hypot(r.width, r.height) / 2);
+  const fill = getComputedStyle(btn).backgroundColor;
+  const bg = getComputedStyle(sheet).backgroundColor;
+  return [
+    { transform: `translate(${dx}px, ${dy}px) scale(${k})`, clipPath: `circle(${side / 2}px at 50% 50%)`, backgroundColor: fill },
+    { transform: 'none', clipPath: `circle(${far}px at 50% 50%)`, backgroundColor: bg }
+  ];
+}
+
+/** La feuille s'agrandit à partir du bouton, puis son contenu arrive en cascade. */
+function reveal(sheet, from) {
+  sheet.animate(morph(sheet, from), { duration: REVEAL_MS, easing: 'cubic-bezier(.3, .9, .2, 1)' });
+  [...sheet.children].forEach((n, i) => n.animate([{ transform: 'translateY(16px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, delay: 160 + i * 45, easing: 'cubic-bezier(.2, .9, .25, 1)', fill: 'backwards' }));
+}
+
+/** Inverse : la feuille se referme dans le bouton, qui rebondit. */
+function shrink(sheet, to) {
+  [...sheet.children].forEach(n => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+  sheet.animate(morph(sheet, to).reverse(), { duration: SHRINK_MS, easing: 'cubic-bezier(.5, 0, .2, 1)', fill: 'forwards' });
+  setTimeout(() => to.animate([{ transform: 'scale(.86)' }, { transform: 'none' }], { duration: 520, easing: SPRING }), SHRINK_MS - 40);
+}
 
 function syncLock() {
   document.documentElement.classList.toggle('is-locked', stack.length > 0);
@@ -21,11 +69,19 @@ export function openSheet(target, { onClose, focus = true } = {}) {
   const el = typeof target === 'string' ? document.getElementById(target) : target;
   if (!el) return;
   if (stack.some(s => s.el === el)) return;
-  stack.push({ el, onClose, returnFocus: document.activeElement });
+  const sheet = el.querySelector(':scope > .sheet');
+  const from = sheet && !reducedMotion() ? takePlus() : null;
+  stack.push({ el, onClose, returnFocus: document.activeElement, from });
+  sheet?.getAnimations({ subtree: true }).forEach(a => a.cancel());
   startWizard(el);
+  el.classList.toggle('is-reveal', Boolean(from));
   el.hidden = false;
   void el.offsetWidth; // force le reflow pour déclencher la transition
   el.classList.add('is-open');
+  if (from) {
+    buzz(6);
+    reveal(sheet, from);
+  }
   syncLock();
   if (focus) {
     const first = el.querySelector('[autofocus], input:not([type=hidden]):not([disabled]), select, textarea, button:not([data-close])');
@@ -40,10 +96,17 @@ export function closeSheet(target) {
   const index = stack.findIndex(s => s.el === el);
   if (index === -1) return;
   const [entry] = stack.splice(index, 1);
+  const sheet = el.querySelector(':scope > .sheet');
+  const into = entry.from?.isConnected && entry.from.offsetParent ? entry.from : null;
+  if (into) shrink(sheet, into);
+  else el.classList.remove('is-reveal');
   el.classList.remove('is-open');
   setTimeout(() => {
-    if (!el.classList.contains('is-open')) el.hidden = true;
-  }, ANIMATION_MS);
+    if (el.classList.contains('is-open')) return;
+    el.hidden = true;
+    el.classList.remove('is-reveal');
+    sheet?.getAnimations({ subtree: true }).forEach(a => a.cancel());
+  }, into ? SHRINK_MS : ANIMATION_MS);
   syncLock();
   entry.returnFocus?.focus?.({ preventScroll: true });
   entry.onClose?.();
@@ -57,6 +120,10 @@ export function closeAllSheets() {
 export const closeTop = () => stack.length && closeSheet(stack[stack.length - 1].el);
 
 export function initDialogs() {
+  document.addEventListener('click', e => {
+    const el = e.target.closest?.(PLUS);
+    lastPlus = el ? { el, at: performance.now() } : null;
+  }, true);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && stack.length) {
       e.preventDefault();

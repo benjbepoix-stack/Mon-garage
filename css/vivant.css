@@ -98,10 +98,23 @@ body[data-view="home"] .topbar__title { font-size: 30px; font-weight: 700; lette
 .vpick__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vpick [data-icon] { flex: none; color: var(--text-2); }
 .vpick:active { transform: scale(.97); }
-.fab { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--fill); color: var(--fill-ink); box-shadow: 0 10px 22px -10px var(--fill); transition: transform .16s ease-out; }
-.fab:active { transform: scale(.92); }
+/* Boutons + : même style que Mon budget (pastille pleine, halo qui respire, ressort au toucher). */
+.fab, .add-btn, .home-add__btn { border: 0; background: var(--fill); color: var(--fill-ink); box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--fill) 70%, transparent), 0 0 0 5px var(--accent-soft); transition: transform 520ms cubic-bezier(.34, 1.5, .64, 1); -webkit-tap-highlight-color: transparent; }
+.fab:active, .add-btn:active, .home-add__btn:active { transform: scale(.9); transition-duration: 90ms; }
+.add-btn:hover, .home-add__btn:hover { background: var(--fill); }
+.fab { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; animation: plus-breathe 3.4s ease-in-out infinite; }
+.add-btn { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--fill) 70%, transparent), 0 0 0 4px var(--accent-soft); }
+.home-add__btn { min-height: 40px; padding: 0 16px 0 12px; font-weight: 600; }
+/* Le halo du bouton + respire doucement. */
+@keyframes plus-breathe { 50% { box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--fill) 70%, transparent), 0 0 0 9px color-mix(in srgb, var(--fill) 7%, transparent); } }
 .fab[hidden] { display: none; }
-.fab:focus-visible, .vpick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fab:focus-visible, .add-btn:focus-visible, .home-add__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 7px; }
+.vpick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Feuille ouverte depuis un bouton + : elle s'agrandit en cercle à partir du bouton (sans glisser). */
+.sheet-backdrop.is-reveal .sheet { transform: none; opacity: 1; transition: none; }
+/* Le fond seul s'estompe : la feuille reste nette pendant qu'elle rentre dans le bouton. */
+.sheet-backdrop.is-reveal { opacity: 1; background: transparent; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); transition: background var(--dur-slow) var(--ease), -webkit-backdrop-filter var(--dur-slow) var(--ease), backdrop-filter var(--dur-slow) var(--ease); }
+.sheet-backdrop.is-reveal.is-open { background: var(--backdrop); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 
 /* ---------- Barre du bas : toujours en bas, trois onglets ---------- */
 .tabbar, :root[data-style] .tabbar { grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(400px, calc(100% - 32px)); border: 0; border-radius: 24px; background: color-mix(in srgb, var(--surface) 84%, transparent); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); box-shadow: var(--shadow-card), 0 18px 40px -20px rgba(0, 0, 0, .35); }
@@ -271,7 +284,8 @@ a.trow:active { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) {
   .stamp { animation: none; opacity: 1; transform: rotate(-12deg); }
   #maintenanceList .row.is-new { animation: none; }
-  .road__label, .fab, .wz-hold__label { transition: none; }
+  .road__label, .fab, .add-btn, .home-add__btn, .wz-hold__label { transition: none; }
+  .fab { animation: none; }
   .wz-hold { background: var(--fill); color: var(--fill-ink); }
   .wz-hold__label { color: inherit; }
 }
