@@ -12,18 +12,18 @@ import { alertIcon } from './alert-ui.js';
 
 const DIGIT_H = 1; // hauteur d'un chiffre, en em (voir .odo__col span)
 const CAR_X = 56; // position de la voiture dans la piste au départ (px)
-/* Voiture et vélo de profil, tournés vers l'avant : les roues (.road__wheel) tournent selon la distance parcourue. */
-const WHEEL = cx => `<g class="road__wheel"><circle cx="${cx}" cy="24" r="6.4" fill="var(--tire)"/><circle cx="${cx}" cy="24" r="2.8" fill="var(--hub)"/><path d="M${cx} 19.2v2M${cx} 26.8v2M${cx - 4.8} 24h2M${cx + 2.8} 24h2" stroke="var(--hub)" stroke-width="1.3" stroke-linecap="round"/></g>`;
-const SPOKES = cx => `<g class="road__wheel"><circle cx="${cx}" cy="22" r="9.2" fill="none" stroke="var(--spoke-tire)" stroke-width="2.6"/><path d="M${cx} 13.5v17M${cx - 8.5} 22h17M${cx - 6} 16l12 12M${cx + 6} 16l-12 12" stroke="var(--text-3)" stroke-width=".8"/><circle cx="${cx}" cy="22" r="1.6" fill="var(--spoke-tire)"/></g>`;
-const CAR_ART = `<g class="road__body"><path d="M4 22v-5c0-2.4 1.5-3.4 3.4-3.7L16 12l6.6-6.4C24 4.4 25.6 4 27.6 4h14c2 0 3.5.6 4.8 1.9L53 12l5 .9c2 .4 3 1.6 3 4V22c0 1.2-.8 2-2 2H6c-1.2 0-2-.8-2-2z" fill="var(--fill)"/>
-  <path d="M24.5 7.2 19.6 12H33V7.2zM36 7.2V12h14.3l-4.1-4c-.6-.5-1.3-.8-2.1-.8z" fill="var(--glass)"/>
-  <rect x="56.5" y="14.2" width="3.6" height="2.6" rx="1.2" fill="#ffe9a8"/><rect x="4.6" y="14.6" width="2" height="2.6" rx=".8" fill="#ff8a72"/>
-  <path d="M34.5 15h3" stroke="var(--glass)" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></g>${WHEEL(16)}${WHEEL(49)}`;
-const BIKE_ART = `${SPOKES(14)}${SPOKES(50)}<g class="road__body"><g fill="none" stroke="var(--fill)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 22 30 22 26 10 14 22M26 10h18M30 22 45 12.5M44 9l6 13M26 10 25 6.5"/></g>
-  <path d="M21.5 6h7.5" stroke="var(--text)" stroke-width="3" stroke-linecap="round"/><path d="M44 9l-.6-3.4h4.6" fill="none" stroke="var(--text)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="30" cy="22" r="2.8" fill="var(--surface)" stroke="var(--text)" stroke-width="1.6"/></g>`;
+/* Voiture et vélo de profil dans la pastille, tournés vers l'avant : les roues (.road__wheel) tournent selon la distance parcourue. */
+const WHEEL = cx => `<g class="road__wheel"><circle cx="${cx}" cy="24" r="6.4" fill="currentColor" stroke="var(--fill)" stroke-width="1.6"/><circle cx="${cx}" cy="24" r="2.8" fill="var(--fill)"/><path d="M${cx} 19.2v2M${cx} 26.8v2M${cx - 4.8} 24h2M${cx + 2.8} 24h2" stroke="var(--fill)" stroke-width="1.3" stroke-linecap="round"/></g>`;
+const SPOKES = cx => `<g class="road__wheel"><circle cx="${cx}" cy="22" r="9.2" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M${cx} 13.5v17M${cx - 8.5} 22h17M${cx - 6} 16l12 12M${cx + 6} 16l-12 12" stroke="currentColor" stroke-width=".8" opacity=".8"/><circle cx="${cx}" cy="22" r="1.6" fill="currentColor"/></g>`;
+const CAR_ART = `<path d="M4 22v-5c0-2.4 1.5-3.4 3.4-3.7L16 12l6.6-6.4C24 4.4 25.6 4 27.6 4h14c2 0 3.5.6 4.8 1.9L53 12l5 .9c2 .4 3 1.6 3 4V22c0 1.2-.8 2-2 2H6c-1.2 0-2-.8-2-2z" fill="currentColor"/>
+  <path d="M24.5 7.2 19.6 12H33V7.2zM36 7.2V12h14.3l-4.1-4c-.6-.5-1.3-.8-2.1-.8z" fill="var(--fill)" opacity=".9"/>
+  <rect x="56.5" y="14.2" width="3.6" height="2.6" rx="1.2" fill="var(--fill)"/><rect x="4.6" y="14.6" width="2" height="2.6" rx=".8" fill="var(--fill)"/>
+  <path d="M34.5 15h3" stroke="var(--fill)" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>${WHEEL(16)}${WHEEL(49)}`;
+const BIKE_ART = `${SPOKES(14)}${SPOKES(50)}<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 22 30 22 26 10 14 22M26 10h18M30 22 45 12.5M44 9l6 13M26 10 25 6.5" stroke-width="2.6"/>
+  <path d="M21.5 6h7.5" stroke-width="3"/><path d="M44 9l-.6-3.4h4.6" stroke-width="2.2"/></g>
+  <circle cx="30" cy="22" r="2.8" fill="currentColor"/>`;
 const vehicleArt = v => `<svg viewBox="0 0 64 32" aria-hidden="true">${v.kind === 'bike' ? BIKE_ART : CAR_ART}</svg>`;
-const WHEEL_R = { car: 7, bike: 10 }; // rayon affiché des roues (px), pour qu'elles roulent sans glisser
+const WHEEL_R = { car: 4.6, bike: 6.6 }; // rayon affiché des roues (px), pour qu'elles roulent sans glisser
 let pending = null; // { id, from } : compteur à faire défiler au prochain rendu de ce véhicule
 
 /** À appeler juste avant d'enregistrer un nouveau relevé : le prochain rendu anime from → nouveau compteur. */
@@ -150,10 +150,7 @@ export function mountRoad(hero, v, f, km, onSubmit) {
   let spin = 0;
   function moveCar(k) {
     const x = toX(k) - CAR_X;
-    if (carX !== null && x !== carX) {
-      spin += ((x - carX) / wheelR) * (180 / Math.PI);
-      car.classList.add('is-rolling');
-    }
+    if (carX !== null) spin += ((x - carX) / wheelR) * (180 / Math.PI);
     carX = x;
     car.style.transform = `translateX(${x}px)`;
     car.querySelectorAll('.road__wheel').forEach(w => (w.style.transform = `rotate(${spin}deg)`));
@@ -221,7 +218,6 @@ export function mountRoad(hero, v, f, km, onSubmit) {
         if (car) moveCar(value);
       }, () => {
         carKm = km;
-        car?.classList.remove('is-rolling');
         updateLook();
         if (passed.length) buzz([10, 40, 10]);
       });
