@@ -44,6 +44,10 @@
   --series-4: #8ea2c8;
   --series-5: #b6dcd6;
   --series-6: #b39ad6;
+  --tire: #0b100f;
+  --spoke-tire: #c9d6d3;
+  --hub: #9db0ac;
+  --glass: #bfe8e1;
 }
 :root[data-theme="light"], :root[data-style][data-theme="light"] {
   --bg: #f5f3ef;
@@ -83,6 +87,10 @@
   --series-4: #5b6b8c;
   --series-5: #a9cbc5;
   --series-6: #8a6fb0;
+  --tire: #2b2925;
+  --spoke-tire: #2b2925;
+  --hub: #e7e2d9;
+  --glass: #d9efe9;
 }
 
 body { font-variant-numeric: tabular-nums; -webkit-tap-highlight-color: transparent; }
@@ -181,7 +189,13 @@ a.trow:active { transform: scale(.985); }
 .road__track { position: absolute; left: 0; top: 0; bottom: 0; width: 1px; will-change: transform; }
 .road__asphalt { position: absolute; left: -600px; width: 6000px; top: 84px; height: 44px; border-radius: 6px; background: var(--road); }
 .road__asphalt::after { content: ""; position: absolute; left: 0; right: 0; top: 21px; height: 2px; background: repeating-linear-gradient(90deg, var(--surface) 0 22px, transparent 22px 40px); }
-.road__car { position: absolute; left: 33px; top: 84px; z-index: 2; display: grid; place-items: center; width: 46px; height: 44px; border-radius: 14px; background: var(--fill); color: var(--fill-ink); box-shadow: 0 8px 18px -8px var(--fill); will-change: transform; }
+.road__car { position: absolute; left: 20px; top: 84px; z-index: 2; width: 72px; height: 44px; will-change: transform; }
+.road__car svg { position: absolute; left: 0; bottom: 7px; width: 72px; height: 36px; overflow: visible; }
+.road__car::before { content: ""; position: absolute; left: 8px; right: 8px; bottom: 4px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, .18); filter: blur(2px); }
+:root:not([data-theme="light"]) .road__car::before { background: rgba(0, 0, 0, .45); }
+.road__wheel, .road__body { transform-box: fill-box; transform-origin: center; }
+.road__car.is-rolling .road__body { animation: road-bob .14s ease-in-out infinite alternate; }
+@keyframes road-bob { to { transform: translateY(-.6px); } }
 .road__sign { position: absolute; top: 26px; display: grid; justify-items: center; transform: translateX(-50%); }
 .road__label { position: relative; z-index: 1; box-sizing: border-box; height: 30px; display: flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-card); font-size: 12.5px; font-weight: 600; white-space: nowrap; color: var(--text); transition: transform .16s ease-out, background .16s, color .16s; }
 :root:not([data-theme="light"]) .road__label { background: var(--surface-3); }
@@ -270,6 +284,7 @@ a.trow:active { transform: scale(.985); }
   .stamp { animation: none; opacity: 1; transform: rotate(-12deg); }
   #maintenanceList .row.is-new { animation: none; }
   .road__label, .fab, .wz-hold__label { transition: none; }
+  .road__car.is-rolling .road__body { animation: none; }
   .wz-hold { background: var(--fill); color: var(--fill-ink); }
   .wz-hold__label { color: inherit; }
 }
